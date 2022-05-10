@@ -4,7 +4,6 @@
 	icon = 'yogstation/icons/obj/xenoarch/artifacts.dmi'
 	icon_state = "gigadrill"
 	key_type = null //maybe add a key in the future
-
 	var/obj/structure/ore_box/OB
 
 /obj/vehicle/ridden/gigadrill/Destroy(force)
@@ -111,3 +110,13 @@
 		for(var/obj/item/stack/ore/ore in range(1, src))
 			if(ore.Adjacent(src))
 				ore.forceMove(OB)
+				
+
+/obj/vehicle/ridden/gigadrill/Crossed(atom/movable/GD)
+	splat(GD)
+	. = ..()
+
+/obj/vehicle/ridden/gigadrill/proc/splat(mob/living/carbon/human/L)
+	message_admins("message")
+	L.adjustBruteLoss(50)
+
