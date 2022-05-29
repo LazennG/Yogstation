@@ -114,7 +114,7 @@
 	user.RemoveAbility(swipe_ability)
 
 obj/effect/proc_holder/swipe
-	name = "swipe"
+	name = "Swipe"
 	desc = "Swipe at a target area, dealing damage and consuming dead creatures to heal yourself. People are ineligible for total consumption unless thoroughly mangled. Creatures take 30 damage and heal the most while people and cyborgs take 10 damage and heal for the least.Totally mangled people heal for a bit more than those that aren't."
 	action_background_icon_state = "bg_demon"
 	action_icon = 'icons/mob/actions/actions_items.dmi'
