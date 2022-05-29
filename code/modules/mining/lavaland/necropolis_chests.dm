@@ -1037,7 +1037,7 @@ GLOBAL_LIST_EMPTY(bloodmen_list)
 /obj/structure/closet/crate/necropolis/bubblegum/PopulateContents()
 	new /obj/item/clothing/suit/space/hostile_environment(src)
 	new /obj/item/clothing/head/helmet/space/hostile_environment(src)
-	var/loot = rand(1,4)
+	var/loot = rand(1,5)
 	switch(loot)
 		if(1)
 			new /obj/item/mayhem(src)
@@ -1047,6 +1047,8 @@ GLOBAL_LIST_EMPTY(bloodmen_list)
 			new /obj/item/melee/knuckles(src)
 		if(4)
 			new /obj/item/organ/stomach/cursed(src)
+		if(5)
+			new /obj/item/clothing/gloves/bracer/cuffs(src)
 
 /obj/structure/closet/crate/necropolis/bubblegum/crusher
 	name = "bloody bubblegum chest"
@@ -1182,6 +1184,7 @@ GLOBAL_LIST_EMPTY(bloodmen_list)
 		#undef COOLDOWN
 		#undef COOLDOWN_HUMAN
 		#undef COOLDOWN_ANIMAL
+
 //Colossus
 /obj/structure/closet/crate/necropolis/colossus
 	name = "colossus chest"

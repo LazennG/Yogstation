@@ -23,7 +23,7 @@ When Bubblegum dies, it leaves behind a H.E.C.K. mining suit as well as a chest 
  2. A contract that marks for death the chosen target
  3. A set of knuckles that can trap victims where they stand
  4. A cursed stomach allowing the user to travel via puddles of vomit
-
+ 5. A pair of cuffs allowing the wearer to devour creatures to heal
 Difficulty: Hard
 
 */
