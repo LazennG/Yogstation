@@ -123,6 +123,8 @@
 
 #define STATUS_EFFECT_BRAZIL_PENANCE /datum/status_effect/brazil_penance //controls heretic sacrifice
 
+#define STATUS_EFFECT_BOUTTABLOW /datum/status_effect/bouttablow //target blows the fuck up in 5 seconds
+
 /////////////
 // NEUTRAL //
 /////////////

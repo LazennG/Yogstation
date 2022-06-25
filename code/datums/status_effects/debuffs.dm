@@ -1125,3 +1125,28 @@
 /datum/status_effect/knuckled/be_replaced()
     owner.underlays -= bruise 
     ..()
+
+/datum/status_effect/bouttablow
+    id = "exploding_arm"
+    duration = 5 SECONDS
+    status_type = STATUS_EFFECT_REPLACE
+    alert_type = null
+    var/mutable_appearance/armstuck
+
+/datum/status_effect/bouttablow/on_apply()
+    armstuck = mutable_appearance('icons/effects/effects.dmi', "rshield")
+    armstuck.pixel_x = -owner.pixel_x
+    armstuck.pixel_y = -owner.pixel_y
+    owner.underlays += armstuck
+    return TRUE
+
+/datum/status_effect/bouttablow/Destroy()
+    if(owner)
+        owner.underlays -= armstuck
+        explosion(owner, -1, 3, 5, 1)
+    QDEL_NULL(armstuck)
+    return ..()
+
+/datum/status_effect/bouttablow/be_replaced()
+    owner.underlays -= armstuck 
+    ..()

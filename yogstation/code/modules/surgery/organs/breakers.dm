@@ -1,11 +1,10 @@
 
 /obj/effect/proc_holder/spell/targeted/wire_snatch
 	name = "Wire Snatch"
-	desc = "Extend a wire from the right arm to reel in foes from a distance. Large or heavy enemies cannot be pulled in"
+	desc = "Extend a wire from the right arm to reel in foes from a distance. Anchored targets that are hit will pull you towards them instead."
 	invocation_type = "none"
 	include_user = TRUE
 	range = -1
-	school = "conjuration"
 	charge_max = 1
 	clothes_req = FALSE
 	cooldown_min = 10
@@ -14,12 +13,11 @@
 	var/summon_path = /obj/item/gun/magic/wire
 
 /obj/effect/proc_holder/spell/targeted/wire_snatch/cast(list/targets, mob/user)
-	for((var/obj/item/gun/magic/wire/T in user))
+	for(var/obj/item/gun/magic/wire/T in user)
 		qdel(T)
-		to_chat(user, span_notice("The wire rewinds into your arm."))
+		to_chat(user, span_notice("The wire returns into your shoulder."))
 		return
 	for(var/mob/living/carbon/C in targets)
-		C.drop_all_held_items()
 		var/GUN = new summon_path
 		C.put_in_hands(GUN)
 
@@ -78,6 +76,7 @@
 		var/obj/item/I = target
 		if(!I?.anchored)
 			I.throw_at(get_step_towards(H,I), 8, 2)
+			H.put_in_hands(I)
 			I.visible_message(span_danger("[I] is pulled by [H]'s wire!"))
 			return
 		zip(H, target)
@@ -85,7 +84,7 @@
 		var/mob/L = target
 		if(!L.anchored)
 			if(istype(H))
-				L.visible_message(span_danger("[L] is pulled by [H]'s wire!"),span_userdanger("A tentacle grabs you and pulls you towards [H]!"))
+				L.visible_message(span_danger("[L] is pulled by [H]'s wire!"),span_userdanger("A wire grabs you and pulls you towards [H]!"))
 				L.throw_at(get_step_towards(H,L), 8, 4)
 	if(iswallturf(target))
 		var/turf/W = target
@@ -114,7 +113,7 @@
 
 /obj/effect/proc_holder/spell/aoe_turf/repulse/breakaway/cast(list/targets,mob/user = usr)
 	var/mob/living/carbon/C = user
-	for(var/obj/item/bodypart/r_arm/robot/breaker/B in C.bodyparts)
+	for(var/obj/item/bodypart/r_arm/B in C.bodyparts)
 		B.dismember()
 		qdel(B)
 		C.visible_message(span_danger("[C]'s arm explodes, launching them back on their feet!"))
@@ -124,4 +123,105 @@
 		C.SetImmobilized(0)
 		C.SetParalyzed(0)
 		new /obj/effect/temp_visual/explosion(get_turf(C))
-	..(targets, user, 0)
+	. = ..()
+
+/obj/effect/proc_holder/spell/targeted/battery
+	name = "Battery"
+	desc = "Let out a burst of energy from your arm, shocking those in front of you and knocking them back."
+	charge_max = 10
+	clothes_req = FALSE
+	invocation_type = "none"
+	sound = 'sound/magic/lightningshock.ogg'
+	action_icon = 'icons/mob/actions/humble/actions_humble.dmi'
+	action_icon_state = "shield"
+	range = -1
+	include_user = TRUE
+	cooldown_min = 20
+	var/shootie = /obj/item/projectile/battery
+
+/obj/item/projectile/battery
+	name = "arm blast"
+	damage = 30
+	damage_type = BURN
+	range = 2
+	icon_state = "plasma"
+
+/obj/item/projectile/battery/on_hit(atom/target)
+	. = ..()
+	if(isliving(target))
+		var/mob/living/L = target
+		var/atom/throw_target = get_edge_target_turf(target, get_dir(src, get_step_away(target, src)))
+		L.safe_throw_at(throw_target, 2, 2, force = MOVE_FORCE_VERY_STRONG)
+
+/obj/effect/proc_holder/spell/targeted/battery/cast(list/targets,mob/user)
+	message_admins("message")
+	if(..())
+		return TRUE
+	new /obj/effect/temp_visual/bsa_splash(user, dir)
+	var/list/shooties = list()
+	shooties += new shootie(get_turf(user))
+	if(user.dir == SOUTH || user.dir == NORTH)
+		shooties += new shootie(get_step(user, EAST))
+		shooties += new shootie(get_step(user, WEST))
+	else
+		shooties += new shootie(get_step(user, NORTH))
+		shooties += new shootie(get_step(user, SOUTH))
+	for(var/S in shooties)
+		var/obj/item/projectile/wing/shooted = S
+		shooted.firer = user
+		shooted.fire(dir2angle(user.dir))
+
+/obj/effect/proc_holder/spell/targeted/exploder
+	name = "Exploder"
+	desc = "Overload the energy inside Overture to turn it into a bomb. Shove it into an enemy and it explodes after a set amount of time."
+	invocation_type = "none"
+	include_user = TRUE
+	range = -1
+	charge_max = 1
+	clothes_req = FALSE
+	cooldown_min = 10
+	action_icon = 'icons/mob/actions/humble/actions_humble.dmi'
+	action_icon_state = "bolt_action"
+	var/summon_path = /obj/item/exploder
+
+/obj/effect/proc_holder/spell/targeted/exploder/cast(list/targets, mob/user)
+	for(var/obj/item/exploder/T in user)
+		qdel(T)
+		to_chat(user, span_notice("The energy in the arm winds down."))
+		return
+	for(var/mob/living/carbon/C in targets)
+		var/ARM = new summon_path
+		C.put_in_hands(ARM)
+/obj/item/exploder/Initialize()
+	. = ..()
+	ADD_TRAIT(src, TRAIT_NODROP, NOBLUDGEON)
+	if(ismob(loc))
+		loc.visible_message(span_warning("[loc.name]'s arm starts crackling with energy!"), span_warning("You start overloading the arm with power!"))
+
+/obj/item/exploder
+	name = "overloaded overture"
+	desc = "A crackling mechanical arm that will plant itself in the next opponent it makes contact with, causing an explosion 3 seconds later. Landing a hit with this costs the user their breaker."
+	icon = 'icons/obj/lavaland/artefacts.dmi'
+	icon_state = "bloodyknuckle"
+	lefthand_file = 'icons/mob/inhands/weapons/melee_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/weapons/melee_righthand.dmi'
+	item_state = "knuckles"
+	item_flags = DROPDEL
+	force = 0
+
+/obj/item/exploder/afterattack(mob/target, mob/user, proximity)
+	. = ..()
+	var/mob/living/carbon/human/H = user
+	var/mob/living/L = target
+	for(var/obj/item/bodypart/r_arm/B in H.bodyparts)
+		if(!proximity || L == H || !ismob(L))
+			return
+		qdel(src)
+		B.dismember()
+		qdel(B)
+		L.apply_status_effect(STATUS_EFFECT_BOUTTABLOW)
+		L.visible_message(span_danger("[H] embeds their arm inside [L]!"))
+		to_chat(L, span_userdanger("[H]'s arm embeds itself in you and starts beeping ominously!"))
+		playsound(src, 'sound/weapons/armbomb.ogg', 100, 1)
+		. = ..()
+		return 
