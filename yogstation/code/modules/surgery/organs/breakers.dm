@@ -225,3 +225,44 @@
 		playsound(src, 'sound/weapons/armbomb.ogg', 100, 1)
 		. = ..()
 		return 
+
+/obj/effect/proc_holder/spell/aimed/boostknuckle
+	name = "Boost Knuckle"
+	desc = "Fire your fist which will explode after hitting a wall or flying for 10 meters, knocking over anyone in the way."
+	school = "evocation"
+	charge_max = 60
+	clothes_req = FALSE
+	invocation = "ONI SOMA"
+	invocation_type = "shout"
+	range = 10
+	cooldown_min = 20 //10 deciseconds reduction per rank
+	projectile_type = /obj/item/projectile/boostknuckle
+	action_icon = 'icons/mob/actions/humble/actions_humble.dmi'
+	base_icon_state = "fireball"
+	action_icon_state = "fireball0"
+	sound = 'sound/magic/fireball.ogg'
+	active_msg = "You prepare to cast your fireball spell!"
+	deactive_msg = "You extinguish your fireball... for now."
+	active = FALSE
+
+/obj/item/projectile/boostknuckle
+	name = "bolt of fireball"
+	icon_state = "fireball"
+	damage = 40
+	damage_type = BRUTE
+	nodamage = FALSE
+
+/obj/item/projectile/boostknuckle/on_hit(atom/target)
+	. = ..()
+	var/mob/living/carbon/human/H = firer
+	var/atom/throw_target = get_edge_target_turf(target, H.dir)
+	if(ismob(target))
+		var/mob/L = target
+		L.throw_at(throw_target, 2, 4, H, 3)
+
+/obj/item/projectile/boostknuckle/Destroy()
+	explosion(src, -1, 3, 5, 1)
+	qdel(src)
+	return ..()
+
+

@@ -1130,7 +1130,7 @@
 /datum/status_effect/bouttablow/Destroy()
     if(owner)
         owner.underlays -= armstuck
-        explosion(owner, -1, 3, 5, 1)
+        explosion(owner, -1, 1, 1, 1)
     QDEL_NULL(armstuck)
     return ..()
 
