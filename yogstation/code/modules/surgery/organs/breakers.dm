@@ -114,7 +114,7 @@
 /obj/effect/proc_holder/spell/aoe_turf/repulse/breakaway/cast(list/targets,mob/user = usr)
 	var/mob/living/carbon/C = user
 	for(var/obj/item/bodypart/r_arm/B in C.bodyparts)
-		B.dismember()
+		B.drop_limb()
 		qdel(B)
 		C.visible_message(span_danger("[C]'s arm explodes, launching them back on their feet!"))
 		C.uncuff() //they lose an arm but this is for bolas
@@ -137,7 +137,7 @@
 	range = -1
 	include_user = TRUE
 	cooldown_min = 20
-	var/shootie = /obj/item/projectile/battery
+	var/spark = /obj/item/projectile/battery
 
 /obj/item/projectile/battery
 	name = "arm blast"
@@ -154,19 +154,17 @@
 		L.safe_throw_at(throw_target, 2, 2, force = MOVE_FORCE_VERY_STRONG)
 
 /obj/effect/proc_holder/spell/targeted/battery/cast(list/targets,mob/user)
-	message_admins("message")
 	if(..())
 		return TRUE
-	new /obj/effect/temp_visual/bsa_splash(user, dir)
-	var/list/shooties = list()
-	shooties += new shootie(get_turf(user))
+	var/list/sparks = list()
+	sparks += new spark(get_turf(user))
 	if(user.dir == SOUTH || user.dir == NORTH)
-		shooties += new shootie(get_step(user, EAST))
-		shooties += new shootie(get_step(user, WEST))
+		sparks += new spark(get_step(user, EAST))
+		sparks += new spark(get_step(user, WEST))
 	else
-		shooties += new shootie(get_step(user, NORTH))
-		shooties += new shootie(get_step(user, SOUTH))
-	for(var/S in shooties)
+		sparks += new spark(get_step(user, NORTH))
+		sparks += new spark(get_step(user, SOUTH))
+	for(var/S in sparks)
 		var/obj/item/projectile/wing/shooted = S
 		shooted.firer = user
 		shooted.fire(dir2angle(user.dir))
@@ -192,6 +190,7 @@
 	for(var/mob/living/carbon/C in targets)
 		var/ARM = new summon_path
 		C.put_in_hands(ARM)
+
 /obj/item/exploder/Initialize()
 	. = ..()
 	ADD_TRAIT(src, TRAIT_NODROP, NOBLUDGEON)
@@ -213,30 +212,87 @@
 	. = ..()
 	var/mob/living/carbon/human/H = user
 	var/mob/living/L = target
+	var/atom/throw_target = get_edge_target_turf(L, src.dir)
 	for(var/obj/item/bodypart/r_arm/B in H.bodyparts)
 		if(!proximity || L == H || !ismob(L))
 			return
-		qdel(src)
-		B.dismember()
+		B.drop_limb()
 		qdel(B)
 		L.apply_status_effect(STATUS_EFFECT_BOUTTABLOW)
+		L.throw_at(throw_target, 2, 4, src, 3)
 		L.visible_message(span_danger("[H] embeds their arm inside [L]!"))
 		to_chat(L, span_userdanger("[H]'s arm embeds itself in you and starts beeping ominously!"))
 		playsound(src, 'sound/weapons/armbomb.ogg', 100, 1)
+		qdel(src)
 		. = ..()
-		return 
 
-/obj/effect/proc_holder/spell/aimed/boostknuckle
+/obj/effect/proc_holder/spell/targeted/boostknuckle
 	name = "Boost Knuckle"
-	desc = "Fire your fist which will explode after hitting a wall or flying for 10 meters, knocking over anyone in the way."
-	school = "evocation"
+	desc = "Fire your fist which will explode after hitting a wall or flying for 10 meters, pulverising anything and anyone in its way."
+	clothes_req = FALSE
+	human_req = FALSE
+	charge_max = 30
+	cooldown_min = 10
+	range = -1
+	include_user = TRUE
+	invocation = "CLANG!"
+	invocation_type = "shout"
+	action_icon_state = "immrod"
+
+/obj/effect/proc_holder/spell/targeted/boostknuckle/cast(list/targets,mob/user)
+	var/mob/living/carbon/C = user
+	for(var/obj/item/bodypart/r_arm/B in C.bodyparts)
+		B.drop_limb()
+		qdel(B)
+		var/turf/start = get_turf(C)
+		var/obj/effect/immovablerod/boostk/K = new(start, get_ranged_target_turf(start, C.dir, (10)))
+		K.start_turf = start
+		C.Immobilize(0.1 SECONDS)//small chance to just walking in front of the attack and eating shit without this
+
+/obj/effect/immovablerod/boostk
+	var/max_distance = 13
+	var/turf/start_turf
+	notify = FALSE
+
+/obj/effect/immovablerod/boostk/Move()
+	if(get_dist(start_turf, get_turf(src)) >= max_distance)
+		qdel(src)
+	..()
+
+/obj/effect/immovablerod/boostk/Destroy()
+	explosion(src, -1, 3, 5, 1)
+	qdel(src)
+	return ..()
+
+/obj/effect/immovablerod/boostk/penetrate(mob/living/L)
+	. = ..()
+	var/atom/throw_target = get_edge_target_turf(L, src.dir)
+	L.throw_at(throw_target, 2, 4, src, 3)
+	L.visible_message(span_danger("[L] is hit by a flying right hook!") , span_userdanger("The flying fist slams into you!"))
+	L.adjustBruteLoss(40)
+	L.Stun(20)
+
+/obj/effect/immovablerod/boostk/Bump(atom/target)
+	if(isturf(target) || isobj(target))
+		if(target.density)
+			if(isturf(target))
+				qdel(src)
+			if(isobj(target))
+				SSexplosions.med_mov_atom += target
+	if(isliving(target))
+		var/mob/living/L = target
+		penetrate(L)
+
+/obj/effect/proc_holder/spell/aimed/jetgadget
+	name = "Jet Gadget"
+	desc = "Launch your arm, causing it to fly erratically after reaching its destination and attacking the nearest target before coming back."
 	charge_max = 60
 	clothes_req = FALSE
 	invocation = "ONI SOMA"
 	invocation_type = "shout"
-	range = 10
+	range = 8
 	cooldown_min = 20 //10 deciseconds reduction per rank
-	projectile_type = /obj/item/projectile/boostknuckle
+	projectile_type = /obj/item/projectile/magic/jetgadget
 	action_icon = 'icons/mob/actions/humble/actions_humble.dmi'
 	base_icon_state = "fireball"
 	action_icon_state = "fireball0"
@@ -245,24 +301,78 @@
 	deactive_msg = "You extinguish your fireball... for now."
 	active = FALSE
 
-/obj/item/projectile/boostknuckle
+/obj/item/projectile/magic/jetgadget
 	name = "bolt of fireball"
 	icon_state = "fireball"
-	damage = 40
+	damage = 15
 	damage_type = BRUTE
 	nodamage = FALSE
 
-/obj/item/projectile/boostknuckle/on_hit(atom/target)
+/obj/effect/proc_holder/spell/aimed/jetgadget/fire_projectile(mob/living/user, atom/target)
+	current_amount--
+	var/mob/living/carbon/C = user
+	for(var/obj/item/bodypart/r_arm/B in C.bodyparts)
+		B.drop_limb()
+		qdel(B)
+		continue
+	for(var/i in 1 to projectiles_per_fire)
+		var/obj/item/projectile/P = new projectile_type(user.loc)
+		P.firer = user
+		P.preparePixelProjectile(target, user)
+		for(var/V in projectile_var_overrides)
+			if(P.vars[V])
+				P.vv_edit_var(V, projectile_var_overrides[V])
+		ready_projectile(P, target, user, i)
+		P.fire()
+	return TRUE
+
+/obj/item/projectile/magic/jetgadget/on_hit(mob/living/user, atom/target)
 	. = ..()
 	var/mob/living/carbon/human/H = firer
-	var/atom/throw_target = get_edge_target_turf(target, H.dir)
-	if(ismob(target))
-		var/mob/L = target
-		L.throw_at(throw_target, 2, 4, H, 3)
+	var/mob/living/simple_animal/hostile/punchline/p = /mob/living/simple_animal/hostile/punchline
+	p = spawn_atom_to_turf(p,src,1)
+	p.deadweight = H
 
-/obj/item/projectile/boostknuckle/Destroy()
-	explosion(src, -1, 3, 5, 1)
-	qdel(src)
-	return ..()
+/mob/living/simple_animal/hostile/punchline
+	name = "flying fist"
+	desc = "A mechanical arm propelled by rockets and dead set on punching whoever's closest!"
+	icon = 'icons/mob/lavaland/lavaland_monsters.dmi'
+	icon_state = "bloodman"
+	icon_living = "bloodman"
+	icon_dead = "bloodman"
+	friendly = "buzzes near"
+	vision_range = 10
+	speed = 3
+	maxHealth = 1
+	health = 1
+	density = FALSE
+	movement_type = FLYING
+	harm_intent_damage = 10
+	melee_damage_lower = 10
+	melee_damage_upper = 10
+	faction = list("cuhrazy")
+	attacktext = "punches"
+	speak_emote = list("beeps")
+	attack_sound = 'sound/weapons/pierce.ogg'
+	obj_damage = 0
+	environment_smash = ENVIRONMENT_SMASH_NONE
+	del_on_death = 1
+	rapid_melee = 2
+	var/mob/living/carbon/deadweight
+	var/obj/item/bodypart/r_arm/robot/breaker/punchline/K
 
+/mob/living/simple_animal/hostile/punchline/Initialize()
+	. = ..()
+	addtimer(CALLBACK(src, .proc/death), 100)
 
+/mob/living/simple_animal/hostile/punchline/AttackingTarget()
+	..()
+	if(isliving(target))
+		var/mob/living/L = target
+		L.Immobilize(10)
+
+/mob/living/simple_animal/hostile/punchline/death(gibbed)
+	K = new(src)
+	visible_message(span_warning("The fist pulls back and returns to its host!"))
+	K.attach_limb(deadweight, TRUE)
+	..(gibbed)
