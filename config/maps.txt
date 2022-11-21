@@ -17,6 +17,11 @@ map yogstation
 	votable
 endmap
 
+map asteroidstation
+	minplayers 40
+	votable
+endmap
+
 map omegastation
 	maxplayers 35
 	disabled
@@ -38,7 +43,7 @@ map kilostation
 endmap
 
 map gaxstation
-	maxplayers 30
+	maxplayers 40
 	votable
 endmap
 

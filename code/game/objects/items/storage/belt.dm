@@ -77,8 +77,21 @@
 		/obj/item/handdrill,
 		/obj/item/jawsoflife,
 		/obj/item/shuttle_creator, //Yogs: Added this here cause I felt it fits
-		/obj/item/barrier_taperoll/engineering
+		/obj/item/barrier_taperoll/engineering,
+		/obj/item/storage/bag/sheetsnatcher
 		))
+
+/obj/item/storage/belt/utility/makeshift
+	name = "makeshift toolbelt"
+	desc = "A shoddy holder of tools."
+	icon_state = "makeshiftbelt"
+	item_state = "makeshiftutility"
+
+/obj/item/storage/belt/utility/makeshift/ComponentInitialize()
+	. = ..()
+	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
+	STR.max_items = 7 //It's a very crappy belt
+	STR.max_combined_w_class = 16
 
 /obj/item/storage/belt/utility/chief
 	name = "\improper Chief Engineer's toolbelt" //"the Chief Engineer's toolbelt", because "Chief Engineer's toolbelt" is not a proper noun
@@ -174,7 +187,8 @@
 		/obj/item/stack/medical,
 		/obj/item/flashlight/pen,
 		/obj/item/extinguisher/mini,
-		/obj/item/reagent_containers/hypospray,
+		/obj/item/reagent_containers/autoinjector,
+		/obj/item/hypospray,
 		/obj/item/sensor_device,
 		/obj/item/radio,
 		/obj/item/clothing/gloves/,
@@ -183,7 +197,6 @@
 		/obj/item/clothing/mask/surgical,
 		/obj/item/clothing/mask/breath,
 		/obj/item/clothing/mask/breath/medical,
-		/obj/item/surgical_drapes, //for true paramedics
 		/obj/item/scalpel,
 		/obj/item/circular_saw,
 		/obj/item/bonesetter,
@@ -205,7 +218,8 @@
 		/obj/item/implanter,
 		/obj/item/pinpointer/crew,
 		/obj/item/stack/medical/bone_gel,
-		/obj/item/holosign_creator/medical
+		/obj/item/holosign_creator/medical,
+		/obj/item/holosign_creator/firstaid
 		))
 
 /obj/item/storage/belt/medical/chief
@@ -215,7 +229,6 @@
 	item_state = "medical_cmo"
 
 /obj/item/storage/belt/medical/chief/full/PopulateContents()
-	new /obj/item/surgical_drapes(src)
 	new /obj/item/scalpel/advanced(src)
 	new /obj/item/retractor/advanced(src)
 	new /obj/item/cautery/advanced(src)
@@ -256,8 +269,10 @@
 		/obj/item/flashlight/seclite,
 		/obj/item/melee/classic_baton/telescopic,
 		/obj/item/radio,
+		/obj/item/pinpointer/tracker,
 		/obj/item/clothing/gloves,
 		/obj/item/restraints/legcuffs/bola,
+		/obj/item/gun/ballistic/revolver/tracking,
 		/obj/item/holosign_creator/security,
 		/obj/item/shield/riot/tele,
 		/obj/item/barrier_taperoll/police
@@ -345,7 +360,7 @@
 		/obj/item/reagent_containers/food/drinks/bottle,
 		/obj/item/stack/medical,
 		/obj/item/kitchen/knife,
-		/obj/item/reagent_containers/hypospray,
+		/obj/item/reagent_containers/autoinjector,
 		/obj/item/lazarus_injector,
 		/obj/item/gps,
 		/obj/item/storage/bag/ore,
@@ -363,12 +378,18 @@
 		/obj/item/stack/marker_beacon,
 		/obj/item/handdrill,
 		/obj/item/jawsoflife,
-		/obj/item/restraints/legcuffs/bola/watcher
+		/obj/item/restraints/legcuffs/bola/watcher,
+		/obj/item/stack/sheet/mineral,
+		/obj/item/grenade/plastic/miningcharge,
+		/obj/item/gem
 		))
 
 
 /obj/item/storage/belt/mining/vendor
-	contents = newlist(/obj/item/survivalcapsule)
+	contents = newlist(/obj/item/survivalcapsule,
+	/obj/item/grenade/plastic/miningcharge/lesser,
+	/obj/item/grenade/plastic/miningcharge/lesser,
+	/obj/item/grenade/plastic/miningcharge/lesser,)
 
 /obj/item/storage/belt/mining/alt
 	icon_state = "explorer2"
@@ -499,7 +520,6 @@
 	new /obj/item/stack/cable_coil(src,MAXCOIL,"white")
 
 /obj/item/storage/belt/military/abductor/scientist/PopulateContents()
-	new /obj/item/surgical_drapes(src)
 	new /obj/item/scalpel/alien(src)
 	new /obj/item/hemostat/alien(src)
 	new /obj/item/retractor/alien(src)
@@ -537,7 +557,6 @@
 	new /obj/item/grenade/flashbang(src)
 	new /obj/item/assembly/flash/handheld(src)
 	new /obj/item/melee/baton/loaded(src)
-	new /obj/item/surgical_drapes(src)
 	new /obj/item/scalpel/alien(src)
 	new /obj/item/hemostat/alien(src)
 	new /obj/item/retractor/alien(src)
@@ -699,6 +718,15 @@
 		/obj/item/gun/ballistic/revolver/detective = 1,
 		/obj/item/ammo_box/c38 = 2)
 	generate_items_inside(items_inside, src)
+
+/obj/item/storage/belt/holster/syndicate
+	name = "syndicate shoulder holster"
+	desc = "A modified holster that can carry more than enough firepower."
+
+/obj/item/storage/belt/holster/syndicate/ComponentInitialize()
+	. = ..()
+	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
+	STR.max_items = 4
 
 /obj/item/storage/belt/quiver
 	name = "leather quiver"

@@ -14,16 +14,24 @@
 
 	outfit = /datum/outfit/job/engineer
 
-	access = list(ACCESS_ENGINE, ACCESS_ENGINE_EQUIP, ACCESS_TECH_STORAGE, ACCESS_MAINT_TUNNELS, ACCESS_MECH_ENGINE,
-									ACCESS_EXTERNAL_AIRLOCKS, ACCESS_CONSTRUCTION, ACCESS_ATMOSPHERICS, ACCESS_TCOMSAT, ACCESS_MINERAL_STOREROOM)
-	minimal_access = list(ACCESS_ENGINE, ACCESS_ENGINE_EQUIP, ACCESS_TECH_STORAGE, ACCESS_MAINT_TUNNELS, ACCESS_MECH_ENGINE,
+	added_access = list(ACCESS_ATMOSPHERICS)
+	base_access = list(ACCESS_ENGINE, ACCESS_ENGINE_EQUIP, ACCESS_TECH_STORAGE, ACCESS_MAINT_TUNNELS, ACCESS_MECH_ENGINE,
 									ACCESS_EXTERNAL_AIRLOCKS, ACCESS_CONSTRUCTION, ACCESS_TCOMSAT, ACCESS_MINERAL_STOREROOM)
 	paycheck = PAYCHECK_MEDIUM
 	paycheck_department = ACCOUNT_ENG
 
 	display_order = JOB_DISPLAY_ORDER_STATION_ENGINEER
+	minimal_character_age = 22 //You need to know a lot of complicated stuff about engines, could theoretically just have a traditional bachelor's
 
 	changed_maps = list("EclipseStation", "OmegaStation")
+
+	mail_goodies = list(
+		/obj/item/storage/box/lights/mixed = 20,
+		/obj/item/lightreplacer = 10,
+		/obj/item/holosign_creator/engineering = 8,
+		/obj/item/rcd_ammo = 5,
+		/obj/item/clothing/head/hardhat/red/upgraded = 1
+	)
 
 /datum/job/engineer/proc/EclipseStationChanges()
 	total_positions = 6
@@ -32,8 +40,8 @@
 /datum/job/engineer/proc/OmegaStationChanges()
 	total_positions = 2
 	spawn_positions = 2
-	access = list(ACCESS_EVA, ACCESS_ENGINE, ACCESS_ENGINE_EQUIP, ACCESS_TECH_STORAGE, ACCESS_MAINT_TUNNELS, ACCESS_EXTERNAL_AIRLOCKS, ACCESS_CONSTRUCTION, ACCESS_ATMOSPHERICS )
-	minimal_access = list(ACCESS_EVA, ACCESS_ENGINE, ACCESS_ENGINE_EQUIP, ACCESS_TECH_STORAGE, ACCESS_MAINT_TUNNELS, ACCESS_EXTERNAL_AIRLOCKS, ACCESS_CONSTRUCTION, ACCESS_ATMOSPHERICS )
+	added_access = list()
+	base_access = list(ACCESS_EVA, ACCESS_ENGINE, ACCESS_ENGINE_EQUIP, ACCESS_TECH_STORAGE, ACCESS_MAINT_TUNNELS, ACCESS_EXTERNAL_AIRLOCKS, ACCESS_CONSTRUCTION, ACCESS_ATMOSPHERICS)
 	supervisors = "the captain and the head of personnel"
 
 GLOBAL_LIST_INIT(available_depts_eng, list(ENG_DEPT_MEDICAL, ENG_DEPT_SCIENCE, ENG_DEPT_SUPPLY, ENG_DEPT_SERVICE))
@@ -91,7 +99,7 @@ GLOBAL_LIST_INIT(available_depts_eng, list(ENG_DEPT_MEDICAL, ENG_DEPT_SCIENCE, E
 	name = "Station Engineer"
 	jobtype = /datum/job/engineer
 
-	pda_type = /obj/item/pda/engineering
+	pda_type = /obj/item/modular_computer/tablet/pda/preset/engineering
 
 	belt = /obj/item/storage/belt/utility/full/engi
 	ears = /obj/item/radio/headset/headset_eng
@@ -106,7 +114,6 @@ GLOBAL_LIST_INIT(available_depts_eng, list(ENG_DEPT_MEDICAL, ENG_DEPT_SCIENCE, E
 	satchel = /obj/item/storage/backpack/satchel/eng
 	duffelbag = /obj/item/storage/backpack/duffelbag/engineering
 	box = /obj/item/storage/box/engineer
-	backpack_contents = list(/obj/item/modular_computer/tablet/pda/preset/basic=1)
 
 	pda_slot = SLOT_L_STORE
 
