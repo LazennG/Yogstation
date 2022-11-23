@@ -226,62 +226,63 @@
 		qdel(src)
 		. = ..()
 
-/obj/effect/proc_holder/spell/targeted/boostknuckle
+/obj/effect/proc_holder/spell/aimed/boostknuckle
 	name = "Boost Knuckle"
 	desc = "Fire your fist which will explode after hitting a wall or flying for 10 meters, pulverising anything and anyone in its way."
 	clothes_req = FALSE
 	human_req = FALSE
 	charge_max = 30
 	cooldown_min = 10
-	range = -1
-	include_user = TRUE
+	range = 20
 	invocation = "CLANG!"
 	invocation_type = "shout"
 	action_icon_state = "immrod"
+	projectile_type = /obj/item/projectile/punchline
 
-/obj/effect/proc_holder/spell/targeted/boostknuckle/cast(list/targets,mob/user)
+/obj/effect/proc_holder/spell/targeted/aimed/boostknuckle/cast(list/targets,mob/user)
 	var/mob/living/carbon/C = user
 	for(var/obj/item/bodypart/r_arm/B in C.bodyparts)
 		B.drop_limb()
 		qdel(B)
-		var/turf/start = get_turf(C)
-		var/obj/effect/immovablerod/boostk/K = new(start, get_ranged_target_turf(start, C.dir, (10)))
-		K.start_turf = start
-		C.Immobilize(0.1 SECONDS)//small chance to just walking in front of the attack and eating shit without this
 
-/obj/effect/immovablerod/boostk
-	var/max_distance = 13
-	var/turf/start_turf
-	notify = FALSE
+/obj/item/projectile/punchline
+	name = "bolt of fireball"
+	icon_state = "fireball"
+	damage = 30
+	range = 10
+	damage_type = BRUTE
+	nodamage = FALSE
+	penetrating = TRUE
 
-/obj/effect/immovablerod/boostk/Move()
-	if(get_dist(start_turf, get_turf(src)) >= max_distance)
-		qdel(src)
-	..()
+	//explosion values
+	var/exp_heavy = 2
+	var/exp_light = 2
+	var/exp_flash = 3
+	var/exp_fire = 2
 
-/obj/effect/immovablerod/boostk/Destroy()
-	explosion(src, -1, 3, 5, 1)
-	qdel(src)
-	return ..()
-
-/obj/effect/immovablerod/boostk/penetrate(mob/living/L)
+/obj/item/projectile/punchline/on_hit(target)
 	. = ..()
-	var/atom/throw_target = get_edge_target_turf(L, src.dir)
-	L.throw_at(throw_target, 2, 4, src, 3)
-	L.visible_message(span_danger("[L] is hit by a flying right hook!") , span_userdanger("The flying fist slams into you!"))
-	L.adjustBruteLoss(40)
-	L.Stun(20)
+	if(ismob(target))
+		var/mob/living/M = target
+		M.take_overall_damage(0,10) //between this 10 burn, the 10 brute, the explosion brute, and the onfire burn, your at about 65 damage if you stop drop and roll immediately
+	var/turf/T = get_turf(target)
+	explosion(T, -1, exp_heavy, exp_light, exp_flash, 0, flame_range = exp_fire)
 
-/obj/effect/immovablerod/boostk/Bump(atom/target)
-	if(isturf(target) || isobj(target))
-		if(target.density)
-			if(isturf(target))
-				qdel(src)
-			if(isobj(target))
-				SSexplosions.med_mov_atom += target
+/obj/item/projectile/punchline/on_hit(atom/target, blocked=0)
+	var/mob/living/carbon/human/H = firer
+	var/atom/throw_target = get_edge_target_turf(target, H.dir)
+	if(istype(target, /obj/structure/window) || istype(target, /obj/machinery/door) || istype(target, /obj/structure/door_assembly))
+		damage = 500 
+		..()
 	if(isliving(target))
 		var/mob/living/L = target
-		penetrate(L)
+		if(!L.anchored && !L.throwing)//avoid double hits
+			if(iscarbon(L))
+				var/mob/living/carbon/C = L
+				var/mob/M = firer
+				if(istype(M))
+					C.throw_at(throw_target, 2, 4, H, 3)
+					return BULLET_ACT_HIT
 
 /obj/effect/proc_holder/spell/aimed/jetgadget
 	name = "Jet Gadget"
@@ -291,7 +292,7 @@
 	invocation = "ONI SOMA"
 	invocation_type = "shout"
 	range = 8
-	cooldown_min = 20 //10 deciseconds reduction per rank
+	cooldown_min = 20 
 	projectile_type = /obj/item/projectile/magic/jetgadget
 	action_icon = 'icons/mob/actions/humble/actions_humble.dmi'
 	base_icon_state = "fireball"
@@ -301,7 +302,7 @@
 	deactive_msg = "You extinguish your fireball... for now."
 	active = FALSE
 
-/obj/item/projectile/magic/jetgadget
+/obj/item/projectile/jetgadget
 	name = "bolt of fireball"
 	icon_state = "fireball"
 	damage = 15
@@ -309,22 +310,12 @@
 	nodamage = FALSE
 
 /obj/effect/proc_holder/spell/aimed/jetgadget/fire_projectile(mob/living/user, atom/target)
-	current_amount--
 	var/mob/living/carbon/C = user
 	for(var/obj/item/bodypart/r_arm/B in C.bodyparts)
 		B.drop_limb()
 		qdel(B)
 		continue
-	for(var/i in 1 to projectiles_per_fire)
-		var/obj/item/projectile/P = new projectile_type(user.loc)
-		P.firer = user
-		P.preparePixelProjectile(target, user)
-		for(var/V in projectile_var_overrides)
-			if(P.vars[V])
-				P.vv_edit_var(V, projectile_var_overrides[V])
-		ready_projectile(P, target, user, i)
-		P.fire()
-	return TRUE
+	..()
 
 /obj/item/projectile/magic/jetgadget/on_hit(mob/living/user, atom/target)
 	. = ..()
@@ -376,3 +367,53 @@
 	visible_message(span_warning("The fist pulls back and returns to its host!"))
 	K.attach_limb(deadweight, TRUE)
 	..(gibbed)
+
+
+//The arms themselves
+
+
+/obj/item/bodypart/r_arm/robot/breaker
+	name = "breaker"
+	desc = "baseline for the wire grapple."
+
+/obj/item/bodypart/r_arm/robot/breaker/attach_limb(mob/living/carbon/C)
+	. = ..()
+	if(!locate(/obj/effect/proc_holder/spell/targeted/wire_snatch) in C.mind.spell_list)
+		C.AddSpell(new /obj/effect/proc_holder/spell/targeted/wire_snatch)
+		C.AddSpell (new /obj/effect/proc_holder/spell/aoe_turf/repulse/breakaway)
+
+/obj/item/bodypart/r_arm/robot/breaker/drop_limb(special)
+	var/mob/living/carbon/C = owner
+	C.RemoveSpell (/obj/effect/proc_holder/spell/aoe_turf/repulse/breakaway)
+	C.RemoveSpell (/obj/effect/proc_holder/spell/targeted/wire_snatch)
+
+/obj/item/bodypart/r_arm/robot/breaker/overture
+	name = "Breaker: Overture"
+	desc = "An robotic right arm that can generate large amounts of power and output it to knock foes back."
+
+/obj/item/bodypart/r_arm/robot/breaker/overture/attach_limb(mob/living/carbon/C)
+	. = ..()
+	C.AddSpell (new /obj/effect/proc_holder/spell/targeted/battery)
+	C.AddSpell (new /obj/effect/proc_holder/spell/targeted/exploder)
+
+/obj/item/bodypart/r_arm/robot/breaker/overture/drop_limb(special)
+	var/mob/living/carbon/C = owner
+	C.RemoveSpell (/obj/effect/proc_holder/spell/targeted/exploder)
+	C.RemoveSpell (/obj/effect/proc_holder/spell/targeted/battery)
+	..()
+
+/obj/item/bodypart/r_arm/robot/breaker/punchline
+	name = "Breaker: Punch Line"
+	desc = "An robotic right arm that can detach itself and fly outwards with jets to deliver heavy impacts."
+
+/obj/item/bodypart/r_arm/robot/breaker/punchline/attach_limb(mob/living/carbon/C, special)
+	. = ..()
+	C.faction |= "cuhrazy"
+	C.AddSpell (new /obj/effect/proc_holder/spell/aimed/boostknuckle)
+	C.AddSpell (new /obj/effect/proc_holder/spell/aimed/jetgadget)
+
+/obj/item/bodypart/r_arm/robot/breaker/punchline/drop_limb(special)
+	var/mob/living/carbon/C = owner
+	C.RemoveSpell (/obj/effect/proc_holder/spell/aoe_turf/repulse/breakaway)
+	C.RemoveSpell (/obj/effect/proc_holder/spell/aimed/boostknuckle)
+	C.RemoveSpell (/obj/effect/proc_holder/spell/aimed/jetgadget)
