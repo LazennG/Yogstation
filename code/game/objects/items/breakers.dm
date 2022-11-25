@@ -212,7 +212,7 @@
 	. = ..()
 	var/mob/living/carbon/human/H = user
 	var/mob/living/L = target
-	var/atom/throw_target = get_edge_target_turf(L, src.dir)
+	var/atom/throw_target = get_edge_target_turf(L, H.dir)
 	for(var/obj/item/bodypart/r_arm/B in H.bodyparts)
 		if(!proximity || L == H || !ismob(L))
 			return
@@ -264,7 +264,7 @@
 	. = ..()
 	if(ismob(target))
 		var/mob/living/M = target
-		M.take_overall_damage(0,10) //between this 10 burn, the 10 brute, the explosion brute, and the onfire burn, your at about 65 damage if you stop drop and roll immediately
+		M.take_overall_damage(0,10)
 	var/turf/T = get_turf(target)
 	explosion(T, -1, exp_heavy, exp_light, exp_flash, 0, flame_range = exp_fire)
 
@@ -276,7 +276,7 @@
 		..()
 	if(isliving(target))
 		var/mob/living/L = target
-		if(!L.anchored && !L.throwing)//avoid double hits
+		if(!L.anchored && !L.throwing)
 			if(iscarbon(L))
 				var/mob/living/carbon/C = L
 				var/mob/M = firer
