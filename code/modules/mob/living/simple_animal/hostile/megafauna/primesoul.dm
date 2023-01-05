@@ -140,7 +140,7 @@
 
 /mob/living/simple_animal/hostile/megafauna/primesoul/proc/snake_shot(var/atom/shootat = target)
 	Shoot(target)
-
+	
 /mob/living/simple_animal/hostile/megafauna/primesoul/proc/charge(var/atom/chargeat = target, var/delay = 3, var/chargepast = 2)
 	if(!chargeat)
 		return
@@ -326,15 +326,32 @@
 	icon_state= "seedling"
 	damage = 25
 	armour_penetration = 100
-	speed = 1
+	speed = 10
+	damage_type = BRUTE
+	pass_flags = PASSTABLE
+	var/parrydist = 2
+
+/obj/item/projectile/reflected
+	name ="reflected snake bolt"
+	icon_state= "plasma"
+	damage = 25
+	armour_penetration = 100
+	speed = 0.5
 	damage_type = BRUTE
 	pass_flags = PASSTABLE
 	var/parrydist = 2
 
 /obj/item/projectile/primesoul/attackby(obj/item/I, mob/living/user, params)
 	. = ..()
-	get_dist(src,get_turf(user))
-	
+	var/target = src.firer
+	if(get_dist(src, user) > parrydist)
+		return
+	else
+		user.gib()
+		qdel(src)
+		var/turf/startloc = get_turf(user)
+		var/obj/item/projectile/P = new /obj/item/projectile/reflected(startloc)
+		P.fire(target)
 
 /mob/living/simple_animal/hostile/megafauna/primesoul/hallucination/Initialize()
 	..()
