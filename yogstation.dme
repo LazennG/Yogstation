@@ -3866,7 +3866,6 @@
 #include "yogstation\code\modules\guardian\abilities\minor\teleport.dm"
 #include "yogstation\code\modules\guardian\abilities\special\pocket.dm"
 #include "yogstation\code\modules\guardian\abilities\special\time.dm"
-#include "yogstation\code\modules\guardian\abilities\mirror\doppelganger.dm"
 #include "yogstation\code\modules\holidays\holidays.dm"
 #include "yogstation\code\modules\holodeck\computer.dm"
 #include "yogstation\code\modules\hydroponics\grown\misc.dm"

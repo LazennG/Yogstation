@@ -325,24 +325,6 @@
 					categories -= "Range"
 	return stats
 
-////////////////////////////////////////mirror-specific version/////////////////////////////////////////////////////////
-/obj/item/guardiancreator/mirror/attack_self(mob/living/user)
-	if (isguardian(user) && !allowguardian)
-		to_chat(user, span_holoparasite("[mob_name] chains are not allowed."))
-		return
-	if (builder.used)
-		to_chat(user, "[used_message]")
-		return
-	else
-		builder.saved_stats = generate_double()
-		builder.spawn_guardian(user)
-
-/obj/item/guardiancreator/mirror/proc/generate_double()
-	var/datum/guardian_stats/stats = new
-	stats.ability = "doppelganger"
-	return stats
-
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /obj/item/guardiancreator/debug
@@ -384,19 +366,6 @@
 	allowmultiple = TRUE
 	allowling = TRUE
 
-/obj/item/guardiancreator/mirror
-	name = "ominous mirror"
-	desc = "An ancient reflective surface. There's something indescribably off about what it shows you."
-	icon = 'icons/obj/food/food.dmi'
-	icon_state = "fishfingers"
-	theme = "carp"
-	mob_name = "Holocarp"
-	use_message = span_holoparasite("You stare at your reflection...")
-	used_message = span_holoparasite("The cracked mirror offers nothing but view of everything it's facing, minus you.")
-	failure_message = "<span class='holoparasite bold'>..And it stares back at you. Maybe you should try again later.</span>"
-	allowmultiple = TRUE
-	allowling = TRUE
-
 /obj/item/guardiancreator/carp/rare
 	allowspecial = TRUE
 
@@ -417,7 +386,3 @@
 
 /obj/item/guardiancreator/tech/random
 	random = TRUE
-
-/obj/item/guardiancreator/mirror/rare
-	allowspecial = TRUE
-
