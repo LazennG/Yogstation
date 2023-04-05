@@ -642,6 +642,12 @@
 	icon_icon = 'icons/mob/actions/actions_cult.dmi'
 	button_icon_state = "horde"
 
+/datum/action/item_action/recall
+	name = "Recall"
+	desc = "Summon the reflection back to its mirror."
+	icon_icon = 'icons/obj/lavaland/artefacts.dmi'
+	button_icon_state = "mirrornormal"
+
 //Preset for spells
 /datum/action/spell_action
 	check_flags = NONE
