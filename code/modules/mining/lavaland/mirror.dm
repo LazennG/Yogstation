@@ -118,7 +118,7 @@
 
 /mob/living/simple_animal/hostile/double/Initialize()
 	. = ..()
-	to_chat(src, span_warning("<b>You are a reflection of your mirror's holder and bound to help whoever you may take the form of.</b>"))
+	to_chat(src, span_warning("<b>You are a reflection in the mirror and bound to protect it and by extension its holder.</b>"))
 	to_chat(src, span_warning("<b>You are moderately strong and are able to deal stronger blows to typical lavaland fauna.</b>"))
 	to_chat(src, span_warning("<b>You are fragile but cannot truly be destroyed until the mirror is. You are able to heal while inside the mirror, and losing will seal you\
 	inside of it for 20 seconds.</b>"))
@@ -229,7 +229,7 @@
 	if(next_swap > world.time)
 		to_chat(doppelganger, span_warning("You can't leave the mirror yet!"))
 		return
-	if(doppelganger.buckled)
+	if(doppelganger.buckled || doppelganger.mirror.original.buckled) //so it's not used from inside the mirror 
 		return
 	if(istype(doppspot, /turf/open/chasm)) 
 		to_chat(doppelganger, span_warning("You probably shouldn't risk the mirror falling from such a height."))
