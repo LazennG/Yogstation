@@ -37,9 +37,49 @@
 		animate(target, transform = null, time = 0.4 SECONDS, loop = 0)
 
 //proc for clearing the thrown list, mostly so the lob proc doesnt get triggered when it shouldn't
-/datum/martial_art/buster_style/proc/drop(mob/living/target)
+/datum/martial_art/buster_style/proc/drop(atom/movable/target)
 	for(var/atom/movable/K in thrown)
 		thrown.Remove(K)
+	for(var/obj/structure/bed/grip/F in view(5, target))
+		F.Destroy()
+
+/datum/martial_art/buster_style/proc/initiate(mob/living/user)
+	var/obj/effect/temp_visual/decoy/fading/onesecond/F = new(get_turf(user), user)
+	animate(F, alpha = 100, color = "#d40a0a")
+	walk_towards(F, user, 0, 1.5)
+	playsound(user,'sound/effects/gravhit.ogg', 20, 1)
+
+/datum/martial_art/buster_style/proc/crash(mob/living/user, atom/movable/ram, var/turf/Q, var/headache, var/dent)
+	if(Q.density || (!(Q.reachableTurftestdensity(T = Q))))
+		if(isliving(ram))
+			var/mob/living/target = ram
+			grab(user, target, headache)
+			if(isanimal(target))
+				if(target.stat == DEAD)
+					target.visible_message(span_warning("[target] crashes and explodes!"))
+					target.gib()
+		if(isobj(ram))
+			var/obj/target = ram
+			target.take_damage(dent)
+		for(var/obj/structure/lightpole in Q)
+			if(lightpole.density)
+				if(istype(lightpole, /obj/machinery/disposal/bin)) // dumpster living things tossed into the trash
+					var/obj/machinery/disposal/bin/dumpster = lightpole
+					ram.forceMove(lightpole)
+					dumpster.visible_message(span_warning("[ram] is thrown down the trash chute!"))
+					dumpster.do_flush()
+					drop(ram)
+					return
+				lightpole.take_damage(dent)
+		for(var/mob/living/speedbump in Q)
+			if(speedbump.density)
+				grab(user, speedbump, headache)
+	if(Q.density || (!(Q.reachableTurftestdensity(T = Q))))
+		return FALSE
+	else 
+		ram.forceMove(Q)
+		return TRUE
+		
 
 /datum/martial_art/buster_style/can_use(mob/living/carbon/human/H)
 	var/obj/item/bodypart/r_arm/robot/buster/R = H.get_bodypart(BODY_ZONE_R_ARM)
@@ -162,13 +202,12 @@
 			I.anchored = TRUE
 	if(isliving(target))
 		var/mob/living/L = target
-		var/obj/structure/bed/grip/F = new(Z, user) // Buckles them to an invisible bed
+		var/obj/structure/bed/grip/F = new(Z, user)
 		COOLDOWN_START(src, next_grapple, COOLDOWN_GRAPPLE)
 		user.apply_status_effect(STATUS_EFFECT_DOUBLEDOWN)
 		old_density = L.density // for the sake of noncarbons not playing nice with lying down
 		L.density = FALSE
 		L.visible_message(span_warning("[user] grabs [L] and lifts [L.p_them()] off the ground!"))
-		L.Stun(1 SECONDS) //so the user has time to aim their throw
 		to_chat(L, span_userdanger("[user] grapples you and lifts you up into the air! Resist [user.p_their()] grip!"))
 		L.forceMove(Z)
 		F.buckle_mob(target)
@@ -181,8 +220,6 @@
 
 
 /datum/martial_art/buster_style/proc/lob(mob/living/user, atom/target) //proc for throwing something you picked up with grapple
-	var/slamdam = 7
-	var/objdam = 50
 	var/throwdam = 15
 	var/target_dist = get_dist(user, target)
 	var/turf/D = get_turf(target)	
@@ -191,7 +228,7 @@
 	tossed.density = old_density
 	user.stop_pulling()
 	if(get_dist(tossed, user) > 1)//cant reach the thing i was supposed to be throwing anymore
-		drop()
+		drop(target)
 		return 
 	for(var/obj/I in thrown)
 		animate(I, time = 0.2 SECONDS, pixel_y = 0) //to get it back to normal since it was lifted before
@@ -203,7 +240,7 @@
 		var/obj/item/bodypart/limb_to_hit = tossedliving.get_bodypart(user.zone_selected)
 		if(!tossedliving.buckled)
 			return
-		grab(user, tossedliving, throwdam) // Apply damage
+		grab(user, tossedliving, throwdam)
 		for(var/obj/structure/bed/grip/F in view(2, user))
 			F.Destroy()
 		if(!limb_to_hit)
@@ -224,71 +261,42 @@
 				T.Remove(tossedliving)
 				user.put_in_hands(T)
 	user.visible_message(span_warning("[user] throws [tossed]!"))
-	for(var/i = 1 to target_dist)
-		var/dir_to_target = get_dir(get_turf(tossed), D) //vars that let the thing be thrown while moving similar to things thrown normally
-		var/turf/T = get_step(get_turf(tossed), dir_to_target)
-		if(T.density) // crash into a wall and damage everything flying towards it before stopping 
-			for(var/mob/living/S in thrown)
-				grab(user, S, slamdam) 
-				S.Knockdown(1.5 SECONDS)
-				S.Immobilize(1.5 SECONDS)
-				if(isanimal(S) && S.stat == DEAD)
-					S.gib()	
-			for(var/obj/O in thrown)
-				O.take_damage(objdam) 
-				target.visible_message(span_warning("[O] collides with [T]!"))
-			drop()
+	fly(user, tossed, D, target_dist, get_turf(tossed))
+	drop(tossed)
+
+
+
+/datum/martial_art/buster_style/proc/fly(mob/living/user, atom/movable/R, turf/destination, distance = 0, turf/present)
+	var/slamdam = 7
+	var/objdam = 50
+	if(distance == 0)
+		return
+	var/dir_to_target = get_dir(get_turf(R), destination) //vars that let the thing be thrown while moving similar to things thrown normally
+	var/turf/nextone = get_step(get_turf(R), dir_to_target)
+	var/list/pirated = list()
+	for(var/obj/structure/hurdle in present)
+		if(hurdle.anchored && hurdle.density)
 			return
-		for(var/obj/Z in T.contents) // crash into something solid and damage it along with thrown objects that hit it
-			for(var/obj/O in thrown) 
-				if(Z.density == TRUE) 
-					O.take_damage(objdam) 
-					if(istype(O, /obj/mecha)) // mechs are probably heavy as hell so stop flying after making contact with resistance
-						thrown -= O
-			if(Z.density == TRUE && Z.anchored == FALSE) // if the thing hit isn't anchored it starts flying too
-				thrown |= Z 
-				Z.take_damage(50) 
-			if(Z.density == TRUE && Z.anchored == TRUE) // If the thing is solid and anchored like a window or grille or table it hurts people thrown that crash into it too
-				for(var/mob/living/S in thrown) 
-					grab(user, S, slamdam) 
-					S.Knockdown(1.5 SECONDS)
-					S.Immobilize(1.5 SECONDS)
-					if(isanimal(S) && S.stat == DEAD)
-						S.gib()
-					if(istype(Z, /obj/machinery/disposal/bin)) // dumpster living things tossed into the trash
-						var/obj/machinery/disposal/bin/dumpster = D
-						S.forceMove(Z)
-						Z.visible_message(span_warning("[S] is thrown down the trash chute!"))
-						dumpster.do_flush()
-						drop()
-						return
-				Z.take_damage(objdam)
-				if(Z.density == TRUE && Z.anchored == TRUE)
-					drop()
-					return // if the solid thing we hit doesnt break then the thrown thing is stopped
-		for(var/mob/living/M in T.contents) // if the thrown mass hits a person then they get tossed and hurt too along with people in the thrown mass
-			if(user != M)
-				grab(user, M, slamdam) 
-				M.Knockdown(1.5 SECONDS) 
-				for(var/mob/living/S in thrown)
-					grab(user, S, slamdam) 
-					S.Knockdown(1 SECONDS) 
-				thrown |= M 
-			for(var/obj/O in thrown)
-				O.take_damage(objdam) // Damage all thrown objects
-		if(T) // if the next tile wont stop the thrown mass from continuing
-			for(var/mob/living/S in thrown)
-				S.Knockdown(1.5 SECONDS)
-				S.Immobilize(1.5 SECONDS)
-			for(var/atom/movable/K in thrown) // to make the mess of things that's being thrown almost look like a normal throw
-				K.SpinAnimation(0.2 SECONDS, 1) 
-				sleep(0.001 SECONDS)
-				K.forceMove(T)
-				if(isspaceturf(T)) // throw them like normal if it's into space
-					var/atom/throw_target = get_edge_target_turf(K, dir_to_target)
-					K.throw_at(throw_target, 6, 4, user, 3)
-					thrown.Remove(K)
-	drop()
+		pirated |= hurdle
+	for(var/atom/movable/piece in pirated)
+		if(istype(piece, /obj/mecha)) // mechs are probably heavy as hell so stop flying after making contact with resistance
+			pirated -= piece
+	for(var/mob/living/oops in present)
+		if(oops == user)
+			continue
+		oops.Knockdown(1.5 SECONDS)
+		oops.Immobilize(1.5 SECONDS)
+		pirated |= oops
+	for(var/atom/movable/K in pirated) // to make the mess of things that's being thrown almost look like a normal throw
+		K.SpinAnimation(0.2 SECONDS, 1) 
+		if(isspaceturf(nextone)) // throw them like normal if it's into space
+			var/atom/throw_target = get_edge_target_turf(K, dir_to_target)
+			K.throw_at(throw_target, 6, 4, user, 3)
+			thrown.Remove(K)
+		(crash(user, K, nextone, slamdam, objdam))
+	if((nextone.density) || (!(nextone.reachableTurftestdensity(T = nextone))))
+		return
+	addtimer(CALLBACK(src, PROC_REF(fly), user, R, destination, distance-1, nextone), 0.1 SECONDS)
 	return
 
 /*---------------------------------------------------------------
@@ -298,74 +306,53 @@
 	start of mop section
 ---------------------------------------------------------------*/
 
+
 /datum/martial_art/buster_style/proc/mop(mob/living/user)
-	var/jumpdistance = 5
-	var/dragdam = 8
-	var/crashdam = 10
+	var/jumpdistance = 4
 	var/turf/T = get_step(get_turf(user), user.dir)
-	var/turf/Z = get_turf(user)
-	var/list/mopped = list()
 	if(!COOLDOWN_FINISHED(src, next_mop))
 		to_chat(user, span_warning("You can't do that yet!"))
 		return
-	var/obj/effect/temp_visual/decoy/fading/threesecond/F = new(Z, user)
-	user.visible_message(span_warning("[user] sprints forward with [user.p_their()] hand outstretched!"))
 	COOLDOWN_START(src, next_mop, COOLDOWN_MOP)
-	playsound(user,'sound/effects/gravhit.ogg', 20, TRUE)
-	user.Immobilize(0.1 SECONDS) //so they dont skip through the target
-	for(var/i = 1 to jumpdistance)
-		if(T.density) // If we're about to hit a wall, stop
+	for(var/mob/living/L in T.contents)
+		if(L)
+			dashattack(user, user.dir, jumpdistance, 2, L)
 			return
-		for(var/obj/object in T.contents) // If we're about to hit a table or something that isn't destroyed, stop
-			if(object.density == TRUE)
-				return
-		if(T)
-			sleep(0.01 SECONDS)
-			user.forceMove(T) // Move us forward
-			walk_towards(F, user, 0, 1.5)
-			animate(F, alpha = 0, color = "#d40a0a", time = 0.5 SECONDS) // Cool after-image
-			for(var/mob/living/mophead in T.contents) // Take all mobs we encounter with us
-				if(mophead != user) 
-					user.apply_status_effect(STATUS_EFFECT_DOUBLEDOWN)	
-					mopped |= mophead // Add them to the list of things we are mopping
-					mophead.Immobilize(0.1 SECONDS) //also to prevent clipping through the user
-					mophead.add_fingerprint(user, FALSE)
-					var/turf/Q = get_step(get_turf(user), user.dir) // get the turf behind the thing we're attacking
-					to_chat(mophead, span_userdanger("[user] grinds you against the ground!"))
-					footsies(mophead)
-					if(isspaceturf(T)) // If we're about to hit space, throw the first mob into space
-						var/atom/throw_target = get_edge_target_turf(mophead, user.dir)
-						wakeup(mophead)
-						mophead.throw_at(throw_target, 2, 4, user, 3) // throwing them outside
-					if(Q.density) // If we're about to hit a wall
-						wakeup(mophead)
-						grab(user, mophead, crashdam) 
-						user.visible_message(span_warning("[user] rams [mophead] into [Q]!"))
-						to_chat(mophead, span_userdanger("[user] rams you into [Q]!"))
-						mophead.Knockdown(1 SECONDS)
-						mophead.Immobilize(1.5 SECONDS)
-						return // Then stop here
-					for(var/obj/object in Q.contents) // If we're about to hit a dense object like a table or window
-						wakeup(mophead)
-						if(object.density == TRUE)
-							grab(user, mophead, crashdam) 
-							user.visible_message(span_warning("[user] rams [mophead] into [object]!"))
-							to_chat(mophead, span_userdanger("[user] rams you into [object]!"))
-							object.take_damage(200) // Damage dense object
-							mophead.Knockdown(1 SECONDS)
-							mophead.Immobilize(1 SECONDS)
-							if(object.density == TRUE) // If it wasn't destroyed, stop here
-								return
-					user.forceMove(get_turf(mophead)) // Move buster arm user (forward) on top of the mopped mob
-					to_chat(mophead, span_userdanger("[user] catches you with [user.p_their()] hand and drags you down!"))
-					user.visible_message(span_warning("[user] hits [mophead] and drags them through the dirt!"))
-					mophead.forceMove(Q) // Move mopped mob forward
-					wakeup(mophead)
-					grab(user, mophead, dragdam) 
-					playsound(mophead,'sound/effects/meteorimpact.ogg', 60, 1)
-			T = get_step(user, user.dir) // Move our goalpost forward one
-	for(var/mob/living/C in mopped) // Return everyone to standing if they should be
-		wakeup(C)
+	dashattack(user, user.dir, jumpdistance)
+
+/datum/martial_art/buster_style/proc/dashattack(mob/living/user, dir, distance = 0, list/rushed)
+	var/dragdam = 8
+	var/crashdam = 10
+	var/speedbumpdam = 200
+	var/turf/Q = get_step(get_turf(user), dir)
+	var/list/pirated = list()
+	for(var/mob/living/target in rushed)
+		wakeup(target)
+	if(distance == 0)
+		return
+	if(distance == 5)
+		initiate(user)
+	for(var/mob/living/target in rushed)
+		(crash(user, target, Q, crashdam, speedbumpdam))
+	if(Q.density || (!(Q.reachableTurftestdensity(T = Q))))
+		return
+	user.forceMove(Q)
+	var/turf/R = get_step(Q, dir)
+	for(var/mob/living/L in Q.contents)
+		if(L == user)
+			continue
+		wakeup(L)
+		pirated |= L
+		footsies(L)
+		to_chat(L, span_userdanger("[user] catches you with [user.p_their()] hand and drags you down!"))
+		user.visible_message(span_warning("[user] hits [L] and drags them through the dirt!"))
+		L.Immobilize(0.3 SECONDS)
+		wakeup(L)
+		grab(user, L, dragdam)
+		playsound(L,'sound/effects/meteorimpact.ogg', 60, 1)
+		crash(user, L, R, crashdam, speedbumpdam)
+	addtimer(CALLBACK(src, PROC_REF(dashattack), user, dir, distance-1, pirated), 0.1 SECONDS)
+	return
 
 /*---------------------------------------------------------------
 	end of mop section
@@ -420,7 +407,6 @@
 			if(isanimal(target) && target.stat == DEAD)
 				target.visible_message(span_warning("[target] explodes into gore on impact!"))
 				target.gib()
-			sleep(0.2 SECONDS)
 			wakeup(target)
 	for(var/mob/living/M in Q.contents) // If there's mobs behind us, apply damage to the mob for each one they are slammed into
 		grab(user, target, crashdam) // Apply damage to the target
@@ -428,7 +414,6 @@
 		if(isanimal(target) && target.stat == DEAD)
 			target.visible_message(span_warning("[target] explodes into gore on impact!"))
 			target.gib()
-		sleep(0.2 SECONDS)
 		wakeup(target)
 		to_chat(target, span_userdanger("[user] throws you into [M]"))
 		to_chat(M, span_userdanger("[user] throws [target] into you!"))
@@ -451,7 +436,6 @@
 	if(isanimal(target) && target.stat == DEAD)
 		target.visible_message(span_warning("[target] explodes into gore on impact!"))
 		target.gib()
-	sleep(0.2 SECONDS)
 	wakeup(target)
 
 /*---------------------------------------------------------------
