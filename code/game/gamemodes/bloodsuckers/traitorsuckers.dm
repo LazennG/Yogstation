@@ -4,7 +4,7 @@
 	report_type = "traitorsucker"
 	false_report_weight = 10
 	traitors_possible = 3 // Hard limit on Traitors if scaling is turned off
-	restricted_jobs = list("AI", "Cyborg")
+	restricted_jobs = list("AI", "Cyborg", "Synthetic")
 	protected_jobs = list(
 		"Captain", "Head of Personnel", "Head of Security", 
 		"Research Director", "Chief Engineer", "Chief Medical Officer", "Curator", 
@@ -19,7 +19,7 @@
 
 	var/list/possible_bloodsuckers = list()
 	var/list/bloodsuckers = list()
-	var/const/bloodsucker_amount = 2
+	var/const/bloodsucker_amount = 3
 
 /datum/game_mode/traitor/bloodsucker/can_start()
 	. = ..()
@@ -40,7 +40,7 @@
 	var/list/datum/mind/possible_bloodsuckers = get_players_for_role(ROLE_BLOODSUCKER)
 
 	var/num_bloodsuckers = 1
-	num_bloodsuckers = clamp(round(bloodsucker_amount/2), 1, num_players())
+	num_bloodsuckers = clamp(round(num_players()/15), 1, bloodsucker_amount)
 
 	if(possible_bloodsuckers.len>0)
 		for(var/j = 0, j < num_bloodsuckers, j++)

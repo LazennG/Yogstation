@@ -223,6 +223,29 @@
 	departmental_flags = DEPARTMENTAL_FLAG_ARMORY
 	combat_design = TRUE
 
+/datum/design/mech_bfg
+	name = "Exosuit Weapon (BFG-90 \"Graze\" Radioactive Cannon)"
+	desc = "Allows for the construction of the BFG-90 \"Graze\" Radioactive Cannon."
+	id = "mech_bfg"
+	build_type = MECHFAB
+	build_path = /obj/item/mecha_parts/mecha_equipment/weapon/ballistic/bfg
+	materials = list(/datum/material/iron=12000,/datum/material/uranium=6000,/datum/material/diamond=2000)
+	construction_time = 10 SECONDS
+	category = list("Exosuit Equipment")
+	combat_design = TRUE
+
+/datum/design/mech_bfg_ammo
+	name = "BFG-90 Radioactive Cannon Ammunition"
+	desc = "Ammunition for the BFG-90 \"Graze\" Radioactive Cannon."
+	id = "mech_bfg_ammo"
+	build_type = PROTOLATHE | MECHFAB
+	build_path = /obj/item/mecha_ammo/bfg
+	materials = list(/datum/material/iron=6000,/datum/material/uranium=6000,/datum/material/diamond=2000)
+	construction_time = 20
+	category = list("Exosuit Ammunition", "Ammo")
+	departmental_flags = DEPARTMENTAL_FLAG_ARMORY
+	combat_design = TRUE
+
 /datum/design/mech_ion
 	name = "Exosuit Weapon (MKIV Ion Heavy Cannon)"
 	desc = "Allows for the construction of the MKIV Ion Heavy Cannon."
@@ -388,6 +411,66 @@
 	construction_time = 1200
 	category = list("Exosuit Equipment")
 
+/datum/design/mech_thrusters
+	name = "Exosuit Module (RCS Thruster Package)"
+	desc = "A thruster package for exosuits. Expels gas from the internal life-support air tank to generate thrust."
+	id = "mech_thrusters"
+	build_type = MECHFAB
+	build_path = /obj/item/mecha_parts/mecha_equipment/thrusters/gas
+	materials = list(/datum/material/iron=25000,/datum/material/titanium=5000,/datum/material/silver=3000)
+	construction_time = 100
+	category = list("Exosuit Equipment")
+
+/datum/design/mech_pipe_dispenser
+	name = "Exosuit Module (Pipe Dispenser Module)"
+	desc = "An exosuit-mounted Rapid Pipe Dispenser."
+	id = "mech_pipe_dispenser"
+	build_type = MECHFAB
+	build_path = /obj/item/mecha_parts/mecha_equipment/pipe_dispenser
+	materials = list(/datum/material/iron=10000,/datum/material/glass=2000)
+	construction_time = 100
+	category = list("Exosuit Equipment")
+
+/datum/design/mech_t_scanner
+	name = "Exosuit Module (T-ray Scanner Module)"
+	desc = "An exosuit-mounted Terahertz-Ray Scanner."
+	id = "mech_t_scanner"
+	build_type = MECHFAB
+	build_path = /obj/item/mecha_parts/mecha_equipment/t_scanner
+	materials = list(/datum/material/iron=2000)
+	construction_time = 50
+	category = list("Exosuit Equipment")
+
+/datum/design/mech_washer
+	name = "Exosuit Module (Pressure Washer)"
+	desc = "An exosuit-mounted pressure washer."
+	id = "mech_washer"
+	build_type = MECHFAB
+	build_path = /obj/item/mecha_parts/mecha_equipment/weapon/pressure_washer
+	materials = list(/datum/material/iron=2000)
+	construction_time = 50
+	category = list("Exosuit Equipment")
+
+/datum/design/mech_mop
+	name = "Exosuit Module (Mop)"
+	desc = "An exosuit-mounted mop."
+	id = "mech_mop"
+	build_type = MECHFAB
+	build_path = /obj/item/mecha_parts/mecha_equipment/melee_weapon/mop
+	materials = list(/datum/material/iron=2000)
+	construction_time = 50
+	category = list("Exosuit Equipment")
+
+/datum/design/mech_flyswatter
+	name = "Exosuit Module (Flyswatter)"
+	desc = "An exosuit-mounted flyswatter."
+	id = "mech_flyswatter"
+	build_type = MECHFAB
+	build_path = /obj/item/mecha_parts/mecha_equipment/melee_weapon/flyswatter
+	materials = list(/datum/material/iron=2000)
+	construction_time = 50
+	category = list("Exosuit Equipment")
+
 /datum/design/mech_gravcatapult
 	name = "Exosuit Module (Gravitational Catapult Module)"
 	desc = "An exosuit mounted Gravitational Catapult."
@@ -532,7 +615,7 @@
 	category = list("Exosuit Equipment")
 
 /datum/design/mech_rocket_fist
-	name = "Exosuit Weapon (DD-2 \"Atom Smasher\" Rocket Fist)"
+	name = "Exosuit Weapon (RS-77 \"Atom Smasher\" Rocket Fist)"
 	id = "mech_rocket_fist"
 	build_type = MECHFAB
 	build_path = /obj/item/mecha_parts/mecha_equipment/melee_weapon/rocket_fist
@@ -552,7 +635,7 @@
 	combat_design = TRUE
 
 /datum/design/mech_katana
-	name = "Exosuit Weapon (OWM-5 \"Ronin\" katana)"
+	name = "Exosuit Weapon (HR-2 \"Ronin\" katana)"
 	id = "mech_katana"
 	build_type = MECHFAB
 	build_path = /obj/item/mecha_parts/mecha_equipment/melee_weapon/sword/katana
@@ -582,7 +665,7 @@
 	combat_design = TRUE
 
 /datum/design/mech_maul
-	name = "Exosuit Weapon (CX-22 \"Barbatos\" heavy maul)"
+	name = "Exosuit Weapon (ASW-8 \"Barbatos\" heavy maul)"
 	id = "mech_maul"
 	build_type = MECHFAB
 	build_path = /obj/item/mecha_parts/mecha_equipment/melee_weapon/sword/maul

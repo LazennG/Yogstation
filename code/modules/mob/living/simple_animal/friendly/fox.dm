@@ -12,7 +12,6 @@
 	emote_see = list("shakes its head.", "shivers.")
 	speak_chance = 1
 	turns_per_move = 5
-	see_in_dark = 6
 	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat/slab = 1) //3 -> 1, foxes aren't Big
 	response_help = "pets"
 	response_disarm = "gently pushes aside"
@@ -20,7 +19,7 @@
 	attack_vis_effect = ATTACK_EFFECT_BITE
 	gold_core_spawnable = FRIENDLY_SPAWN
 	can_be_held = TRUE
-	do_footstep = TRUE
+	footstep_type = FOOTSTEP_MOB_CLAW
 	wuv_happy = "screams happily!"
 	wuv_angy = "screams angrily!"
 
@@ -28,6 +27,6 @@
 /mob/living/simple_animal/pet/fox/Renault
 	name = "Renault"
 	desc = "Renault, the Captain's trustworthy fox."
-	gender = FEMALE
+	gender = MALE
 	gold_core_spawnable = NO_SPAWN
 	unique_pet = TRUE

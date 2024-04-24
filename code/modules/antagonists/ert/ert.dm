@@ -62,7 +62,6 @@
 
 /datum/antagonist/ert/on_gain()
 	update_name()
-	forge_objectives()
 	equipERT()
 	. = ..()
 
@@ -79,7 +78,7 @@
 /datum/antagonist/ert/deathsquad/New()
 	. = ..()
 	name_source = GLOB.commando_names
-	
+
 /datum/antagonist/ert/clown/New()
 	. = ..()
 	name_source = GLOB.clown_names
@@ -138,6 +137,10 @@
 	name = "Deathsquad Trooper"
 	outfit = /datum/outfit/death_commando
 	role = "Trooper"
+
+/datum/antagonist/ert/mining
+	name = "Dwarven Miner"
+	outfit = /datum/outfit/ert/mining
 
 /datum/antagonist/ert/medic/inquisitor
 	outfit = /datum/outfit/ert/medic/inquisitor
@@ -208,7 +211,7 @@
 	name = "Occupying Riot Officer"
 	outfit = /datum/outfit/occupying/heavy
 	role = "Riot Officer"
-	
+
 /datum/antagonist/ert/occupying/commander
 	name = "Occupying Commander"
 	outfit = /datum/outfit/occupying/commander
@@ -224,13 +227,34 @@
 	outfit = /datum/outfit/centcom_clown/honk_squad
 	role = "HONKER"
 
+/datum/antagonist/ert/imperial
+	name = "Imperial Guardsman"
+	outfit = /datum/outfit/imperial
+	role = "Guardsman"
+
+/datum/antagonist/ert/imperial/hotshot
+	name = "Imperial Guardsman Veteran"
+	outfit = /datum/outfit/imperial/veteran
+	role = "Guard Veteran"
+
+/datum/antagonist/ert/imperial/plasma
+	name = "Imperial Guardsman Plasma Gunner"
+	outfit = /datum/outfit/imperial/plasma
+	role = "Plasma Gunner"
+
+/datum/antagonist/ert/imperial/sniper
+	name = "Imperial Guardsman Marksman"
+	outfit = /datum/outfit/imperial/marksman
+	role = "Marksman"
+
+/datum/antagonist/ert/imperial/sergeant
+	name = "Imperial Sergeant"
+	outfit = /datum/outfit/imperial/commander
+	role = "Sergeant"
+
 /datum/antagonist/ert/create_team(datum/team/ert/new_team)
 	if(istype(new_team))
 		ert_team = new_team
-
-/datum/antagonist/ert/proc/forge_objectives()
-	if(ert_team)
-		objectives |= ert_team.objectives
 
 /datum/antagonist/ert/proc/equipERT()
 	var/mob/living/carbon/human/H = owner.current

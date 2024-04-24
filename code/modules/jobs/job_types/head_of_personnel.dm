@@ -2,20 +2,17 @@
 	title = "Head of Personnel"
 	description = "Alter access on ID cards, manage civil and supply departments, \
 		protect Ian, run the station when the captain dies."
-	flag = HOP
 	orbit_icon = "dog"
 	auto_deadmin_role_flags = DEADMIN_POSITION_HEAD
 	department_head = list("Captain")
-	department_flag = CIVILIAN
 	head_announce = list(RADIO_CHANNEL_SUPPLY, RADIO_CHANNEL_SERVICE)
 	faction = "Station"
 	total_positions = 1
 	spawn_positions = 1
 	supervisors = "the captain"
-	selection_color = "#ddddff"
 	req_admin_notify = 1
 	minimal_player_age = 10
-	exp_requirements = 720
+	exp_requirements = 720 //fairly low skill job
 	exp_type = EXP_TYPE_CREW
 	exp_type_department = EXP_TYPE_SUPPLY
 	alt_titles = list("Chief of Staff", "Head of Internal Affairs", "First Officer")
@@ -29,7 +26,7 @@
 			            ACCESS_CREMATORIUM, ACCESS_KITCHEN, ACCESS_CARGO, ACCESS_MAILSORTING, ACCESS_QM, ACCESS_HYDROPONICS, ACCESS_LAWYER,
 						ACCESS_MECH_MINING, ACCESS_MECH_ENGINE, ACCESS_MECH_SCIENCE, ACCESS_MECH_SECURITY, ACCESS_MECH_MEDICAL,
 			            ACCESS_THEATRE, ACCESS_CHAPEL_OFFICE, ACCESS_LIBRARY, ACCESS_RESEARCH, ACCESS_MINING, ACCESS_VAULT, ACCESS_MINING_STATION,
-			            ACCESS_HOP, ACCESS_RC_ANNOUNCE, ACCESS_KEYCARD_AUTH, ACCESS_GATEWAY, ACCESS_MINERAL_STOREROOM, ACCESS_MANUFACTURING) //yogs - added ACCESS_MANUFACTURING as it's the clerk's
+			            ACCESS_HOP, ACCESS_RC_ANNOUNCE, ACCESS_KEYCARD_AUTH, ACCESS_GATEWAY, ACCESS_MINERAL_STOREROOM, ACCESS_MANUFACTURING, ACCESS_SERVHALL) //yogs - added ACCESS_MANUFACTURING as it's the clerk's
 	paycheck = PAYCHECK_COMMAND
 	paycheck_department = ACCOUNT_SRV
 
@@ -42,11 +39,24 @@
 	)
 
 	mail_goodies = list(
+		/obj/item/toner = 15,
+		/obj/item/pen/fourcolor = 10,
+		/obj/item/pen/fountain = 10,
 		/obj/item/card/id/silver = 10,
-		/obj/item/stack/sheet/bone = 5
+		/obj/item/stack/sheet/bone = 5,
+		/obj/item/stamp = 5,
+		/obj/item/stamp/denied = 5,
+		/obj/item/stamp/syndi = 3,
+		/obj/item/stamp/cent = 1 //the holy grail of stamps
 	)
 
 	smells_like = "bureaucracy"
+
+	minimal_lightup_areas = list(/area/crew_quarters/heads/hop, /area/security/nuke_storage)
+
+// Special handling to avoid lighting up the entirety of supply whenever there's a HoP.
+/datum/job/head_of_personnel/areas_to_light_up(minimal_access = TRUE)
+	return minimal_lightup_areas | GLOB.command_lightup_areas
 
 //only pet worth reviving
 /datum/job/hop/get_mail_goodies(mob/recipient)

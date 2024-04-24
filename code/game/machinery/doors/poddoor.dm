@@ -22,7 +22,7 @@
 /obj/machinery/door/poddoor/preopen
 	icon_state = "open"
 	density = FALSE
-	opacity = 0
+	opacity = FALSE
 
 /obj/machinery/door/poddoor/ert
 	name = "ERT Armory door"
@@ -44,9 +44,9 @@
 /obj/machinery/door/poddoor/shuttledock/proc/check()
 	var/turf/T = get_step(src, checkdir)
 	if(!istype(T, turftype))
-		INVOKE_ASYNC(src, .proc/open)
+		INVOKE_ASYNC(src, PROC_REF(open))
 	else
-		INVOKE_ASYNC(src, .proc/close)
+		INVOKE_ASYNC(src, PROC_REF(close))
 
 /obj/machinery/door/poddoor/incinerator_toxmix
 	name = "combustion chamber vent"
@@ -89,7 +89,8 @@
 			flick("closing", src)
 			playsound(src, 'sound/machines/blastdoor.ogg', 30, 1)
 
-/obj/machinery/door/poddoor/update_icon()
+/obj/machinery/door/poddoor/update_icon_state()
+	. = ..()
 	if(density)
 		icon_state = "closed"
 	else
@@ -126,9 +127,8 @@
 
 			if(!multitool_check_buffer(user, W))
 				return
-				
-			var/obj/item/multitool/P = W	
-			id = P.buffer
+	
+			id = multitool_get_buffer(user, W)
 			to_chat(user, span_notice("You link the button to the [src]."))
 			return
 
@@ -187,3 +187,5 @@
 	if(panel_open)
 		. += "<span class='[span_notice("The maintenance panel is [panel_open ? "opened" : "closed"].")]"
 		
+/obj/machinery/door/poddoor/connect_to_shuttle(mapload, obj/docking_port/mobile/port, obj/docking_port/stationary/dock)
+	id = "[id]"

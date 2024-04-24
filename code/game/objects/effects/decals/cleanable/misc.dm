@@ -11,7 +11,7 @@
 	icon_state = "ash"
 	mergeable_decal = FALSE
 
-/obj/effect/decal/cleanable/ash/Initialize()
+/obj/effect/decal/cleanable/ash/Initialize(mapload)
 	. = ..()
 	reagents.add_reagent(/datum/reagent/ash, 30)
 	pixel_x = rand(-5, 5)
@@ -25,7 +25,7 @@
 	name = "large pile of ashes"
 	icon_state = "big_ash"
 
-/obj/effect/decal/cleanable/ash/large/Initialize()
+/obj/effect/decal/cleanable/ash/large/Initialize(mapload)
 	. = ..()
 	reagents.add_reagent(/datum/reagent/ash, 30) //double the amount of ash.
 
@@ -35,7 +35,7 @@
 	icon = 'icons/obj/shards.dmi'
 	icon_state = "tiny"
 
-/obj/effect/decal/cleanable/glass/Initialize()
+/obj/effect/decal/cleanable/glass/Initialize(mapload)
 	. = ..()
 	setDir(pick(GLOB.cardinals))
 
@@ -48,28 +48,39 @@
 /obj/effect/decal/cleanable/dirt
 	name = "dirt"
 	desc = "Someone should clean that up."
-	icon_state = "dirt"
-	canSmoothWith = list(/obj/effect/decal/cleanable/dirt, /turf/closed/wall, /obj/structure/falsewall)
-	smooth = SMOOTH_FALSE
+	icon = 'icons/effects/dirt.dmi'
+	icon_state = "dirt-flat-0"
+	base_icon_state = "dirt"
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	smoothing_flags = NONE
+	smoothing_groups = SMOOTH_GROUP_CLEANABLE_DIRT
+	canSmoothWith = SMOOTH_GROUP_CLEANABLE_DIRT + SMOOTH_GROUP_WALLS
 
-/obj/effect/decal/cleanable/dirt/Initialize()
+/obj/effect/decal/cleanable/dirt/Initialize(mapload)
 	. = ..()
+	icon_state = pick("dirt-flat-0","dirt-flat-1","dirt-flat-2","dirt-flat-3")
+	var/obj/structure/fluff/broken_flooring/broken_flooring = locate(/obj/structure/fluff/broken_flooring) in loc
+	if(!isnull(broken_flooring))
+		return
 	var/turf/T = get_turf(src)
 	if(T.tiled_dirt)
-		smooth = SMOOTH_MORE
-		icon = 'icons/effects/dirt.dmi'
-		icon_state = ""
-		queue_smooth(src)
-	queue_smooth_neighbors(src)
+		smoothing_flags = SMOOTH_BITMASK
+		QUEUE_SMOOTH(src)
+	if(smoothing_flags & (SMOOTH_CORNERS|SMOOTH_BITMASK))
+		QUEUE_SMOOTH_NEIGHBORS(src)
 
 /obj/effect/decal/cleanable/dirt/Destroy()
-	queue_smooth_neighbors(src)
+	if(smoothing_flags & (SMOOTH_CORNERS|SMOOTH_BITMASK))
+		QUEUE_SMOOTH_NEIGHBORS(src)
 	return ..()
 
 /obj/effect/decal/cleanable/dirt/dust
 	name = "dust"
 	desc = "A thin layer of dust coating the floor."
+
+/obj/effect/decal/cleanable/dirt/dust/Initialize(mapload)
+	. = ..()
+	icon_state = base_icon_state
 
 /obj/effect/decal/cleanable/greenglow
 	name = "glowing goo"
@@ -83,10 +94,10 @@
 /obj/effect/decal/cleanable/greenglow/ex_act()
 	return
 
-/obj/effect/decal/cleanable/greenglow/Initialize()
+/obj/effect/decal/cleanable/greenglow/Initialize(mapload)
 	. = ..()
 	AddComponent(/datum/component/radioactive, 15, src, 0, FALSE)
-	addtimer(CALLBACK(src, .proc/Decay), 24 SECONDS)
+	addtimer(CALLBACK(src, PROC_REF(Decay)), 24 SECONDS)
 
 /obj/effect/decal/cleanable/greenglow/proc/Decay()
 	var/datum/component/radioactive/R = GetComponent(/datum/component/radioactive)
@@ -95,9 +106,9 @@
 	light_range = 0
 	update_light()
 	if(R)
-		R.RemoveComponent()
+		qdel(R)
 
-/obj/effect/decal/cleanable/greenglow/filled/Initialize()
+/obj/effect/decal/cleanable/greenglow/filled/Initialize(mapload)
 	. = ..()
 	reagents.add_reagent(pick(/datum/reagent/uranium, /datum/reagent/uranium/radium), 5)
 
@@ -108,6 +119,7 @@
 	layer = WALL_OBJ_LAYER
 	icon_state = "cobweb1"
 	resistance_flags = FLAMMABLE
+	clean_type = CLEAN_TYPE_HARD_DECAL
 
 /obj/effect/decal/cleanable/cobweb/cobweb2
 	icon_state = "cobweb2"
@@ -119,6 +131,7 @@
 	icon = 'icons/effects/effects.dmi'
 	icon_state = "molten"
 	mergeable_decal = FALSE
+	clean_type = CLEAN_TYPE_HARD_DECAL
 
 /obj/effect/decal/cleanable/molten_object/large
 	name = "big gooey grey mass"
@@ -185,7 +198,7 @@
 	if(severity == 1) //so shreds created during an explosion aren't deleted by the explosion.
 		qdel(src)
 
-/obj/effect/decal/cleanable/shreds/Initialize()
+/obj/effect/decal/cleanable/shreds/Initialize(mapload)
 	pixel_x = rand(-10, 10)
 	pixel_y = rand(-10, 10)
 	. = ..()
@@ -213,8 +226,8 @@
 /obj/effect/decal/cleanable/plasma
 	name = "stabilized plasma"
 	desc = "A puddle of stabilized plasma."
-	icon_state = "flour"
-	icon = 'icons/effects/tomatodecal.dmi'
+	icon_state = "molten"
+	icon = 'icons/effects/effects.dmi'
 	color = "#C8A5DC"
 
 /obj/effect/decal/cleanable/insectguts
@@ -231,3 +244,12 @@
 /obj/effect/decal/cleanable/insectguts/Destroy(force)
 	GLOB.vomit_spots -= src
 	. = ..()
+
+/obj/effect/decal/cleanable/dirt_siding
+	name = "dirt siding"
+	icon = 'icons/turf/decals.dmi'
+	icon_state = "dirt_side"
+
+/obj/effect/decal/cleanable/dirt_siding/corner
+	name = "dirt corner"
+	icon_state = "dirt_side_corner"

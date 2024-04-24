@@ -4,7 +4,6 @@
 	icon = 'icons/obj/pda.dmi'
 	icon_state = "pdapainter"
 	density = TRUE
-	obj_integrity = 200
 	max_integrity = 200
 	var/obj/item/bodypart/storedpart
 	var/initial_icon_state
@@ -15,24 +14,27 @@
 	if(storedpart)
 		. += span_notice("Alt-click to eject the limb.")
 
-/obj/machinery/aug_manipulator/Initialize()
+/obj/machinery/aug_manipulator/Initialize(mapload)
     initial_icon_state = initial(icon_state)
     return ..()
 
-/obj/machinery/aug_manipulator/update_icon()
-	cut_overlays()
-
+/obj/machinery/aug_manipulator/update_icon_state()
+	. = ..()
 	if(stat & BROKEN)
 		icon_state = "[initial_icon_state]-broken"
 		return
-
-	if(storedpart)
-		add_overlay("[initial_icon_state]-closed")
 
 	if(powered())
 		icon_state = initial_icon_state
 	else
 		icon_state = "[initial_icon_state]-off"
+
+/obj/machinery/aug_manipulator/update_overlays()
+	. = ..()
+	if(stat & BROKEN)
+		return
+	if(storedpart)
+		. += "[initial_icon_state]-closed"
 
 /obj/machinery/aug_manipulator/Destroy()
 	QDEL_NULL(storedpart)
@@ -50,7 +52,7 @@
 /obj/machinery/aug_manipulator/handle_atom_del(atom/A)
 	if(A == storedpart)
 		storedpart = null
-		update_icon()
+		update_appearance(UPDATE_ICON)
 
 /obj/machinery/aug_manipulator/attackby(obj/item/O, mob/user, params)
 	if(default_unfasten_wrench(user, O))
@@ -71,10 +73,10 @@
 				return
 			storedpart = O
 			O.add_fingerprint(user)
-			update_icon()
+			update_appearance(UPDATE_ICON)
 
 	else if(O.tool_behaviour == TOOL_WELDER && user.a_intent != INTENT_HARM)
-		if(obj_integrity < max_integrity)
+		if(atom_integrity < max_integrity)
 			if(!O.tool_start_check(user, amount=0))
 				return
 
@@ -87,8 +89,8 @@
 					return
 				to_chat(user, span_notice("You repair [src]."))
 				stat &= ~BROKEN
-				obj_integrity = max(obj_integrity, max_integrity)
-				update_icon()
+				update_integrity(max(atom_integrity, max_integrity))
+				update_appearance(UPDATE_ICON)
 		else
 			to_chat(user, span_notice("[src] does not need repairs."))
 	else
@@ -118,7 +120,7 @@
 	if(storedpart)
 		storedpart.forceMove(get_turf(src))
 		storedpart = null
-		update_icon()
+		update_appearance(UPDATE_ICON)
 	else
 		to_chat(user, span_notice("[src] is empty."))
 

@@ -151,21 +151,20 @@
 	else if(W.tool_behaviour == TOOL_MULTITOOL)
 		if(!multitool_check_buffer(user, W))
 			return
-		var/obj/item/multitool/P = W
-
-		if(istype(P.buffer, /obj/machinery/clonepod))
-			if(get_area(P.buffer) != get_area(src))
+		var/atom/buffer_atom = multitool_get_buffer(user, W)
+		if(istype(buffer_atom, /obj/machinery/clonepod))
+			if(get_area(buffer_atom) != get_area(src))
 				to_chat(user, "<font color = #666633>-% Cannot link machines across power zones. Buffer cleared %-</font color>")
-				P.buffer = null
+				multitool_set_buffer(user, W, null)
 				return
-			to_chat(user, "<font color = #666633>-% Successfully linked [P.buffer] with [src] %-</font color>")
-			var/obj/machinery/clonepod/pod = P.buffer
+			to_chat(user, "<font color = #666633>-% Successfully linked [buffer_atom] with [src] %-</font color>")
+			var/obj/machinery/clonepod/pod = buffer_atom
 			if(pod.connected)
 				pod.connected.DetachCloner(pod)
 			AttachCloner(pod)
 		else
-			P.buffer = src
-			to_chat(user, "<font color = #666633>-% Successfully stored [REF(P.buffer)] [P.buffer.name] in buffer %-</font color>")
+			multitool_set_buffer(user, W, src)
+			to_chat(user, "<font color = #666633>-% Successfully stored [REF(buffer_atom)] [buffer_atom.name] in buffer %-</font color>")
 		return
 	else
 		return ..()
@@ -554,7 +553,7 @@
 	R.fields["name"] = mob_occupant.real_name
 	R.fields["id"] = copytext_char(md5(mob_occupant.real_name), 2, 6)
 	R.fields["UE"] = dna.unique_enzymes
-	R.fields["UI"] = dna.uni_identity
+	R.fields["UI"] = dna.unique_identity
 	R.fields["SE"] = dna.mutation_index
 	R.fields["blood_type"] = dna.blood_type
 	R.fields["features"] = dna.features
@@ -577,7 +576,7 @@
 
 	R.fields["bank_account"] = has_bank_account
 	R.fields["mindref"] = "[REF(mob_occupant.mind)]"
-	R.fields["last_death"] = mob_occupant.stat == DEAD ? mob_occupant.mind.last_death : -1
+	R.fields["last_death"] = mob_occupant.stat == DEAD ? mob_occupant.mind?.last_death : -1
 	R.fields["body_only"] = body_only
 
 	if(!body_only)
@@ -594,7 +593,7 @@
 	var/datum/data/record/old_record = find_record("mindref", REF(mob_occupant.mind), records)
 	if(body_only)
 		old_record = find_record("UE", dna.unique_enzymes, records) //Body-only records cannot be identified by mind, so we use the DNA
-		if(old_record && ((old_record.fields["UI"] != dna.uni_identity) || (!old_record.fields["body_only"]))) //Never overwrite a mind-and-body record if it exists
+		if(old_record && ((old_record.fields["UI"] != dna.unique_identity) || (!old_record.fields["body_only"]))) //Never overwrite a mind-and-body record if it exists
 			old_record = null
 	if(old_record)
 		records -= old_record

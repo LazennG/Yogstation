@@ -92,9 +92,9 @@
 	desc = "As a changeling, complete your objectives"
 	id = 13
 
-/datum/achievement/greentext/slingascend
+/datum/achievement/greentext/darkspawn
 	name = "The Dark Shadow"
-	desc = "As a shadowling, ascend successfully"
+	desc = "As a darkspawn, ascend successfully"
 	id = 14
 
 /datum/achievement/death
@@ -181,12 +181,12 @@
 
 /datum/achievement/greentext/narsie
 	name = "Blood Rites"
-	desc = "As a member of blood cult, summon Nar-Sie"
+	desc = "As a member of blood cult, summon Nar'sie"
 	id = GREENTEXT + 4
 
 /datum/achievement/greentext/narsie/master
 	name = "Master of Blood"
-	desc = "As a cult master, summon Nar-Sie"
+	desc = "As a cult master, summon Nar'sie"
 	id = GREENTEXT + 5
 
 /datum/achievement/greentext/revolution

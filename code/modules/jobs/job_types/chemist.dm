@@ -2,15 +2,12 @@
 	title = "Chemist"
 	description = "Supply the doctors with chemicals, make medicine, as well as \
 		less likable substances in the comfort of a fully reinforced room."
-	flag = CHEMIST
 	orbit_icon = "prescription-bottle"
 	department_head = list("Chief Medical Officer")
-	department_flag = MEDSCI
 	faction = "Station"
 	total_positions = 2
 	spawn_positions = 2
 	supervisors = "the chief medical officer"
-	selection_color = "#d4ebf2"
 	exp_type = EXP_TYPE_CREW
 	exp_requirements = 120
 	exp_type_department = EXP_TYPE_MEDICAL
@@ -33,9 +30,20 @@
 
 	mail_goodies = list(
 		/obj/item/reagent_containers/glass/bottle/flash_powder = 15,
-		///obj/item/reagent_containers/glass/bottle/exotic_stabilizer = 5,
-		///obj/item/reagent_containers/glass/bottle/leadacetate = 5,
+		/obj/item/reagent_containers/glass/beaker/meta = 15,
+		/obj/item/reagent_containers/glass/beaker/large/lemoline = 10,
+		/obj/item/storage/pill_bottle/gummies/floorbear = 1,
 		/obj/item/paper/secretrecipe = 1
+	)
+
+	lightup_areas = list(
+		/area/medical/surgery,
+		/area/medical/virology,
+		/area/medical/genetics
+	)
+	minimal_lightup_areas = list(
+		/area/medical/morgue,
+		/area/medical/chemistry
 	)
 
 	smells_like = "chemicals"
@@ -44,7 +52,7 @@
 	name = "Chemist"
 	jobtype = /datum/job/chemist
 
-	pda_type = /obj/item/modular_computer/tablet/pda/preset/chem
+	pda_type = /obj/item/modular_computer/tablet/pda/preset/medical/chem
 
 	glasses = /obj/item/clothing/glasses/science
 	ears = /obj/item/radio/headset/headset_med

@@ -12,12 +12,14 @@ would spawn and follow the beaker, even if it is carried or thrown.
 	pass_flags = PASSTABLE | PASSGRILLE
 	anchored = TRUE
 
-/obj/effect/particle_effect/Initialize()
+/obj/effect/particle_effect/Initialize(mapload)
 	. = ..()
 	GLOB.cameranet.updateVisibility(src)
+	GLOB.thrallnet.updateVisibility(src)
 
 /obj/effect/particle_effect/Destroy()
 	GLOB.cameranet.updateVisibility(src)
+	GLOB.thrallnet.updateVisibility(src)
 	return ..()
 
 /obj/effect/particle_effect/newtonian_move() // Prevents effects from getting registered for SSspacedrift
@@ -25,7 +27,7 @@ would spawn and follow the beaker, even if it is carried or thrown.
 
 /datum/effect_system
 	var/number = 3
-	var/cardinals = FALSE
+	var/cardinals_only = FALSE
 	var/turf/location
 	var/atom/holder
 	var/effect_type
@@ -39,7 +41,7 @@ would spawn and follow the beaker, even if it is carried or thrown.
 
 /datum/effect_system/proc/set_up(number = 3, cardinals_only = FALSE, location)
 	src.number = min(number, 10)
-	src.cardinals = cardinals_only
+	src.cardinals_only = cardinals_only
 	src.location = get_turf(location)
 
 /datum/effect_system/proc/attach(atom/atom)
@@ -51,7 +53,7 @@ would spawn and follow the beaker, even if it is carried or thrown.
 	for(var/i in 1 to number)
 		if(total_effects > 20)
 			return
-		INVOKE_ASYNC(src, .proc/generate_effect)
+		INVOKE_ASYNC(src, PROC_REF(generate_effect))
 
 /datum/effect_system/proc/generate_effect()
 	if(holder)
@@ -59,7 +61,7 @@ would spawn and follow the beaker, even if it is carried or thrown.
 	var/obj/effect/E = new effect_type(location)
 	total_effects++
 	var/direction
-	if(cardinals)
+	if(cardinals_only)
 		direction = pick(GLOB.cardinals)
 	else
 		direction = pick(GLOB.alldirs)
@@ -68,7 +70,7 @@ would spawn and follow the beaker, even if it is carried or thrown.
 		sleep(0.5 SECONDS)
 		step(E,direction)
 	if(!QDELETED(src))
-		addtimer(CALLBACK(src, .proc/decrement_total_effect), 20)
+		addtimer(CALLBACK(src, PROC_REF(decrement_total_effect)), 20)
 
 /datum/effect_system/proc/decrement_total_effect()
 	total_effects--

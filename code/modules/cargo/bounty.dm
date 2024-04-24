@@ -7,6 +7,10 @@ GLOBAL_LIST_EMPTY(bounties_list)
 	var/claimed = FALSE
 	var/high_priority = FALSE
 
+//SYNDICATE BOUNTY
+/datum/bounty/syndicate
+
+
 // Displayed on bounty UI screen.
 /datum/bounty/proc/completion_string()
 	return ""
@@ -55,9 +59,9 @@ GLOBAL_LIST_EMPTY(bounties_list)
 		setup_bounties()
 
 	var/list/matched_one = FALSE
-	for(var/thing in reverseRange(AM.GetAllContents()))
+	for(var/thing in reverse_range(AM.get_all_contents()))
 		var/matched_this = FALSE
-		for(var/datum/bounty/B in GLOB.bounties_list)
+		for(var/datum/bounty/B as anything in GLOB.bounties_list)
 			if(B.applies_to(thing))
 				matched_one = TRUE
 				matched_this = TRUE

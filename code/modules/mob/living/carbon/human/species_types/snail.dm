@@ -7,6 +7,7 @@
 	species_traits = list(MUTCOLORS, NO_UNDERWEAR, HAS_FLESH, HAS_BONE)
 	inherent_traits = list(TRAIT_ALWAYS_CLEAN)
 	attack_verb = "slap"
+	attack_effect = ATTACK_EFFECT_DISARM
 	say_mod = "slurs"
 	coldmod = 0.5 //snails only come out when its cold and wet
 	burnmod = 2
@@ -31,10 +32,10 @@
 
 /datum/species/snail/on_species_gain(mob/living/carbon/C, datum/species/old_species, pref_load)
 	. = ..()
-	var/obj/item/storage/backpack/bag = C.get_item_by_slot(SLOT_BACK)
+	var/obj/item/storage/backpack/bag = C.get_item_by_slot(ITEM_SLOT_BACK)
 	if(!istype(bag, /obj/item/storage/backpack/snail))
 		if(C.dropItemToGround(bag)) //returns TRUE even if its null
-			C.equip_to_slot_or_del(new /obj/item/storage/backpack/snail(C), SLOT_BACK)
+			C.equip_to_slot_or_del(new /obj/item/storage/backpack/snail(C), ITEM_SLOT_BACK)
 	C.AddComponent(/datum/component/snailcrawl)
 	ADD_TRAIT(C, TRAIT_NOSLIPALL, SPECIES_TRAIT)
 
@@ -42,7 +43,7 @@
 	. = ..()
 	qdel(C.GetComponent(/datum/component/snailcrawl))
 	REMOVE_TRAIT(C, TRAIT_NOSLIPALL, SPECIES_TRAIT)
-	var/obj/item/storage/backpack/bag = C.get_item_by_slot(SLOT_BACK)
+	var/obj/item/storage/backpack/bag = C.get_item_by_slot(ITEM_SLOT_BACK)
 	if(istype(bag, /obj/item/storage/backpack/snail))
 		bag.emptyStorage()
 		C.temporarilyRemoveItemFromInventory(bag, TRUE)
@@ -59,9 +60,9 @@
 	max_integrity = 200
 	resistance_flags = FIRE_PROOF | ACID_PROOF
 
-/obj/item/storage/backpack/snail/Initialize()
+/obj/item/storage/backpack/snail/Initialize(mapload)
 	. = ..()
-	ADD_TRAIT(src, TRAIT_NODROP, CURSED_ITEM_TRAIT)
+	ADD_TRAIT(src, TRAIT_NODROP, CURSED_ITEM_TRAIT(type))
 
 /datum/species/snail/handle_chemicals(datum/reagent/chem, mob/living/carbon/human/H)
 	. = ..()

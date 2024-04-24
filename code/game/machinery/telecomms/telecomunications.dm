@@ -15,6 +15,7 @@
 GLOBAL_LIST_EMPTY(telecomms_list)
 
 /obj/machinery/telecomms
+	name = "telecommunications machine"
 	icon = 'icons/obj/machines/telecomms.dmi'
 	critical_machine = TRUE
 	var/list/links = list() // list of machines this machine is linked to
@@ -30,7 +31,8 @@ GLOBAL_LIST_EMPTY(telecomms_list)
 	var/on = TRUE
 	var/toggled = TRUE 	// Is it toggled on
 	var/long_range_link = FALSE  // Can you link it across Z levels or on the otherside of the map? (Relay & Hub)
-	var/hide = FALSE  // Is it a hidden machine?
+	/// Is it a hidden machine?
+	var/hide = FALSE
 
 	var/generates_heat = TRUE 	//yogs turn off tcomms generating heat
 	var/heatoutput = 2500		//yogs modify power output per trafic removed(usual heat capacity of the air in server room is 1600J/K)
@@ -120,19 +122,23 @@ GLOBAL_LIST_EMPTY(telecomms_list)
 					T.links |= src
 
 
-/obj/machinery/telecomms/update_icon()
-	cut_overlays()
-	if(on)
-		var/mutable_appearance/on_overlay
-		if(on_icon)
-			on_overlay = mutable_appearance(icon, on_icon)
-		else
-			on_overlay = mutable_appearance(icon, "[initial(icon_state)]_on")
-		add_overlay(on_overlay)
+/obj/machinery/telecomms/update_icon_state()
+	. = ..()
 	if(panel_open)
 		icon_state = "[initial(icon_state)]_o"
 	else
 		icon_state = initial(icon_state)
+
+/obj/machinery/telecomms/update_overlays()
+	. = ..()
+	if(!on)
+		return
+	var/mutable_appearance/on_overlay
+	if(on_icon)
+		on_overlay = mutable_appearance(icon, on_icon)
+	else
+		on_overlay = mutable_appearance(icon, "[initial(icon_state)]_on")
+	. += on_overlay
 
 /obj/machinery/telecomms/proc/update_power()
 
@@ -148,10 +154,9 @@ GLOBAL_LIST_EMPTY(telecomms_list)
 /obj/machinery/telecomms/proc/update_speed()
 	if(!on)
 		return
-	var/turf/T = get_turf(src) //yogs
 	var/speedloss = 0
-	var/datum/gas_mixture/env = T.return_air()
-	var/temperature = env.return_temperature()
+	var/datum/gas_mixture/env = return_air()
+	var/temperature = env?.return_temperature()
 	if(temperature <= 150)				// 150K optimal operating parameters
 		net_efective = 100
 	else
@@ -177,7 +182,7 @@ GLOBAL_LIST_EMPTY(telecomms_list)
 	update_power()
 
 	// Update the icon
-	update_icon()
+	update_appearance(UPDATE_ICON)
 	update_speed()
 
 
@@ -186,15 +191,16 @@ GLOBAL_LIST_EMPTY(telecomms_list)
 	. = ..()
 	if(. & EMP_PROTECT_SELF)
 		return
-	if(prob(100/severity) && !(stat & EMPED))
+	if(prob(10 * severity) && !(stat & EMPED))
 		stat |= EMPED
-		var/duration = (300 * 10)/severity
-		addtimer(CALLBACK(src, .proc/de_emp), rand(duration - 20, duration + 20))
+		var/duration = (30 SECONDS) * severity // 30 seconds per level of severity, 5 minutes at 10 severity (EMP_HEAVY)
+		addtimer(CALLBACK(src, PROC_REF(de_emp)), rand(duration - 20, duration + 20))
 
 /obj/machinery/telecomms/proc/de_emp()
 	stat &= ~EMPED
 
-/obj/machinery/telecomms/emag_act()
+/obj/machinery/telecomms/emag_act(mob/user, obj/item/card/emag/emag_card)
 	obj_flags |= EMAGGED
 	visible_message(span_notice("Sparks fly out of the [src]!"))
 	traffic += 50
+	return TRUE

@@ -1,5 +1,6 @@
 
-//Hydraulic clamp, Kill clamp, Extinguisher, RCD, Cable layer.
+
+//Hydraulic clamp, Kill clamp, Extinguisher, RCD, RPD, Cable layer.
 
 
 /obj/item/mecha_parts/mecha_equipment/hydraulic_clamp
@@ -8,10 +9,28 @@
 	icon_state = "mecha_clamp"
 	equip_cooldown = 15
 	energy_drain = 10
+	toolspeed = 0.5
+	usesound = 'sound/mecha/hydraulic.ogg'
+	tool_behaviour = TOOL_CROWBAR
+	equip_actions = list(/datum/action/innate/mecha/equipment/clamp_mode)
 	/// How much damage does it apply when used
 	var/dam_force = 20
 	var/obj/mecha/working/ripley/cargo_holder
-	harmful = TRUE
+	harmful = FALSE
+
+/datum/action/innate/mecha/equipment/clamp_mode
+	name = "Toggle Clamp Mode"
+	button_icon_state = "clamp_crowbar"
+
+/datum/action/innate/mecha/equipment/clamp_mode/Activate()
+	if(equipment.tool_behaviour == TOOL_CROWBAR)
+		equipment.tool_behaviour = TOOL_WRENCH
+	else
+		equipment.tool_behaviour = TOOL_CROWBAR
+	button_icon_state = "clamp_[equipment.tool_behaviour]"
+	chassis.balloon_alert(owner, "clamp set to [(equipment.tool_behaviour==TOOL_CROWBAR) ? "pry" : "wrench"]")
+	playsound(chassis, 'sound/items/change_jaws.ogg', 50, 1)
+	build_all_button_icons()
 
 /obj/item/mecha_parts/mecha_equipment/hydraulic_clamp/can_attach(obj/mecha/working/ripley/M as obj)
 	if(..())
@@ -28,11 +47,18 @@
 	..()
 	cargo_holder = null
 
-/obj/item/mecha_parts/mecha_equipment/hydraulic_clamp/action(atom/target)
+/obj/item/mecha_parts/mecha_equipment/hydraulic_clamp/action(atom/target, mob/living/user, params)
 	if(!action_checks(target))
 		return
 	if(!cargo_holder)
 		return
+	
+	// There are two ways things handle being pried, and I'm too lazy to make every single thing use the same one
+	if(target.tool_act(user, src, tool_behaviour) & TOOL_ACT_MELEE_CHAIN_BLOCKING)
+		return TRUE
+	if(target.attackby(src, user, params))
+		return TRUE
+
 	if(ismecha(target))
 		var/obj/mecha/M = target
 		var/have_ammo
@@ -46,20 +72,14 @@
 		else
 			to_chat(chassis.occupant, "No providable supplies found in cargo hold")
 		return
+
 	if(isobj(target))
 		var/obj/O = target
-		if(istype(O, /obj/machinery/door/firedoor))
-			var/obj/machinery/door/firedoor/D = O
-			D.try_to_crowbar(src,chassis.occupant)
-			return
-		if(istype(O, /obj/machinery/door/airlock/))
-			var/obj/machinery/door/airlock/D = O
-			D.try_to_crowbar(src,chassis.occupant)
-			return
 		if(!O.anchored)
 			if(cargo_holder.cargo.len < cargo_holder.cargo_capacity)
 				chassis.visible_message("[chassis] lifts [target] and starts to load it into cargo compartment.")
 				O.anchored = TRUE
+				play_tool_sound(chassis)
 				if(do_after_cooldown(target))
 					cargo_holder.cargo += O
 					O.forceMove(chassis)
@@ -187,61 +207,49 @@
 	equip_cooldown = 5
 	energy_drain = 0
 	range = MECHA_MELEE|MECHA_RANGED
+	var/chem_amount = 2
 
-/obj/item/mecha_parts/mecha_equipment/extinguisher/Initialize()
+/obj/item/mecha_parts/mecha_equipment/extinguisher/Initialize(mapload)
 	. = ..()
 	create_reagents(1000)
-	reagents.add_reagent(/datum/reagent/water, 1000)
+	reagents.add_reagent(/datum/reagent/firefighting_foam, 1000)
 
 /obj/item/mecha_parts/mecha_equipment/extinguisher/action(atom/target) //copypasted from extinguisher. TODO: Rewrite from scratch.
-	if(!action_checks(target) || get_dist(chassis, target)>3)
+	if(!action_checks(target))
 		return
 
-	if(istype(target, /obj/structure/reagent_dispensers/watertank) && get_dist(chassis,target) <= 1)
-		var/obj/structure/reagent_dispensers/watertank/WT = target
+	if(istype(target, /obj/structure/reagent_dispensers/foamtank) && get_dist(chassis,target) <= 1)
+		var/obj/structure/reagent_dispensers/WT = target
 		WT.reagents.trans_to(src, 1000)
 		occupant_message(span_notice("Extinguisher refilled."))
 		playsound(chassis, 'sound/effects/refill.ogg', 50, 1, -6)
-	else
-		if(reagents.total_volume > 0)
-			playsound(chassis, 'sound/effects/extinguish.ogg', 75, 1, -3)
-			var/direction = get_dir(chassis,target)
-			var/turf/T = get_turf(target)
-			var/turf/T1 = get_step(T,turn(direction, 90))
-			var/turf/T2 = get_step(T,turn(direction, -90))
+	else if(reagents.total_volume >= 1)
+		playsound(chassis, 'sound/effects/extinguish.ogg', 75, 1, -3)
 
-			var/list/the_targets = list(T,T1,T2)
-			spawn(0)
-				for(var/a=0, a<5, a++)
-					var/obj/effect/particle_effect/water/W = new /obj/effect/particle_effect/water(get_turf(chassis))
-					if(!W)
-						return
-					var/turf/my_target = pick(the_targets)
-					var/datum/reagents/R = new/datum/reagents(5)
-					W.reagents = R
-					R.my_atom = W
-					reagents.trans_to(W,1, transfered_by = chassis.occupant)
-					for(var/b=0, b<4, b++)
-						if(!W)
-							return
-						step_towards(W,my_target)
-						if(!W)
-							return
-						var/turf/W_turf = get_turf(W)
-						W.reagents.reaction(W_turf)
-						for(var/atom/atm in W_turf)
-							W.reagents.reaction(atm)
-						if(W.loc == my_target)
-							break
-						sleep(0.2 SECONDS)
+		//Get all the turfs that can be shot at
+		var/direction = get_dir(chassis,target)
+		var/turf/T = get_turf(target)
+		var/turf/T1 = get_step(T,turn(direction, 90))
+		var/turf/T2 = get_step(T,turn(direction, -90))
+		var/turf/T3 = get_step(T1, turn(direction, 90))
+		var/turf/T4 = get_step(T2,turn(direction, -90))
+		var/list/the_targets = list(T,T1,T2,T3,T4)
+
+		for(var/a=0, a<5, a++)
+			var/my_target = pick(the_targets)
+			var/obj/effect/particle_effect/water/W = new /obj/effect/particle_effect/water(get_turf(src), my_target)
+			reagents.trans_to(W, chem_amount, transfered_by = chassis.occupant)
+			the_targets -= my_target
 		return 1
+	else
+		occupant_message(span_warning("[src] is empty!"))
 
 /obj/item/mecha_parts/mecha_equipment/extinguisher/get_equip_info()
 	return "[..()] \[[src.reagents.total_volume]\]"
 
-/obj/item/mecha_parts/mecha_equipment/extinguisher/can_attach(obj/mecha/working/M as obj)
+/obj/item/mecha_parts/mecha_equipment/extinguisher/can_attach(obj/mecha/M as obj)
 	if(..())
-		if(istype(M))
+		if(istype(M, /obj/mecha/working) || istype(M, /obj/mecha/combat/sidewinder))
 			return 1
 	return 0
 
@@ -251,122 +259,181 @@
 	name = "mounted RCD"
 	desc = "An exosuit-mounted Rapid Construction Device."
 	icon_state = "mecha_rcd"
-	equip_cooldown = 10
-	energy_drain = 50
+	equip_cooldown = 0 // internal RCD will handle it
+	energy_drain = 0 // uses matter instead of energy
 	range = MECHA_MELEE|MECHA_RANGED
 	item_flags = NO_MAT_REDEMPTION
-	var/mode = 0 //0 - deconstruct, 1 - wall or floor, 2 - airlock.
-	var/play_sound = TRUE //so fancy mime RCD can be silent
+	equip_actions = list(/datum/action/innate/mecha/equipment/rcd)
+	var/rcd_type = /obj/item/construction/rcd/exosuit
+	var/obj/item/construction/rcd/internal_rcd
 
-/obj/item/mecha_parts/mecha_equipment/rcd/Initialize()
+/obj/item/mecha_parts/mecha_equipment/rcd/Initialize(mapload)
 	. = ..()
 	GLOB.rcd_list += src
+	internal_rcd = new rcd_type(src)
 
 /obj/item/mecha_parts/mecha_equipment/rcd/Destroy()
 	GLOB.rcd_list -= src
+	if(internal_rcd && !QDELETED(internal_rcd))
+		qdel(internal_rcd)
 	return ..()
 
-/obj/item/mecha_parts/mecha_equipment/rcd/action(atom/target)
-	if(istype(target, /turf/open/space/transit))//>implying these are ever made -Sieve
-		return
-
-	if(!isturf(target) && !istype(target, /obj/machinery/door/airlock))
-		target = get_turf(target)
-	if(!action_checks(target) || get_dist(chassis, target)>3)
-		return
-	if(play_sound)
-		playsound(chassis, 'sound/machines/click.ogg', 50, 1)
-
-	switch(mode)
-		if(0)
-			if(iswallturf(target))
-				energy_drain = 500
-				var/turf/closed/wall/W = target
-				occupant_message("Deconstructing [W]...")
-				if(do_after_cooldown(W))
-					chassis.spark_system.start()
-					W.ScrapeAway(flags = CHANGETURF_INHERIT_AIR)
-					if(play_sound)
-						playsound(W, 'sound/items/deconstruct.ogg', 50, 1)
-				if(target == /turf/closed/wall/r_wall)
-					energy_drain = 2000
-			else if(isfloorturf(target))
-				energy_drain = 100
-				var/turf/open/floor/F = target
-				occupant_message("Deconstructing [F]...")
-				if(do_after_cooldown(target))
-					chassis.spark_system.start()
-					F.ScrapeAway(flags = CHANGETURF_INHERIT_AIR)
-					if(play_sound)
-						playsound(F, 'sound/items/deconstruct.ogg', 50, 1)
-			else if (istype(target, /obj/machinery/door/airlock))
-				energy_drain = 500
-				occupant_message("Deconstructing [target]...")
-				if(do_after_cooldown(target))
-					chassis.spark_system.start()
-					qdel(target)
-					if(play_sound)
-						playsound(target, 'sound/items/deconstruct.ogg', 50, 1)
-		if(1)
-			if(isspaceturf(target))
-				var/turf/open/space/S = target
-				occupant_message("Building Floor...")
-				if(do_after_cooldown(S))
-					S.PlaceOnTop(/turf/open/floor/plating, flags = CHANGETURF_INHERIT_AIR)
-					if(play_sound)
-						playsound(S, 'sound/items/deconstruct.ogg', 50, 1)
-					chassis.spark_system.start()
-			else if(isfloorturf(target))
-				var/turf/open/floor/F = target
-				energy_drain = 750
-				occupant_message("Building Wall...")
-				if(do_after_cooldown(F))
-					F.PlaceOnTop(/turf/closed/wall)
-					if(play_sound)
-						playsound(F, 'sound/items/deconstruct.ogg', 50, 1)
-					chassis.spark_system.start()
-		if(2)
-			if(isfloorturf(target))
-				energy_drain = 750
-				occupant_message("Building Airlock...")
-				if(do_after_cooldown(target))
-					chassis.spark_system.start()
-					var/obj/machinery/door/airlock/T = new /obj/machinery/door/airlock(target)
-					T.autoclose = TRUE
-					if(play_sound)
-						playsound(target, 'sound/items/deconstruct.ogg', 50, 1)
-						playsound(target, 'sound/effects/sparks2.ogg', 50, 1)
-
-
-
-/obj/item/mecha_parts/mecha_equipment/rcd/do_after_cooldown(var/atom/target)
+/obj/item/mecha_parts/mecha_equipment/rcd/attach(obj/mecha/M)
 	. = ..()
+	internal_rcd.owner = M
 
-/obj/item/mecha_parts/mecha_equipment/rcd/Topic(href,href_list)
-	..()
-	if(href_list["mode"])
-		mode = text2num(href_list["mode"])
-		switch(mode)
-			if(0)
-				occupant_message("Switched RCD to Deconstruct.")
-				energy_drain = initial(energy_drain)
-			if(1)
-				occupant_message("Switched RCD to Construct.")
-				energy_drain = 2*initial(energy_drain)
-			if(2)
-				occupant_message("Switched RCD to Construct Airlock.")
-				energy_drain = 2*initial(energy_drain)
-	return
+/obj/item/mecha_parts/mecha_equipment/rcd/detach(atom/moveto)
+	internal_rcd.owner = null
+	return ..()
+
+/obj/item/mecha_parts/mecha_equipment/rcd/action(atom/target, mob/living/user, params)
+	var/prox_flag = chassis.Adjacent(target)
+	if(prox_flag && (istype(target, /obj/item/stack) || istype(target, /obj/item/rcd_ammo) || istype(target, /obj/item/rcd_upgrade)))
+		chassis.matter_resupply(target, user)
+		return TRUE
+	if(!isliving(target))
+		internal_rcd.afterattack(target, user, prox_flag, params) // RCD itself will handle it
+		return TRUE
 
 /obj/item/mecha_parts/mecha_equipment/rcd/get_equip_info()
-	return "[..()] \[<a href='?src=[REF(src)];mode=0'>D</a>|<a href='?src=[REF(src)];mode=1'>C</a>|<a href='?src=[REF(src)];mode=2'>A</a>\]"
+	return "[..()] \[Matter: [internal_rcd ? internal_rcd.matter : 0]/[internal_rcd ? internal_rcd.max_matter : 0]\]"
 
+/datum/action/innate/mecha/equipment/rcd
+	name = "Change RCD Mode"
+	button_icon_state = "rcd"
+
+/datum/action/innate/mecha/equipment/rcd/Activate()
+	var/obj/item/mecha_parts/mecha_equipment/rcd/E = equipment
+	E.internal_rcd.ui_interact(owner)
 
 /obj/item/mecha_parts/mecha_equipment/rcd/mime //special silent RCD
 	name = "silenced mounted RCD"
 	desc = "An expertly mimed exosuit-mounted Rapid Construction Device. Not a sound is made."
-	play_sound = FALSE
+	rcd_type = /obj/item/construction/rcd/exosuit/mime
 
+
+/obj/item/mecha_parts/mecha_equipment/pipe_dispenser
+	name = "mounted RPD"
+	desc = "An exosuit-mounted Rapid Pipe Dispenser"
+	icon_state = "mecha_pipe_dispenser"
+	equip_cooldown = 0 // internal RPD will handle it
+	energy_drain = 0 // uses matter instead of energy
+	range = MECHA_MELEE|MECHA_RANGED
+	item_flags = NO_MAT_REDEMPTION
+	equip_actions = list(/datum/action/innate/mecha/equipment/pipe_dispenser)
+	var/rpd_type = /obj/item/pipe_dispenser/exosuit // in case there's ever any other type of RPD for mechs for some reason
+	var/obj/item/pipe_dispenser/internal_rpd
+
+/obj/item/mecha_parts/mecha_equipment/pipe_dispenser/Initialize(mapload)
+	. = ..()
+	internal_rpd = new rpd_type(src)
+
+/obj/item/mecha_parts/mecha_equipment/pipe_dispenser/Destroy()
+	if(internal_rpd && !QDELETED(internal_rpd))
+		qdel(internal_rpd)
+	return ..()
+
+/obj/item/mecha_parts/mecha_equipment/pipe_dispenser/attach(obj/mecha/M)
+	. = ..()
+	internal_rpd.owner = M
+
+/obj/item/mecha_parts/mecha_equipment/pipe_dispenser/detach(atom/moveto)
+	internal_rpd.owner = null
+	return ..()
+
+/obj/item/mecha_parts/mecha_equipment/pipe_dispenser/action(atom/target, mob/living/user, params)
+	if(internal_rpd.pre_attack(target, user))
+		return FALSE
+	chassis.Beam(target, icon_state="rped_upgrade",time=2)
+	return TRUE
+
+/datum/action/innate/mecha/equipment/pipe_dispenser
+	name = "Change RPD Mode"
+	button_icon_state = "rpd"
+
+/datum/action/innate/mecha/equipment/pipe_dispenser/Activate()
+	var/obj/item/mecha_parts/mecha_equipment/pipe_dispenser/E = equipment
+	E.internal_rpd.ui_interact(owner)
+
+
+/obj/item/mecha_parts/mecha_equipment/t_scanner
+	name = "exosuit T-ray scanner"
+	desc = "An exosuit-mounted terahertz-ray emitter and scanner used to detect underfloor objects such as cables and pipes. Has much higher range than the handheld version."
+	icon_state = "mecha_t_scanner"
+	equip_actions = list(/datum/action/innate/mecha/equipment/t_scanner)
+	selectable = FALSE
+	/// Scanning distance
+	var/distance = 6
+	/// Whether the scanning is enabled
+	var/scanning = FALSE
+	/// Stored t-ray scan images
+	var/list/t_ray_images
+
+/obj/item/mecha_parts/mecha_equipment/t_scanner/attach(obj/mecha/M)
+	. = ..()
+	RegisterSignal(M, COMSIG_MOVABLE_MOVED, PROC_REF(on_mech_move))
+
+/obj/item/mecha_parts/mecha_equipment/t_scanner/detach(atom/moveto)
+	UnregisterSignal(chassis, COMSIG_MOVABLE_MOVED)
+	if(scanning)
+		STOP_PROCESSING(SSobj, src)
+	return ..()
+
+/obj/item/mecha_parts/mecha_equipment/t_scanner/process(delta_time)
+	if(!update_scan(chassis.occupant))
+		return PROCESS_KILL
+
+/obj/item/mecha_parts/mecha_equipment/t_scanner/proc/on_mech_move()
+	if(chassis.occupant?.client)
+		update_scan(chassis.occupant)
+
+/obj/item/mecha_parts/mecha_equipment/t_scanner/proc/update_scan(mob/pilot, force_remove=FALSE) // twice the range, no downtime
+	if(!pilot?.client)
+		return FALSE
+	if(t_ray_images?.len)
+		pilot.client.images.Remove(t_ray_images)
+		QDEL_NULL(t_ray_images)
+	if(!scanning || force_remove)
+		return FALSE
+
+	t_ray_images = list()
+	for(var/obj/O in orange(distance, chassis))
+		if(HAS_TRAIT(O, TRAIT_T_RAY_VISIBLE))
+			var/image/I = new(loc = get_turf(O))
+			var/mutable_appearance/MA = new(O)
+			MA.alpha = 128
+			MA.dir = O.dir
+			I.appearance = MA
+			t_ray_images += I
+
+	if(t_ray_images.len)
+		pilot.client.images += t_ray_images
+	
+	return TRUE
+
+/obj/item/mecha_parts/mecha_equipment/t_scanner/grant_actions(mob/pilot)
+	. = ..()
+	update_scan(pilot)
+
+/obj/item/mecha_parts/mecha_equipment/t_scanner/remove_actions(mob/pilot)
+	update_scan(pilot, TRUE)
+	return ..()
+
+/datum/action/innate/mecha/equipment/t_scanner
+	name = "Toggle T-ray Scanner"
+	button_icon_state = "t_scanner_off"
+
+/datum/action/innate/mecha/equipment/t_scanner/Activate()
+	var/obj/item/mecha_parts/mecha_equipment/t_scanner/t_scan = equipment
+	t_scan.scanning = !t_scan.scanning
+	t_scan.update_scan(t_scan.chassis.occupant)
+	t_scan.chassis.occupant_message("You [t_scan.scanning ? "activate" : "deactivate"] [t_scan].")
+	button_icon_state = "t_scanner_[t_scan.scanning ? "on" : "off"]"
+	build_all_button_icons()
+	if(t_scan.scanning)
+		START_PROCESSING(SSobj, t_scan)
+	else
+		STOP_PROCESSING(SSobj, t_scan)
 
 /obj/item/mecha_parts/mecha_equipment/cable_layer
 	name = "cable layer"
@@ -378,19 +445,19 @@
 	var/obj/item/stack/cable_coil/cable
 	var/max_cable = 1000
 
-/obj/item/mecha_parts/mecha_equipment/cable_layer/Initialize()
+/obj/item/mecha_parts/mecha_equipment/cable_layer/Initialize(mapload)
 	. = ..()
 	cable = new(src, 0)
 
-/obj/item/mecha_parts/mecha_equipment/cable_layer/can_attach(obj/mecha/working/M)
+/obj/item/mecha_parts/mecha_equipment/cable_layer/can_attach(obj/mecha/M)
 	if(..())
-		if(istype(M))
+		if(istype(M, /obj/mecha/working) || istype(M, /obj/mecha/combat/sidewinder))
 			return 1
 	return 0
 
 /obj/item/mecha_parts/mecha_equipment/cable_layer/attach()
 	..()
-	event = chassis.events.addEvent("onMove", CALLBACK(src, .proc/layCable))
+	event = chassis.events.addEvent("onMove", CALLBACK(src, PROC_REF(layCable)))
 	return
 
 /obj/item/mecha_parts/mecha_equipment/cable_layer/detach()
@@ -402,7 +469,7 @@
 		chassis.events.clearEvent("onMove",event)
 	return ..()
 
-/obj/item/mecha_parts/mecha_equipment/cable_layer/action(var/obj/item/stack/cable_coil/target)
+/obj/item/mecha_parts/mecha_equipment/cable_layer/action(obj/item/stack/cable_coil/target)
 	if(!action_checks(target))
 		return
 	if(istype(target) && target.amount)
@@ -462,17 +529,17 @@
 /obj/item/mecha_parts/mecha_equipment/cable_layer/proc/reset()
 	last_piece = null
 
-/obj/item/mecha_parts/mecha_equipment/cable_layer/proc/dismantleFloor(var/turf/new_turf)
+/obj/item/mecha_parts/mecha_equipment/cable_layer/proc/dismantle_floor(turf/new_turf)
 	if(isfloorturf(new_turf))
 		var/turf/open/floor/T = new_turf
 		if(!isplatingturf(T))
 			if(!T.broken && !T.burnt)
 				new T.floor_tile(T)
 			T.make_plating()
-	return !new_turf.intact
+	return new_turf.underfloor_accessibility >= UNDERFLOOR_INTERACTABLE
 
-/obj/item/mecha_parts/mecha_equipment/cable_layer/proc/layCable(var/turf/new_turf)
-	if(equip_ready || !istype(new_turf) || !dismantleFloor(new_turf))
+/obj/item/mecha_parts/mecha_equipment/cable_layer/proc/layCable(turf/new_turf)
+	if(equip_ready || !istype(new_turf) || !dismantle_floor(new_turf))
 		return reset()
 	var/fdirn = turn(chassis.dir,180)
 	for(var/obj/structure/cable/LC in new_turf)		// check to make sure there's not a cable there already
@@ -483,13 +550,13 @@
 	var/obj/structure/cable/NC = new(new_turf, "red")
 	NC.d1 = 0
 	NC.d2 = fdirn
-	NC.update_icon()
+	NC.update_appearance(UPDATE_ICON)
 
 	var/datum/powernet/PN
 	if(last_piece && last_piece.d2 != chassis.dir)
 		last_piece.d1 = min(last_piece.d2, chassis.dir)
 		last_piece.d2 = max(last_piece.d2, chassis.dir)
-		last_piece.update_icon()
+		last_piece.update_appearance(UPDATE_ICON)
 		PN = last_piece.powernet
 
 	if(!PN)
@@ -505,8 +572,8 @@
 
 //Dunno where else to put this so shrug
 /obj/item/mecha_parts/mecha_equipment/ripleyupgrade
-	name = "Ripley MK-II Conversion Kit"
-	desc = "A pressurized canopy attachment kit for an Autonomous Power Loader Unit \"Ripley\" MK-I mecha, to convert it to the slower, but space-worthy MK-II design. This kit cannot be removed, once applied."
+	name = "Firefighter Conversion Kit"
+	desc = "A pressurized canopy attachment kit for an Autonomous Power Loader Unit MK-I \"Ripley\" mecha, to convert it to the slower, but space-worthy MK-II design. This kit cannot be removed, once applied."
 	icon_state = "ripleyupgrade"
 
 /obj/item/mecha_parts/mecha_equipment/ripleyupgrade/can_attach(obj/mecha/working/ripley/M)
@@ -525,7 +592,7 @@
 	return TRUE
 
 /obj/item/mecha_parts/mecha_equipment/ripleyupgrade/attach(obj/mecha/M)
-	var/obj/mecha/working/ripley/mkii/N = new /obj/mecha/working/ripley/mkii(get_turf(M),1)
+	var/obj/mecha/working/ripley/firefighter/N = new /obj/mecha/working/ripley/firefighter(get_turf(M),1)
 	if(!N)
 		return
 	QDEL_NULL(N.cell)
@@ -543,7 +610,6 @@
 		N.capacitor = M.capacitor
 		M.capacitor.forceMove(N)
 		M.capacitor = null
-	N.update_part_values()
 	for(var/obj/item/mecha_parts/E in M.contents)
 		if(istype(E, /obj/item/mecha_parts/concealed_weapon_bay)) //why is the bay not just a variable change who did this
 			E.forceMove(N)
@@ -554,7 +620,7 @@
 	N.dna_lock = M.dna_lock
 	N.maint_access = M.maint_access
 	N.strafe = M.strafe
-	N.obj_integrity = M.obj_integrity //This is not a repair tool
+	N.update_integrity(M.get_integrity()) //This is not a repair tool
 	if (M.name != "\improper APLU MK-I \"Ripley\"")
 		N.name = M.name
 	M.wreckage = 0

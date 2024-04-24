@@ -12,6 +12,8 @@
 	var/datum/admins/holder = null
  	///Needs to implement InterceptClickOn(user,params,atom) proc
 	var/datum/click_intercept = null
+	///Time when the click was intercepted
+	var/click_intercept_time = 0
 	///Used for admin AI interaction
 	var/AI_Interact = FALSE
 
@@ -47,10 +49,9 @@
 		///////////////
 		//SOUND STUFF//
 		///////////////
-	///Currently playing ambience sound
-	var/ambience_playing = null
-	///Whether an ambience sound has been played and one shouldn't be played again, unset by a callback
-	var/played = FALSE
+		
+	var/buzz_playing = null
+
 		////////////
 		//SECURITY//
 		////////////
@@ -81,6 +82,8 @@
 	var/mouse_up_icon = null
 	///used to make a special mouse cursor, this one for mouse up icon
 	var/mouse_down_icon = null
+	///used to override the mouse cursor so it doesnt get reset
+	var/mouse_override_icon = null
 
 	///Used for ip intel checking to identify evaders, disabled because of issues with traffic
 	var/ip_intel = "Disabled"
@@ -112,9 +115,6 @@
 
 	///Should only be a key-value list of north/south/east/west = atom/movable/screen.
 	var/list/char_render_holders
-
-	///LibVG encoding
-	var/encoding = "1252"
 
 	///Messages currently seen by this client
 	var/list/seen_messages
@@ -170,3 +170,35 @@
 
 	/// Whether or not this client has standard hotkeys enabled
 	var/hotkeys = TRUE
+
+	/// Whether or not this client has the combo HUD enabled
+	var/combo_hud_enabled = FALSE
+
+	var/list/parallax_layers
+	var/list/parallax_layers_cached
+	///Tracks say() usage for ic/dchat while slowmode is enabled
+	COOLDOWN_DECLARE(say_slowmode)
+	
+	///this is the last recorded client eye by SSparallax/fire()
+	var/atom/movable/movingmob
+	var/turf/previous_turf
+	///world.time of when we can state animate()ing parallax again
+	var/dont_animate_parallax
+	/// Direction our current area wants to move parallax
+	var/parallax_movedir = 0
+	/// How many parallax layers to show our client
+	var/parallax_layers_max = 4
+	/// Timer for the area directional animation
+	var/parallax_animate_timer
+	/// Do we want to do parallax animations at all?
+	/// Exists to prevent laptop fires
+	var/do_parallax_animations = TRUE
+	var/parallax_throttle = 0 //ds between updates
+	var/last_parallax_shift //world.time of last update
+	/**
+	 * Assoc list with all the active maps - when a screen obj is added to
+	 * a map, it's put in here as well.
+	 *
+	 * Format: list(<mapname> = list(/atom/movable/screen))
+	 */
+	var/list/screen_maps = list()

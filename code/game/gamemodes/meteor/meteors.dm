@@ -88,18 +88,32 @@ GLOBAL_LIST_INIT(meteorsC, list(/obj/effect/meteor/dust)) //for space dust event
 	icon_state = "small"
 	density = TRUE
 	anchored = TRUE
-	var/hits = 4
-	var/hitpwr = 2 //Level of ex_act to be called on hit.
-	var/dest
 	pass_flags = PASSTABLE
-	var/heavy = 0
+	
+	///The resilience of our meteor
+	var/hits = 4
+	///Level of ex_act to be called on hit.
+	var/hitpwr = EXPLODE_HEAVY
+	//Should we shake people's screens on impact
+	var/heavy = FALSE
+	///Sound to play when you hit something
 	var/meteorsound = 'sound/effects/meteorimpact.ogg'
+	///Our starting z level, prevents infinite meteors
 	var/z_original
-	var/threat = 0 // used for determining which meteors are most interesting
-	var/lifetime = DEFAULT_METEOR_LIFETIME
-	var/timerid = null
+	///Used for determining which meteors are most interesting
+	var/threat = 0
+
+	//Potential items to spawn when you die
 	var/list/meteordrop = list(/obj/item/stack/ore/iron)
+	///How much stuff to spawn when you die
 	var/dropamt = 2
+
+	///The thing we're moving towards, usually a turf
+	var/atom/dest
+	///Lifetime in seconds
+	var/lifetime = DEFAULT_METEOR_LIFETIME
+	
+	var/timerid = null
 
 /obj/effect/meteor/Move()
 	if(z != z_original || loc == dest)
@@ -134,6 +148,7 @@ GLOBAL_LIST_INIT(meteorsC, list(/obj/effect/meteor/dust)) //for space dust event
 	SpinAnimation()
 	timerid = QDEL_IN(src, lifetime)
 	chase_target(target)
+	update_appearance()
 
 /obj/effect/meteor/Bump(atom/A)
 	if(A)
@@ -158,7 +173,7 @@ GLOBAL_LIST_INIT(meteorsC, list(/obj/effect/meteor/dust)) //for space dust event
 				SSexplosions.low_mov_atom += thing
 
 	//then, ram the turf if it still exists
-	if(T)
+	if(T && !isspaceturf(T))
 		switch(hitpwr)
 			if(EXPLODE_DEVASTATE)
 				SSexplosions.highturf += T
@@ -292,7 +307,7 @@ GLOBAL_LIST_INIT(meteorsC, list(/obj/effect/meteor/dust)) //for space dust event
 	var/meteorgibs = /obj/effect/gibspawner/generic
 	threat = 2
 
-/obj/effect/meteor/meaty/Initialize()
+/obj/effect/meteor/meaty/Initialize(mapload)
 	for(var/path in meteordrop)
 		if(path == /obj/item/reagent_containers/food/snacks/meat/slab/human/mutant)
 			meteordrop -= path
@@ -323,7 +338,7 @@ GLOBAL_LIST_INIT(meteorsC, list(/obj/effect/meteor/dust)) //for space dust event
 	meteordrop = list(/obj/item/reagent_containers/food/snacks/meat/slab/xeno, /obj/item/organ/tongue/alien)
 	meteorgibs = /obj/effect/gibspawner/xeno
 
-/obj/effect/meteor/meaty/xeno/Initialize()
+/obj/effect/meteor/meaty/xeno/Initialize(mapload)
 	meteordrop += subtypesof(/obj/item/organ/alien)
 	return ..()
 
@@ -385,7 +400,7 @@ GLOBAL_LIST_INIT(meteorsSPOOKY, list(/obj/effect/meteor/pumpkin))
 	meteordrop = list(/obj/item/clothing/head/hardhat/pumpkinhead, /obj/item/reagent_containers/food/snacks/grown/pumpkin)
 	threat = 100
 
-/obj/effect/meteor/pumpkin/Initialize()
+/obj/effect/meteor/pumpkin/Initialize(mapload)
 	. = ..()
 	meteorsound = pick('sound/hallucinations/im_here1.ogg','sound/hallucinations/im_here2.ogg')
 //////////////////////////

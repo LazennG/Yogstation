@@ -1,6 +1,6 @@
 /obj/item/clothing/head
 	name = BODY_ZONE_HEAD
-	icon = 'icons/obj/clothing/hats.dmi'
+	icon = 'icons/obj/clothing/hats/hats.dmi'
 	icon_state = "top_hat"
 	item_state = "that"
 	body_parts_covered = HEAD
@@ -11,32 +11,30 @@
 	var/hattable = TRUE
 	dynamic_hair_suffix = "+generic"
 
-/obj/item/clothing/head/Initialize()
+/obj/item/clothing/head/Initialize(mapload)
 	. = ..()
 	if(ishuman(loc) && dynamic_hair_suffix)
 		var/mob/living/carbon/human/H = loc
 		H.update_hair()
 
-/obj/item/clothing/head/equipped(mob/user, slot)
-	..()
-	if(slot != SLOT_HEAD)
-		var/mob/living/carbon/C = user
-		if(istype(C))
-			C.update_internals()
+/obj/item/clothing/head/worn_overlays(mutable_appearance/standing, isinhands = FALSE, icon_file)
+	. = ..()
+	if(isinhands)
+		return
 
-/obj/item/clothing/head/dropped(mob/user)
-	..()
-	var/mob/living/carbon/C = user
-	if(istype(C))
-		C.update_internals()
+	if(damaged_clothes)
+		. += mutable_appearance('icons/effects/item_damage.dmi', "damagedhelmet")
 
-/obj/item/clothing/head/worn_overlays(isinhands = FALSE)
-	. = list()
-	if(!isinhands)
-		if(damaged_clothes)
-			. += mutable_appearance('icons/effects/item_damage.dmi', "damagedhelmet")
-		if(HAS_BLOOD_DNA(src))
-			. += mutable_appearance('icons/effects/blood.dmi', "helmetblood")
+	if(!HAS_BLOOD_DNA(src))
+		return
+
+	var/mutable_appearance/bloody_helmet
+	if(clothing_flags & LARGE_WORN_ICON)
+		bloody_helmet = mutable_appearance('icons/effects/64x64.dmi', "helmetblood_large")
+	else
+		bloody_helmet = mutable_appearance('icons/effects/blood.dmi', "helmetblood")
+	bloody_helmet.color = get_blood_dna_color(return_blood_DNA())
+	. += bloody_helmet
 
 /obj/item/clothing/head/update_clothes_damaged_state()
 	..()
@@ -52,7 +50,7 @@
 		return
 	if(ishuman(hit_atom))
 		var/mob/living/carbon/human/H = hit_atom
-		if(prob(33) && H.equip_to_slot_if_possible(src, SLOT_HEAD))
+		if(prob(33) && H.equip_to_slot_if_possible(src, ITEM_SLOT_HEAD))
 			H.visible_message("The [src] lands gracefully on [H]'s head")
 			return TRUE
 		H.visible_message("The [src] hits [H]'s head")

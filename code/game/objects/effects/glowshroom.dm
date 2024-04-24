@@ -13,6 +13,7 @@ GLOBAL_VAR_INIT(glowshrooms, 0)
 	density = FALSE
 	icon = 'icons/obj/lighting.dmi'
 	icon_state = "glowshroom" //replaced in New
+	base_icon_state = "glowshroom"
 	layer = ABOVE_NORMAL_TURF_LAYER
 	max_integrity = GLOWSHROOM_BASE_INTEGRITY
 	///Cooldown for when next to try to spread.
@@ -87,7 +88,7 @@ GLOBAL_VAR_INIT(glowshrooms, 0)
 		myseed.genes += G
 	set_light(G.glow_range(myseed), G.glow_power(myseed), G.glow_color)
 	setDir(calc_dir())
-	var/base_icon_state = initial(icon_state)
+	base_icon_state = initial(icon_state)
 	if(!floor)
 		switch(dir) //offset to make it be on the wall rather than on the floor
 			if(NORTH)
@@ -107,9 +108,11 @@ GLOBAL_VAR_INIT(glowshrooms, 0)
 	START_PROCESSING(SSobj, src)
 
 /obj/structure/glowshroom/Destroy()
-	. = ..()
+	if(isatom(myseed))
+		QDEL_NULL(myseed)
 	GLOB.glowshrooms--
 	STOP_PROCESSING(SSobj, src)
+	return ..()
 
 /**
  * Causes glowshroom spreading across the floor/walls.
@@ -222,7 +225,9 @@ GLOBAL_VAR_INIT(glowshrooms, 0)
 /obj/structure/glowshroom/proc/Decay(amount)
 	myseed.adjust_endurance(-amount * endurance_decay_rate)
 	take_damage(amount)
-	if (myseed.endurance <= 10) // Plant is gone
+	// take_damage could qdel our shroom, so check beforehand
+	// if our endurance dropped before the min plant endurance, then delete our shroom anyways
+	if (!QDELETED(src) && myseed.endurance <= 10)
 		qdel(src)
 
 /obj/structure/glowshroom/play_attack_sound(damage_amount, damage_type = BRUTE, damage_flag = 0)

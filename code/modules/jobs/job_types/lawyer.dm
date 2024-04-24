@@ -2,22 +2,19 @@
 	title = "Lawyer"
 	description = "Advocate for prisoners, create law-binding contracts, \
 		ensure Security is following protocol and Space Law."
-	flag = LAWYER
 	orbit_icon = "gavel"
 	department_head = list("Head of Personnel")
-	department_flag = CIVILIAN
 	faction = "Station"
 	total_positions = 2
 	spawn_positions = 2
 	supervisors = "the head of personnel"
-	selection_color = "#dddddd"
 	var/lawyers = 0 //Counts lawyer amount
 	alt_titles = list("Prosecutor", "Defense Attorney", "Paralegal", "Ace Attorney")
 
 	outfit = /datum/outfit/job/lawyer
 
 	added_access = list()
-	base_access = list(ACCESS_LAWYER, ACCESS_COURT, ACCESS_SEC_DOORS)
+	base_access = list(ACCESS_LAWYER, ACCESS_COURT, ACCESS_SEC_DOORS, ACCESS_SERVHALL)
 	paycheck = PAYCHECK_EASY
 	paycheck_department = ACCOUNT_CIV
 	mind_traits = list(TRAIT_LAW_ENFORCEMENT_METABOLISM)
@@ -29,13 +26,21 @@
 		/datum/job_department/service,
 	)
 
+	mail_goodies = list(
+		/obj/item/tape = 15,
+		/obj/item/taperecorder = 10,
+		/obj/item/megaphone = 10,
+		/obj/item/gavelhammer = 5,
+		/obj/item/banhammer = 1
+	)
+
 	smells_like = "legal lies"
 
 /datum/outfit/job/lawyer
 	name = "Lawyer"
 	jobtype = /datum/job/lawyer
 
-	pda_type = /obj/item/modular_computer/tablet/pda/preset/basic/fountainpen
+	pda_type = /obj/item/modular_computer/tablet/pda/preset/fountainpen/lawyer
 
 	ears = /obj/item/radio/headset/headset_srvsec
 	uniform = /obj/item/clothing/under/lawyer/bluesuit

@@ -20,6 +20,7 @@ GLOBAL_LIST_INIT(atmos_pipe_recipes, list(
 		new /datum/pipe_info/pipe("Manifold",			/obj/machinery/atmospherics/pipe/manifold, TRUE),
 		new /datum/pipe_info/pipe("4-Way Manifold",		/obj/machinery/atmospherics/pipe/manifold4w, TRUE),
 		new /datum/pipe_info/pipe("Layer Manifold",		/obj/machinery/atmospherics/pipe/layer_manifold, TRUE),
+		new /datum/pipe_info/pipe("Multi-Deck Adapter", /obj/machinery/atmospherics/pipe/multiz, TRUE),
 	),
 	"Devices" = list(
 		new /datum/pipe_info/pipe("Connector",			/obj/machinery/atmospherics/components/unary/portables_connector, FALSE),
@@ -224,12 +225,12 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 	var/p_dir = NORTH
 	var/p_flipped = FALSE
 	var/paint_color = "grey"
-	var/atmos_build_speed = 5 //deciseconds (500ms)
-	var/disposal_build_speed = 5
-	var/transit_build_speed = 5
-	var/plumbing_build_speed = 5
-	var/destroy_speed = 5
-	var/paint_speed = 5
+	var/atmos_build_speed = 2 DECISECONDS
+	var/disposal_build_speed = 2 DECISECONDS
+	var/transit_build_speed = 2 DECISECONDS
+	var/plumbing_build_speed = 2 DECISECONDS
+	var/destroy_speed = 2 DECISECONDS
+	var/paint_speed = 2 DECISECONDS
 	var/category = ATMOS_CATEGORY
 	var/piping_layer = PIPING_LAYER_DEFAULT
 	var/ducting_layer = DUCT_LAYER_DEFAULT
@@ -240,8 +241,10 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 	var/static/datum/pipe_info/first_plumbing
 	var/mode = BUILD_MODE | PAINT_MODE | DESTROY_MODE | WRENCH_MODE
 	var/locked = FALSE //wheter we can change categories. Useful for the plumber
+	/// The owner of this RCD. It can be a mech or a player.
+	var/owner
 
-/obj/item/pipe_dispenser/Initialize()
+/obj/item/pipe_dispenser/Initialize(mapload)
 	. = ..()
 	spark_system = new
 	spark_system.set_up(5, 0, src)
@@ -266,7 +269,7 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 
 /obj/item/pipe_dispenser/equipped(mob/user, slot, initial)
 	. = ..()
-	RegisterSignal(user, COMSIG_MOUSE_SCROLL_ON, .proc/mouse_wheeled)
+	RegisterSignal(user, COMSIG_MOUSE_SCROLL_ON, PROC_REF(mouse_wheeled))
 
 /obj/item/pipe_dispenser/dropped(mob/user, silent)
 	UnregisterSignal(user, COMSIG_MOUSE_SCROLL_ON)
@@ -285,6 +288,9 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 	return list(
 		get_asset_datum(/datum/asset/spritesheet/pipes),
 	)
+
+/obj/item/pipe_dispenser/ui_host(mob/user)
+	return owner || ..()
 
 /obj/item/pipe_dispenser/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
@@ -305,7 +311,7 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 		"selected_color" = paint_color,
 		"paint_colors" = GLOB.pipe_paint_colors,
 		"mode" = mode,
-		"locked" = locked
+		"locked" = locked,
 	)
 
 	var/list/recipes
@@ -329,10 +335,10 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 	return data
 
 /obj/item/pipe_dispenser/ui_act(action, params)
-	if(..())
+	. = ..()
+	if(.)
 		return
-	if(!usr.canUseTopic(src, BE_CLOSE))
-		return
+
 	var/playeffect = TRUE
 	switch(action)
 		if("color")
@@ -429,7 +435,7 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 			return
 
 	if (mode & BUILD_MODE)
-		if(istype(get_area(user), /area/reebe/city_of_cogs))
+		if(istype(get_area(user), /area/centcom/reebe/city_of_cogs))
 			to_chat(user, span_notice("You cannot build on Reebe.."))
 			return
 
@@ -467,7 +473,7 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 
 						P.update()
 						P.add_fingerprint(usr)
-						P.setPipingLayer(piping_layer)
+						P.set_piping_layer(piping_layer)
 						if(findtext("[queued_p_type]", "/obj/machinery/atmospherics/pipe") && !findtext("[queued_p_type]", "layer_manifold"))
 							P.add_atom_colour(GLOB.pipe_paint_colors[paint_color], FIXED_COLOUR_PRIORITY)
 						if(mode&WRENCH_MODE)
@@ -476,8 +482,8 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 			if(DISPOSALS_CATEGORY) //Making disposals pipes
 				if(!can_make_pipe)
 					return ..()
-				A = get_turf(A)
-				if(is_blocked_turf(A))
+				var/turf/attempting_turf = get_turf(A)
+				if(attempting_turf.is_blocked_turf())
 					to_chat(user, span_warning("[src]'s error light flickers; there's something in the way!"))
 					return
 				to_chat(user, span_notice("You start building a disposals pipe..."))
@@ -493,7 +499,7 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 					activate()
 
 					C.add_fingerprint(usr)
-					C.update_icon()
+					C.update_appearance(UPDATE_ICON)
 					if(mode&WRENCH_MODE)
 						C.wrench_act(user, src)
 					return
@@ -501,8 +507,8 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 			if(TRANSIT_CATEGORY) //Making transit tubes
 				if(!can_make_pipe)
 					return ..()
-				A = get_turf(A)
-				if(is_blocked_turf(A))
+				var/turf/attempting_turf = get_turf(A)
+				if(attempting_turf.is_blocked_turf())
 					to_chat(user, span_warning("[src]'s error light flickers; there's something in the way!"))
 					return
 				to_chat(user, span_notice("You start building a transit tube..."))
@@ -530,8 +536,8 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 			if(PLUMBING_CATEGORY) //Making pancakes
 				if(!can_make_pipe)
 					return ..()
-				A = get_turf(A)
-				if(is_blocked_turf(A))
+				var/turf/attempting_turf = get_turf(A)
+				if(attempting_turf.is_blocked_turf())
 					to_chat(user, span_warning("[src]'s error light flickers; there's something in the way!"))
 					return
 				to_chat(user, span_notice("You start building a fluid duct..."))
@@ -567,6 +573,24 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 		return
 	to_chat(source, span_notice("You set the layer to [piping_layer]."))
 
+/obj/item/pipe_dispenser/exosuit
+	name = "mounted pipe dispenser"
+	desc = "You shouldn't be seeing this!"
+	item_flags = NO_MAT_REDEMPTION | DROPDEL | NOBLUDGEON
+	resistance_flags = INDESTRUCTIBLE | FIRE_PROOF | ACID_PROOF | UNACIDABLE // would be weird if it could somehow be destroyed inside the equipment item
+
+/obj/item/pipe_dispenser/exosuit/ui_state(mob/user)
+	return GLOB.pilot_state
+
+// don't allow using this thing unless you're piloting the mech it's attached to
+/obj/item/pipe_dispenser/exosuit/can_interact(mob/user)
+	if(!(owner && ismecha(owner)))
+		return FALSE
+	var/obj/mecha/gundam = owner
+	if(user == gundam.occupant && !gundam.equipment_disabled && gundam.selected == loc)
+		return TRUE
+	return FALSE
+
 /obj/item/pipe_dispenser/plumbing
 	name = "Plumberinator"
 	desc = "A crude device to rapidly plumb things."
@@ -574,7 +598,7 @@ GLOBAL_LIST_INIT(fluid_duct_recipes, list(
 	category = PLUMBING_CATEGORY
 	locked = TRUE
 
-/obj/item/pipe_dispenser/plumbing/Initialize()
+/obj/item/pipe_dispenser/plumbing/Initialize(mapload)
 	. = ..()
 	spark_system = new
 	spark_system.set_up(5, 0, src)

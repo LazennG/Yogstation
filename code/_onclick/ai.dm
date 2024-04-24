@@ -9,7 +9,7 @@
 
 	Note that AI have no need for the adjacency proc, and so this proc is a lot cleaner.
 */
-/mob/living/silicon/ai/DblClickOn(var/atom/A, params)
+/mob/living/silicon/ai/DblClickOn(atom/A, params)
 	if(control_disabled || incapacitated())
 		return
 
@@ -18,7 +18,7 @@
 	else
 		A.move_camera_by_click()
 
-/mob/living/silicon/ai/ClickOn(var/atom/A, params)
+/mob/living/silicon/ai/ClickOn(atom/A, params)
 	if(world.time <= next_click)
 		return
 	next_click = world.time + 1
@@ -99,14 +99,16 @@
 	for AI shift, ctrl, and alt clicking.
 */
 
-/mob/living/silicon/ai/CtrlShiftClickOn(var/atom/A)
+/mob/living/silicon/ai/CtrlShiftClickOn(atom/A)
 	A.AICtrlShiftClick(src)
-/mob/living/silicon/ai/ShiftClickOn(var/atom/A)
+
+/mob/living/silicon/ai/ShiftClickOn(atom/A)
 	A.AIShiftClick(src)
 
-/mob/living/silicon/ai/CtrlClickOn(var/atom/A)
+/mob/living/silicon/ai/CtrlClickOn(atom/A)
 	A.AICtrlClick(src)
-/mob/living/silicon/ai/AltClickOn(var/atom/A)
+
+/mob/living/silicon/ai/AltClickOn(atom/A)
 	A.AIAltClick(src)
 
 /*
@@ -129,15 +131,27 @@
 
 /* Airlocks */
 /obj/machinery/door/airlock/AICtrlClick() // Bolts doors
-	if(obj_flags & EMAGGED)
+	if((obj_flags & EMAGGED) || (obj_flags & CMAGGED))
 		return
+
+	var/mob/living/silicon/ai/AI = usr
+	if(istype(AI) && !AI.has_subcontroller_connection(get_area(src)))
+		to_chat(AI, span_warning("No connection to subcontroller detected. Priming servos..."))
+		if(!do_after(AI, 1 SECONDS, src, IGNORE_USER_LOC_CHANGE))
+			return
 
 	toggle_bolt(usr)
 	add_hiddenprint(usr)
 
 /obj/machinery/door/airlock/AIAltClick() // Eletrifies doors.
-	if(obj_flags & EMAGGED)
+	if((obj_flags & EMAGGED) || (obj_flags & CMAGGED))
 		return
+
+	var/mob/living/silicon/ai/AI = usr
+	if(istype(AI) && !AI.has_subcontroller_connection(get_area(src)))
+		to_chat(AI, span_warning("No connection to subcontroller detected. Priming servos..."))
+		if(!do_after(AI, 1 SECONDS, src, IGNORE_USER_LOC_CHANGE))
+			return
 
 	if(!secondsElectrified)
 		shock_perm(usr)
@@ -145,21 +159,38 @@
 		shock_restore(usr)
 
 /obj/machinery/door/airlock/AIShiftClick()  // Opens and closes doors!
-	if(obj_flags & EMAGGED)
+	if((obj_flags & EMAGGED) || (obj_flags & CMAGGED))
 		return
 
+	var/mob/living/silicon/ai/AI = usr
+	if(istype(AI) && !AI.has_subcontroller_connection(get_area(src)))
+		to_chat(AI, span_warning("No connection to subcontroller detected. Priming servos..."))
+		if(!do_after(AI, 1 SECONDS, src, IGNORE_USER_LOC_CHANGE))
+			return
 	user_toggle_open(usr)
 	add_hiddenprint(usr)
 
 /obj/machinery/door/airlock/AICtrlShiftClick()  // Sets/Unsets Emergency Access Override
-	if(obj_flags & EMAGGED)
+	if((obj_flags & EMAGGED) || (obj_flags & CMAGGED))
 		return
+
+	var/mob/living/silicon/ai/AI = usr
+	if(istype(AI) && !AI.has_subcontroller_connection(get_area(src)))
+		to_chat(AI, span_warning("No connection to subcontroller detected. Priming servos..."))
+		if(!do_after(AI, 1 SECONDS, src, IGNORE_USER_LOC_CHANGE))
+			return
 
 	toggle_emergency(usr)
 	add_hiddenprint(usr)
 
 /* APC */
 /obj/machinery/power/apc/AICtrlClick() // turns off/on APCs.
+
+	var/mob/living/silicon/ai/AI = usr
+	if(istype(AI) && !AI.has_subcontroller_connection(get_area(src)))
+		to_chat(AI, span_warning("No connection to subcontroller detected. Polling APC..."))
+		if(!do_after(AI, 1 SECONDS, src, IGNORE_USER_LOC_CHANGE))
+			return
 	if(can_use(usr, 1))
 		toggle_breaker(usr)
 
@@ -199,5 +230,5 @@
 // Override TurfAdjacent for AltClicking
 //
 
-/mob/living/silicon/ai/TurfAdjacent(var/turf/T)
+/mob/living/silicon/ai/TurfAdjacent(turf/T)
 	return (GLOB.cameranet && GLOB.cameranet.checkTurfVis(T))

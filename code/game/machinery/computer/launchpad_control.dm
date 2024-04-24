@@ -9,7 +9,7 @@
 	var/list/obj/machinery/launchpad/launchpads
 	var/maximum_pads = 4
 
-/obj/machinery/computer/launchpad/Initialize()
+/obj/machinery/computer/launchpad/Initialize(mapload)
 	launchpads = list()
 	. = ..()
 
@@ -21,11 +21,11 @@
 	if(W.tool_behaviour == TOOL_MULTITOOL)
 		if(!multitool_check_buffer(user, W))
 			return
-		var/obj/item/multitool/M = W
-		if(M.buffer && istype(M.buffer, /obj/machinery/launchpad))
+		var/atom/buffer_atom = multitool_get_buffer(user, W)
+		if(buffer_atom && istype(buffer_atom, /obj/machinery/launchpad))
 			if(LAZYLEN(launchpads) < maximum_pads)
-				launchpads |= M.buffer
-				M.buffer = null
+				launchpads |= buffer_atom
+				multitool_set_buffer(user, W, null)
 				to_chat(user, span_notice("You upload the data from the [W.name]'s buffer."))
 			else
 				to_chat(user, span_warning("[src] cannot handle any more connections!"))
@@ -42,7 +42,7 @@
 	if(QDELETED(pad))
 		to_chat(user, span_warning("ERROR: Launchpad not responding. Check launchpad integrity."))
 		return
-	if(!pad.isAvailable())
+	if(!pad.IsAvailable(feedback = FALSE))
 		to_chat(user, span_warning("ERROR: Launchpad not operative. Make sure the launchpad is ready and powered."))
 		return
 	pad.doteleport(user, sending)

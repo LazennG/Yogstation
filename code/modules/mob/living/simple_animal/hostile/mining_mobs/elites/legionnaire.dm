@@ -37,7 +37,7 @@
 	speed = 0
 	move_to_delay = 3
 	mouse_opacity = MOUSE_OPACITY_ICON
-	internal_type = /obj/item/gps/internal/legionnaire
+	gps_name = "Wailing Signal"
 	deathsound = 'sound/magic/curse.ogg'
 	deathmessage = "'s arms reach out before it falls apart onto the floor, lifeless."
 	loot_drop = /obj/item/crusher_trophy/legionnaire_spine
@@ -107,9 +107,9 @@
 		T = get_step(T, dir_to_target)
 	playsound(src,'sound/magic/demon_attack1.ogg', 200, 1)
 	visible_message(span_boldwarning("[src] prepares to charge!"))
-	addtimer(CALLBACK(src, .proc/legionnaire_charge_2, dir_to_target, 0), 5)
+	addtimer(CALLBACK(src, PROC_REF(legionnaire_charge_2), dir_to_target, 0), 5)
 
-/mob/living/simple_animal/hostile/asteroid/elite/legionnaire/proc/legionnaire_charge_2(var/move_dir, var/times_ran)
+/mob/living/simple_animal/hostile/asteroid/elite/legionnaire/proc/legionnaire_charge_2(move_dir, times_ran)
 	if(times_ran >= 4)
 		return
 	var/turf/T = get_step(get_turf(src), move_dir)
@@ -135,7 +135,7 @@
 		L.safe_throw_at(throwtarget, 10, 1, src)
 		L.Paralyze(20)
 		L.adjustBruteLoss(50)
-	addtimer(CALLBACK(src, .proc/legionnaire_charge_2, move_dir, (times_ran + 1)), 2)
+	addtimer(CALLBACK(src, PROC_REF(legionnaire_charge_2), move_dir, (times_ran + 1)), 2)
 
 /mob/living/simple_animal/hostile/asteroid/elite/legionnaire/proc/head_detach(target)
 	ranged_cooldown = world.time + 10
@@ -163,7 +163,7 @@
 
 /mob/living/simple_animal/hostile/asteroid/elite/legionnaire/proc/onHeadDeath()
 	myhead = null
-	addtimer(CALLBACK(src, .proc/regain_head), 50)
+	addtimer(CALLBACK(src, PROC_REF(regain_head)), 50)
 
 /mob/living/simple_animal/hostile/asteroid/elite/legionnaire/proc/regain_head()
 	has_head = TRUE
@@ -220,10 +220,6 @@
 	desc = "One vs many."
 	invisibility = 100
 
-/mob/living/simple_animal/hostile/asteroid/elite/legionnaire/death()
-	QDEL_NULL(internal) // removes signal from a deceased elite.
-	. = ..()
-
 //The legionnaire's head.  Basically the same as any legion head, but we have to tell our creator when we die so they can generate another head.
 /mob/living/simple_animal/hostile/asteroid/elite/legionnairehead
 	name = "legionnaire head"
@@ -275,7 +271,7 @@
 	if(isliving(mover))
 		var/mob/living/L = mover
 		L.adjust_fire_stacks(3)
-		L.IgniteMob()
+		L.ignite_mob()
 	. = ..()
 
 /obj/structure/legionnaire_bonfire/Destroy()
@@ -288,7 +284,7 @@
 	duration = 10
 	color = rgb(0,0,0)
 
-/obj/effect/temp_visual/dragon_swoop/legionnaire/Initialize()
+/obj/effect/temp_visual/dragon_swoop/legionnaire/Initialize(mapload)
 	. = ..()
 	transform *= 0.33
 
@@ -341,7 +337,7 @@
 	if(ismegafauna(L) || istype(L, /mob/living/simple_animal/hostile/asteroid))
 		L.apply_damage(fauna_damage_bonus, BRUTE)
 
-/mob/living/simple_animal/hostile/asteroid/elite/legionnaire/attendant/Initialize()
+/mob/living/simple_animal/hostile/asteroid/elite/legionnaire/attendant/Initialize(mapload)
 	. = ..()
 	var/datum/component/riding/D = LoadComponent(/datum/component/riding)
 	D.set_riding_offsets(RIDING_OFFSET_ALL, list(TEXT_NORTH = list(10,40, MOB_LAYER), TEXT_SOUTH = list(-10, 40, MOB_LAYER), TEXT_EAST = list(0, 40, MOB_LAYER), TEXT_WEST = list( 0, 40, MOB_LAYER)))
@@ -350,23 +346,23 @@
 	D.set_vehicle_dir_layer(EAST, ABOVE_MOB_LAYER)
 	D.set_vehicle_dir_layer(WEST, ABOVE_MOB_LAYER)
 	D.vehicle_move_delay = 1
-	RegisterSignal(src, COMSIG_MOVABLE_BUCKLE, .proc/give_abilities)
-	RegisterSignal(src, COMSIG_MOVABLE_UNBUCKLE, .proc/remove_abilities)
+	RegisterSignal(src, COMSIG_MOVABLE_BUCKLE, PROC_REF(give_abilities))
+	RegisterSignal(src, COMSIG_MOVABLE_UNBUCKLE, PROC_REF(remove_abilities))
 
 /mob/living/simple_animal/hostile/asteroid/elite/legionnaire/attendant/proc/give_abilities(mob/living/elite, mob/living/M, force = FALSE)
 	toggle_ai(AI_OFF)
-	if(istype(click_intercept, /obj/effect/proc_holder/drakeling))
-		var/obj/effect/proc_holder/drakeling/D = click_intercept
-		D.remove_ranged_ability()
-	for(var/action in attack_action_types)
-		RemoveAbility(action)
-		M.AddAbility(action)
+	if(istype(click_intercept, /datum/action/cooldown/spell/pointed/drakeling))
+		var/datum/action/cooldown/spell/pointed/drakeling/D = click_intercept
+		D.unset_click_ability(D.owner)
+	for(var/datum/action/action in attack_action_types)
+		action.Remove(src)
+		action.Grant(M)
 
 /mob/living/simple_animal/hostile/asteroid/elite/legionnaire/attendant/proc/remove_abilities(mob/living/elite, mob/living/M, force = FALSE)
 	toggle_ai(AI_ON)
-	if(istype(M.click_intercept, /obj/effect/proc_holder/drakeling))
-		var/obj/effect/proc_holder/drakeling/D = M.click_intercept
-		D.remove_ranged_ability()
-	for(var/action in attack_action_types)
-		M.RemoveAbility(action)
-		AddAbility(action)
+	if(istype(M.click_intercept, /datum/action/cooldown/spell/pointed/drakeling))
+		var/datum/action/cooldown/spell/pointed/drakeling/D = M.click_intercept
+		D.unset_click_ability(D.owner)
+	for(var/datum/action/action in attack_action_types)
+		action.Remove(M)
+		action.Grant(src)

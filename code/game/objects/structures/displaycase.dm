@@ -20,7 +20,7 @@
 	var/trophy_message = ""
 	var/glass_fix = TRUE
 
-/obj/structure/displaycase/Initialize()
+/obj/structure/displaycase/Initialize(mapload)
 	. = ..()
 	if(start_showpieces.len && !start_showpiece_type)
 		var/list/showpiece_entry = pick(start_showpieces)
@@ -30,7 +30,7 @@
 				trophy_message = showpiece_entry["trophy_message"]
 	if(start_showpiece_type)
 		showpiece = new start_showpiece_type (src)
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
 /obj/structure/displaycase/Destroy()
 	if(electronics)
@@ -69,13 +69,14 @@
 			trigger_alarm()
 	qdel(src)
 
-/obj/structure/displaycase/obj_break(damage_flag)
+/obj/structure/displaycase/atom_break(damage_flag)
+	. = ..()
 	if(!broken && !(flags_1 & NODECONSTRUCT_1))
 		density = FALSE
 		broken = 1
 		new /obj/item/shard( src.loc )
 		playsound(src, "shatter", 70, TRUE)
-		update_icon()
+		update_appearance(UPDATE_ICON)
 		trigger_alarm()
 
 /obj/structure/displaycase/proc/trigger_alarm()
@@ -85,7 +86,8 @@
 		alarmed.burglaralert(src)
 		playsound(src, 'sound/effects/alert.ogg', 50, TRUE)
 
-/obj/structure/displaycase/update_icon()
+/obj/structure/displaycase/update_icon(updates=ALL)
+	. = ..()
 	var/icon/I
 	if(open)
 		I = icon('icons/obj/stationobjs.dmi',"glassbox_open")
@@ -97,8 +99,7 @@
 		var/icon/S = getFlatIcon(showpiece)
 		S.Scale(17,17)
 		I.Blend(S,ICON_UNDERLAY,8,8)
-	src.icon = I
-	return
+	icon = I
 
 /obj/structure/displaycase/attackby(obj/item/W, mob/user, params)
 	if(W.GetID() && !broken && openable)
@@ -108,14 +109,14 @@
 		else
 			to_chat(user,  span_alert("Access denied."))
 	else if(W.tool_behaviour == TOOL_WELDER && user.a_intent == INTENT_HELP && !broken)
-		if(obj_integrity < max_integrity)
+		if(atom_integrity < max_integrity)
 			if(!W.tool_start_check(user, amount=5))
 				return
 
 			to_chat(user, span_notice("You begin repairing [src]..."))
 			if(W.use_tool(src, user, 40, amount=5, volume=50))
-				obj_integrity = max_integrity
-				update_icon()
+				update_integrity(max_integrity)
+				update_appearance(UPDATE_ICON)
 				to_chat(user, span_notice("You repair [src]."))
 		else
 			to_chat(user, span_warning("[src] is already in good condition!"))
@@ -139,7 +140,7 @@
 		if(user.transferItemToLoc(W, src))
 			showpiece = W
 			to_chat(user, span_notice("You put [W] on display."))
-			update_icon()
+			update_appearance(UPDATE_ICON)
 	else if(glass_fix && broken && istype(W, /obj/item/stack/sheet/glass))
 		var/obj/item/stack/sheet/glass/G = W
 		if(G.get_amount() < 2)
@@ -149,14 +150,14 @@
 		if(do_after(user, 2 SECONDS, src))
 			G.use(2)
 			broken = 0
-			obj_integrity = max_integrity
-			update_icon()
+			update_integrity(max_integrity)
+			update_appearance(UPDATE_ICON)
 	else
 		return ..()
 
 /obj/structure/displaycase/proc/toggle_lock(mob/user)
 	open = !open
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
 /obj/structure/displaycase/attack_paw(mob/user)
 	return attack_hand(user)
@@ -171,7 +172,7 @@
 		log_combat(user, src, "deactivates the hover field of")
 		dump()
 		src.add_fingerprint(user)
-		update_icon()
+		update_appearance(UPDATE_ICON)
 		return
 	else
 	    //prevents remote "kicks" with TK
@@ -233,7 +234,18 @@
 //The lab cage and captain's display case do not spawn with electronics, which is why req_access is needed.
 /obj/structure/displaycase/captain
 	start_showpiece_type = /obj/item/gun/energy/laser/captain
-	req_access = list(ACCESS_CENT_SPECOPS) //this was intentional, presumably to make it slightly harder for caps to grab their gun roundstart
+	req_access = list(ACCESS_CENT_SPECOPS) // This is intentional, presumably to make it slightly harder for caps to grab their gun roundstart.
+
+/obj/structure/displaycase/captain/attackby(obj/item/W, mob/user, params) // Unless shit has really hit the fan.
+	if(!istype(W, /obj/item/card/id))
+		return ..()
+	if(SSsecurity_level.get_current_level_as_number()>= SEC_LEVEL_GAMMA) // Everything higher than red.
+		req_access = list(ACCESS_CAPTAIN)
+	else
+		to_chat(user, span_warning("The display case's access locks can only be lifted above red alert!"))
+		req_access = list(ACCESS_CENT_SPECOPS)
+		return
+	. = ..()
 
 /obj/structure/displaycase/labcage
 	name = "lab cage"
@@ -257,7 +269,7 @@
 	integrity_failure = 0
 	openable = FALSE
 
-/obj/structure/displaycase/trophy/Initialize()
+/obj/structure/displaycase/trophy/Initialize(mapload)
 	. = ..()
 	GLOB.trophy_cases += src
 
@@ -292,7 +304,7 @@
 		to_chat(user, span_warning("The case rejects the [W]!"))
 		return
 
-	for(var/a in W.GetAllContents())
+	for(var/a in W.get_all_contents())
 		if(is_type_in_typecache(a, GLOB.blacklisted_cargo_types))
 			to_chat(user, span_warning("The case rejects the [W]!"))
 			return
@@ -306,7 +318,7 @@
 		to_chat(user, span_notice("You insert [W] into the case."))
 		showpiece = W
 		added_roundstart = FALSE
-		update_icon()
+		update_appearance(UPDATE_ICON)
 
 		placer_key = user.ckey
 

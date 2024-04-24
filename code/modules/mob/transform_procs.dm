@@ -23,7 +23,7 @@
 
 	new /obj/effect/temp_visual/monkeyify(loc)
 
-	transformation_timer = addtimer(CALLBACK(src, .proc/finish_monkeyize, tr_flags), TRANSFORMATION_DURATION, TIMER_UNIQUE)
+	transformation_timer = addtimer(CALLBACK(src, PROC_REF(finish_monkeyize), tr_flags), TRANSFORMATION_DURATION, TIMER_UNIQUE)
 
 /mob/living/carbon/proc/finish_monkeyize(tr_flags)
 	transformation_timer = null
@@ -178,7 +178,7 @@
 //////////////////////////           Humanize               //////////////////////////////
 //Could probably be merged with monkeyize but other transformations got their own procs, too
 
-/mob/living/carbon/proc/humanize(tr_flags = (TR_KEEPITEMS | TR_KEEPVIRUS | TR_KEEPSTUNS | TR_KEEPREAGENTS | TR_DEFAULTMSG))
+/mob/living/carbon/proc/humanize(tr_flags = (TR_KEEPITEMS | TR_KEEPVIRUS | TR_KEEPSTUNS | TR_KEEPREAGENTS | TR_DEFAULTMSG), datum/changelingprofile/chosen_prof)
 	if (notransform || transformation_timer)
 		return
 	//now the rest
@@ -199,9 +199,9 @@
 	invisibility = INVISIBILITY_MAXIMUM
 	new /obj/effect/temp_visual/monkeyify/humanify(loc)
 
-	transformation_timer = addtimer(CALLBACK(src, .proc/finish_humanize, tr_flags), TRANSFORMATION_DURATION, TIMER_UNIQUE)
+	transformation_timer = addtimer(CALLBACK(src, PROC_REF(finish_humanize), tr_flags, chosen_prof), TRANSFORMATION_DURATION, TIMER_UNIQUE)
 
-/mob/living/carbon/proc/finish_humanize(tr_flags)
+/mob/living/carbon/proc/finish_humanize(tr_flags, datum/changelingprofile/chosen_prof)
 	transformation_timer = null
 	var/list/stored_implants = list()
 	var/list/int_organs = list()
@@ -349,17 +349,18 @@
 
 	transfer_trait_datums(O)
 
+	if(chosen_prof)
+		changeling_transform(O, chosen_prof)
+
 	qdel(src)
 
-/mob/living/carbon/human/AIize(transfer_after = TRUE, client/preference_source)
-	if (notransform)
+/mob/living/carbon/human/AIize(client/preference_source, move = TRUE)
+	if(notransform)
 		return
-	for(var/t in bodyparts)
-		qdel(t)
 
 	return ..()
 
-/mob/living/carbon/AIize(transfer_after = TRUE, client/preference_source)
+/mob/living/carbon/AIize(client/preference_source, move = TRUE)
 	if (notransform)
 		return
 	notransform = TRUE
@@ -368,26 +369,23 @@
 		dropItemToGround(W)
 	regenerate_icons()
 	icon = null
-	invisibility = INVISIBILITY_MAXIMUM
+	SetInvisibility(INVISIBILITY_MAXIMUM)
 	return ..()
 
-/mob/proc/AIize(transfer_after = TRUE, client/preference_source)
-	var/valid_core = FALSE
+/mob/proc/AIize(client/preference_source, move = TRUE)
+	var/list/turf/core_loc = list()
 	for(var/obj/machinery/ai/data_core/core in GLOB.data_cores)
 		if(core.valid_data_core())
-			valid_core = TRUE
-			break
-	if(!valid_core)
+			core_loc |= core.loc
+	if(!length(core_loc))
 		message_admins("No valid data core for [src]. Yell at a mapper! The AI will die.")
 
 	if(client)
 		stop_sound_channel(CHANNEL_LOBBYMUSIC)
 
-	if(!transfer_after)
-		mind.active = FALSE
+	var/mob/living/silicon/ai/our_AI = new /mob/living/silicon/ai(pick(core_loc), null, src)
 
-	. = new /mob/living/silicon/ai(loc, null, src)
-
+	. = our_AI
 
 	if(preference_source)
 		apply_pref_name(/datum/preference/name/ai, preference_source)
@@ -439,7 +437,7 @@
 
 	. = R
 	if(R.ckey && is_banned_from(R.ckey, "Cyborg"))
-		INVOKE_ASYNC(R, /mob/living/silicon/robot.proc/replace_banned_cyborg)
+		INVOKE_ASYNC(R, TYPE_PROC_REF(/mob/living/silicon/robot, replace_banned_cyborg))
 	qdel(src)
 
 /mob/living/silicon/robot/proc/replace_banned_cyborg()
@@ -516,8 +514,8 @@
 	. = new_slime
 	qdel(src)
 
-/mob/proc/become_overmind(starting_points = 60, pointmodifier = 1)
-	var/mob/camera/blob/B = new /mob/camera/blob(get_turf(src), starting_points, pointmodifier)
+/mob/proc/become_overmind(starting_points = 60, pointmodifier = 1, announcement_delay = 6000)
+	var/mob/camera/blob/B = new /mob/camera/blob(get_turf(src), starting_points, pointmodifier, announcement_delay)
 	B.key = key
 	. = B
 	qdel(src)

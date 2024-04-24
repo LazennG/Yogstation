@@ -4,7 +4,7 @@
 	icon_state = "frog"
 	icon_living = "frog"
 	icon_dead = "frog_dead"
-	mob_biotypes = list(MOB_ORGANIC, MOB_BEAST)
+	mob_biotypes = MOB_ORGANIC|MOB_BEAST
 	speak = list("ribbit","croak")
 	emote_see = list("hops in a circle.", "shakes.")
 	speak_chance = 1
@@ -27,7 +27,7 @@
 	gold_core_spawnable = HOSTILE_SPAWN
 	var/stepped_sound = 'sound/effects/huuu.ogg'
 
-/mob/living/simple_animal/hostile/retaliate/frog/Initialize()
+/mob/living/simple_animal/hostile/retaliate/frog/Initialize(mapload)
 	. = ..()
 	if(prob(1))
 		name = "rare frog"
@@ -36,9 +36,13 @@
 		icon_living = "rare_frog"
 		icon_dead = "rare_frog_dead"
 		butcher_results = list(/obj/item/reagent_containers/food/snacks/nugget = 5)
+	var/static/list/loc_connections = list(
+		COMSIG_ATOM_ENTERED = PROC_REF(on_entered),
+	)
+	AddElement(/datum/element/connect_loc, loc_connections)
 
-/mob/living/simple_animal/hostile/retaliate/frog/Crossed(AM as mob|obj)
-	. = ..()
+
+/mob/living/simple_animal/hostile/retaliate/frog/proc/on_entered(datum/source, atom/movable/AM, ...)
 	if(!stat && isliving(AM))
 		var/mob/living/L = AM
 		if(L.mob_size > MOB_SIZE_TINY)

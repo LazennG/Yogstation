@@ -15,7 +15,7 @@
 	if(..())
 		return
 	owner.alpha = CHAMELEON_MUTATION_DEFAULT_TRANSPARENCY
-	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, .proc/on_move)
+	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
 
 /datum/mutation/human/chameleon/on_life()
 	if(owner.InCritical())
@@ -40,9 +40,10 @@
 /datum/mutation/human/chameleon/super // Changeling chameleon
 	conflicts = list(/datum/mutation/human/chameleon)
 	allow_transfer = FALSE
+	allow_cloning = FALSE
 	mutadone_proof = TRUE
 	locked = TRUE
 	efficiency = 50
 
-/datum/mutation/human/chameleon/on_move() // Do not completely reveal us when we move
+/datum/mutation/human/chameleon/super/on_move() // Do not completely reveal us when we move
 	owner.alpha = clamp(owner.alpha + efficiency, CHAMELEON_MUTATION_MINIMUM_TRANSPARENCY,CHAMELEON_MUTATION_DEFAULT_TRANSPARENCY)

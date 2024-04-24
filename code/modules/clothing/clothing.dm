@@ -12,7 +12,7 @@
 	var/visor_flags_inv = 0		//same as visor_flags, but for flags_inv
 	var/visor_flags_cover = 0	//same as above, but for flags_cover
 //what to toggle when toggled with weldingvisortoggle()
-	var/visor_vars_to_toggle = VISOR_FLASHPROTECT | VISOR_TINT | VISOR_VISIONFLAGS | VISOR_DARKNESSVIEW | VISOR_INVISVIEW
+	var/visor_vars_to_toggle = VISOR_FLASHPROTECT | VISOR_TINT | VISOR_VISIONFLAGS | VISOR_INVISVIEW
 	lefthand_file = 'icons/mob/inhands/clothing_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/clothing_righthand.dmi'
 	var/alt_desc = null
@@ -26,12 +26,17 @@
 
 	var/clothing_flags = NONE
 
+	var/can_be_bloody = TRUE
+
 	/// What items can be consumed to repair this clothing (must by an /obj/item/stack)
 	var/repairable_by = /obj/item/stack/sheet/cloth
 
 	//Var modification - PLEASE be careful with this I know who you are and where you live
 	var/list/user_vars_to_edit //VARNAME = VARVALUE eg: "name" = "butts"
 	var/list/user_vars_remembered //Auto built by the above + dropped() + equipped()
+
+	/// Trait modification, lazylist of traits to add/take away, on equipment/drop in the correct slot
+	var/list/clothing_traits
 
 	var/pocket_storage_component_path
 
@@ -52,12 +57,14 @@
 	/// How many zones (body parts, not precise) we have disabled so far, for naming purposes
 	var/zones_disabled
 
-/obj/item/clothing/Initialize()
+/obj/item/clothing/Initialize(mapload)
 	if(CHECK_BITFIELD(clothing_flags, VOICEBOX_TOGGLABLE))
 		actions_types += /datum/action/item_action/toggle_voice_box
 	. = ..()
 	if(ispath(pocket_storage_component_path))
 		LoadComponent(pocket_storage_component_path)
+	if(can_be_bloody && ((body_parts_covered & FEET) || (flags_inv & HIDESHOES)))
+		LoadComponent(/datum/component/bloodysoles)
 
 /obj/item/clothing/MouseDrop(atom/over_object)
 	. = ..()
@@ -110,7 +117,7 @@
 /obj/item/clothing/proc/repair(mob/user, params)
 	damaged_clothes = CLOTHING_PRISTINE
 	update_clothes_damaged_state(FALSE)
-	obj_integrity = max_integrity
+	update_integrity(max_integrity)
 	name = initial(name) // remove "tattered" or "shredded" if there's a prefix
 	body_parts_covered = initial(body_parts_covered)
 	slot_flags = initial(slot_flags)
@@ -135,7 +142,7 @@
 /obj/item/clothing/proc/take_damage_zone(def_zone, damage_amount, damage_type, armour_penetration)
 	if(!def_zone || !limb_integrity || (initial(body_parts_covered) in GLOB.bitflags)) // the second check sees if we only cover one bodypart anyway and don't need to bother with this
 		return
-	var/list/covered_limbs = body_parts_covered2organ_names(body_parts_covered) // what do we actually cover?
+	var/list/covered_limbs = cover_flags2body_zones(body_parts_covered) // what do we actually cover?
 	if(!(def_zone in covered_limbs))
 		return
 
@@ -154,10 +161,10 @@
   *
   * Arguments:
   * * def_zone: The bodypart zone we're disabling
-  * * damage_type: Only really relevant for the verb for describing the breaking, and maybe obj_destruction()
+  * * damage_type: Only really relevant for the verb for describing the breaking, and maybe atom_destruction()
   */
 /obj/item/clothing/proc/disable_zone(def_zone, damage_type)
-	var/list/covered_limbs = body_parts_covered2organ_names(body_parts_covered)
+	var/list/covered_limbs = cover_flags2body_zones(body_parts_covered)
 	if(!(def_zone in covered_limbs))
 		return
 
@@ -167,14 +174,14 @@
 	if(iscarbon(loc))
 		var/mob/living/carbon/C = loc
 		C.visible_message(span_danger("The [zone_name] on [C]'s [src.name] is [break_verb] away!"), span_userdanger("The [zone_name] on your [src.name] is [break_verb] away!"), vision_distance = COMBAT_MESSAGE_RANGE)
-		RegisterSignal(C, COMSIG_MOVABLE_MOVED, .proc/bristle, override = TRUE)
+		RegisterSignal(C, COMSIG_MOVABLE_MOVED, PROC_REF(bristle), override = TRUE)
 
 	zones_disabled++
-	for(var/i in zone2body_parts_covered(def_zone))
+	for(var/i in body_zone2cover_flags(def_zone))
 		body_parts_covered &= ~i
 
 	if(body_parts_covered == NONE) // if there are no more parts to break then the whole thing is kaput
-		obj_destruction((damage_type == BRUTE ? MELEE : LASER)) // melee/laser is good enough since this only procs from direct attacks anyway and not from fire/bombs
+		atom_destruction((damage_type == BRUTE ? MELEE : LASER)) // melee/laser is good enough since this only procs from direct attacks anyway and not from fire/bombs
 		return
 
 	damaged_clothes = CLOTHING_DAMAGED
@@ -197,6 +204,8 @@
 	if(!istype(user))
 		return
 	UnregisterSignal(user, COMSIG_MOVABLE_MOVED)
+	for(var/trait in clothing_traits)
+		REMOVE_CLOTHING_TRAIT(user, trait)
 	if(LAZYLEN(user_vars_remembered))
 		for(var/variable in user_vars_remembered)
 			if(variable in user.vars)
@@ -205,17 +214,41 @@
 		user_vars_remembered = initial(user_vars_remembered) // Effectively this sets it to null.
 
 /obj/item/clothing/equipped(mob/user, slot)
-	..()
+	. = ..()
 	if (!istype(user))
 		return
-	if(slot_flags & slotdefine2slotbit(slot)) //Was equipped to a valid slot for this item?
+	if(slot_flags & slot) //Was equipped to a valid slot for this item?
 		if(iscarbon(user) && LAZYLEN(zones_disabled))
-			RegisterSignal(user, COMSIG_MOVABLE_MOVED, .proc/bristle)
+			RegisterSignal(user, COMSIG_MOVABLE_MOVED, PROC_REF(bristle))
+		for(var/trait in clothing_traits)
+			ADD_CLOTHING_TRAIT(user, trait)
 		if (LAZYLEN(user_vars_to_edit))
 			for(var/variable in user_vars_to_edit)
 				if(variable in user.vars)
 					LAZYSET(user_vars_remembered, variable, user.vars[variable])
 					user.vv_edit_var(variable, user_vars_to_edit[variable])
+
+// Adds a trait to the clothing traits list, and adds it to the wearer
+/obj/item/clothing/proc/attach_clothing_traits(trait_or_traits)
+	if(!islist(trait_or_traits))
+		trait_or_traits = list(trait_or_traits)
+
+	LAZYOR(clothing_traits, trait_or_traits)
+	var/mob/wearer = loc
+	if(istype(wearer) && (wearer.get_slot_by_item(src) & slot_flags))
+		for(var/new_trait in trait_or_traits)
+			ADD_CLOTHING_TRAIT(wearer, new_trait)
+
+// Removes a trait from the clothing traits list, and removes it from the wearer
+/obj/item/clothing/proc/detach_clothing_traits(trait_or_traits)
+	if(!islist(trait_or_traits))
+		trait_or_traits = list(trait_or_traits)
+
+	LAZYREMOVE(clothing_traits, trait_or_traits)
+	var/mob/wearer = loc
+	if(istype(wearer))
+		for(var/new_trait in trait_or_traits)
+			REMOVE_CLOTHING_TRAIT(wearer, new_trait)
 
 /obj/item/clothing/examine(mob/user)
 	. = ..()
@@ -255,29 +288,8 @@
 
 /obj/item/clothing/Topic(href, href_list)
 	. = ..()
-
 	if(href_list["list_armor"])
-		var/list/readout = list("<span class='notice'><u><b>PROTECTION CLASSES</u></b>")
-		if(armor.bio || armor.bomb || armor.bullet || armor.energy || armor.laser || armor.melee)
-			readout += "\n<b>ARMOR (I-X)</b>"
-			if(armor.bio)
-				readout += "\nTOXIN [armor_to_protection_class(armor.bio)]"
-			if(armor.bomb)
-				readout += "\nEXPLOSIVE [armor_to_protection_class(armor.bomb)]"
-			if(armor.bullet)
-				readout += "\nBULLET [armor_to_protection_class(armor.bullet)]"
-			if(armor.energy)
-				readout += "\nENERGY [armor_to_protection_class(armor.energy)]"
-			if(armor.laser)
-				readout += "\nLASER [armor_to_protection_class(armor.laser)]"
-			if(armor.melee)
-				readout += "\nMELEE [armor_to_protection_class(armor.melee)]"
-		if(armor.fire || armor.acid)
-			readout += "\n<b>DURABILITY (I-X)</b>"
-			if(armor.fire)
-				readout += "\nFIRE [armor_to_protection_class(armor.fire)]"
-			if(armor.acid)
-				readout += "\nACID [armor_to_protection_class(armor.acid)]"
+		var/additional_info = ""
 		if(flags_cover & HEADCOVERSMOUTH || flags_cover & HEADCOVERSEYES)
 			var/list/things_blocked = list()
 			if(flags_cover & HEADCOVERSMOUTH)
@@ -285,26 +297,12 @@
 			if(flags_cover & HEADCOVERSEYES)
 				things_blocked += "pepperspray"
 			if(length(things_blocked))
-				readout += "\n<b>COVERAGE</b>"
-				readout += "\nIt will block [english_list(things_blocked)]."
+				additional_info += "\n<b>COVERAGE</b>"
+				additional_info += "\nIt will block [english_list(things_blocked)]."
+		to_chat(usr, "[armor.show_protection_classes(additional_info)]")
 
-		readout += "</span>"
-
-		to_chat(usr, "[readout.Join()]")
-
-/**
-  * Rounds armor_value down to the nearest 10, divides it by 10 and then converts it to Roman numerals.
-  *
-  * Arguments:
-  * * armor_value - Number we're converting
-  */
-/obj/item/clothing/proc/armor_to_protection_class(armor_value)
-	if (armor_value < 0)
-		. = "-"
-	. += "\Roman[round(abs(armor_value), 10) / 10]"
-	return .
-
-/obj/item/clothing/obj_break(damage_flag)
+/obj/item/clothing/atom_break(damage_flag)
+	. = ..()
 	damaged_clothes = CLOTHING_DAMAGED
 	update_clothes_damaged_state()
 	if(ismob(loc)) //It's not important enough to warrant a message if nobody's wearing it
@@ -339,17 +337,19 @@ SEE_PIXELS// if an object is located on an unlit area, but some of its pixels ar
 BLIND     // can't see anything
 */
 
-/proc/generate_female_clothing(index,t_color,icon,type) //In a shellnut, blends the uniform sprite with a pre-made sprite in uniform.dmi that's mostly white pixels with a few empty ones to trim off the pixels in the empty spots
-	var/icon/female_clothing_icon	= icon(icon, t_color) // and make the uniform the "female" shape. female_s is either the top-only one (for jumpskirts and the like) or the full one (for jumpsuits)
-	var/icon/female_s				= icon('icons/effects/clothing.dmi', "[(type == FEMALE_UNIFORM_FULL) ? "female_full" : "female_top"]")
+/proc/generate_female_clothing(index, t_color, icon, type) //In a shellnut, blends the uniform sprite with a pre-made sprite in uniform.dmi that's mostly white pixels with a few empty ones to trim off the pixels in the empty spots
+	var/icon/female_clothing_icon = icon("icon" = icon, "icon_state" = t_color) // and make the uniform the "female" shape. female_s is either the top-only one (for jumpskirts and the like) or the full one (for jumpsuits)
+	var/icon/female_s = icon("icon" = 'icons/effects/clothing.dmi', "icon_state" = "[(type == FEMALE_UNIFORM_FULL) ? "female_full" : "female_top"]")
 	female_clothing_icon.Blend(female_s, ICON_MULTIPLY)
-	GLOB.female_clothing_icons[index] = fcopy_rsc(female_clothing_icon) //Then it saves the icon in a global list so it doesn't have to make it again
+	female_clothing_icon = fcopy_rsc(female_clothing_icon)
+	GLOB.female_clothing_icons[index] = female_clothing_icon //Then it saves the icon in a global list so it doesn't have to make it again
 
-/proc/generate_skinny_clothing(index,t_color,icon,type) //Works the exact same as above but for skinny people
-	var/icon/skinny_clothing_icon	= icon(icon, t_color)
-	var/icon/skinny_s				= icon('icons/effects/clothing.dmi', "[(type == FEMALE_UNIFORM_FULL) ? "skinny_full" : "skinny_top"]") //Hooks into same check to see if it's eligible
+/proc/generate_skinny_clothing(index, t_color, icon, type) //Works the exact same as above but for skinny people
+	var/icon/skinny_clothing_icon = icon(icon, t_color)
+	var/icon/skinny_s = icon("icon" = 'icons/effects/clothing.dmi', "icon_state" = "[(type == FEMALE_UNIFORM_FULL) ? "skinny_full" : "skinny_top"]") //Hooks into same check to see if it's eligible
 	skinny_clothing_icon.Blend(skinny_s, ICON_MULTIPLY)
-	GLOB.skinny_clothing_icons[index] = fcopy_rsc(skinny_clothing_icon)
+	skinny_clothing_icon = fcopy_rsc(skinny_clothing_icon)
+	GLOB.skinny_clothing_icons[index] = skinny_clothing_icon
 
 /obj/item/clothing/under/verb/toggle()
 	set name = "Adjust Suit Sensors"
@@ -359,6 +359,9 @@ BLIND     // can't see anything
 	if (istype(M, /mob/dead/))
 		return
 	if (!can_use(M))
+		return
+	if(is_synth(M))
+		to_chat(usr, "You're unable to use suit sensors as a synthetic!")
 		return
 	if(src.has_sensor == LOCKED_SENSORS)
 		to_chat(usr, "The controls are locked.")
@@ -443,7 +446,7 @@ BLIND     // can't see anything
 			adjusted = DIGIALT_STYLE
 		if(DIGIALT_STYLE)
 			adjusted = DIGITIGRADE_STYLE
-	if(adjusted == NORMAL_STYLE || adjusted == DIGIALT_STYLE) //Yogs End
+	if(adjusted == ALT_STYLE || adjusted == DIGIALT_STYLE) //Yogs End
 		if(fitted != FEMALE_UNIFORM_TOP)
 			fitted = NO_FEMALE_UNIFORM
 		if(!alt_covers_chest) // for the special snowflake suits that expose the chest when adjusted (and also the arms, realistically)
@@ -458,7 +461,7 @@ BLIND     // can't see anything
 				return adjusted
 			for(var/zone in list(BODY_ZONE_CHEST, BODY_ZONE_L_ARM, BODY_ZONE_R_ARM)) // ugly check to make sure we don't reenable protection on a disabled part
 				if(damage_by_parts[zone] > limb_integrity)
-					for(var/part in zone2body_parts_covered(zone))
+					for(var/part in body_zone2cover_flags(zone))
 						body_parts_covered &= part
 	return adjusted
 
@@ -475,7 +478,7 @@ BLIND     // can't see anything
 		C.head_update(src, forced = 1)
 	for(var/X in actions)
 		var/datum/action/A = X
-		A.UpdateButtonIcon()
+		A.build_all_button_icons()
 	return TRUE
 
 /obj/item/clothing/proc/visor_toggling() //handles all the actual toggling of flags
@@ -489,15 +492,13 @@ BLIND     // can't see anything
 	if(visor_vars_to_toggle & VISOR_TINT)
 		tint ^= initial(tint)
 
-
 /obj/item/clothing/proc/can_use(mob/user)
 	if(user && ismob(user))
 		if(!user.incapacitated())
-			return 1
-	return 0
+			return TRUE
+	return FALSE
 
-
-/obj/item/clothing/obj_destruction(damage_flag)
+/obj/item/clothing/atom_destruction(damage_flag, total_destruction=FALSE)
 	if(damage_flag == BOMB)
 		var/turf/T = get_turf(src)
 		spawn(1) //so the shred survives potential turf change from the explosion.

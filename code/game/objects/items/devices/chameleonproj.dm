@@ -16,7 +16,7 @@
 	var/obj/effect/dummy/chameleon/active_dummy = null
 	var/saved_appearance = null
 
-/obj/item/chameleon/Initialize()
+/obj/item/chameleon/Initialize(mapload)
 	. = ..()
 	var/obj/item/cigbutt/butt = /obj/item/cigbutt
 	saved_appearance = initial(butt.appearance)
@@ -49,6 +49,8 @@
 		return
 	if(istype(target, /obj/structure/falsewall))
 		return
+	if(istype(target, /obj/structure/chisel_message))
+		return
 	if(target.alpha != 255)
 		return
 	if(target.invisibility != 0)
@@ -61,7 +63,7 @@
 	var/obj/temp = new/obj()
 	temp.appearance = target.appearance
 	temp.layer = initial(target.layer) // scanning things in your inventory
-	temp.plane = initial(target.plane)
+	SET_PLANE_IMPLICIT(temp, initial(target.plane))
 	saved_appearance = temp.appearance
 
 /obj/item/chameleon/proc/check_sprite(atom/target)

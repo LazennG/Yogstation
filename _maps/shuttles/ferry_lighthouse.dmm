@@ -219,7 +219,7 @@
 	dir = 8;
 	dwidth = 8;
 	height = 27;
-	id = "ferry";
+	shuttle_id = "ferry";
 	name = "The Lighthouse";
 	port_direction = 2;
 	width = 16
@@ -283,7 +283,7 @@
 /turf/open/floor/wood,
 /area/shuttle/transport)
 "bd" = (
-/obj/item/twohanded/required/kirbyplants/dead{
+/obj/item/kirbyplants/dead{
 	desc = "It doesn't look very healthy...";
 	name = "potted plant"
 	},

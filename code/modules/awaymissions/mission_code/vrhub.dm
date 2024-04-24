@@ -5,7 +5,8 @@
 /area/awaymission/vr/hub
 	name = "Virtual Reality Hub Area"
 	icon_state = "awaycontent2"
-	dynamic_lighting = DYNAMIC_LIGHTING_FORCED
+	static_lighting = FALSE
+	base_lighting_alpha = 255
 
 /area/awaymission/vr/hub/boxing
 	name = "Virtual Reality Boxing Ring"
@@ -22,61 +23,66 @@
 	desc = "Gives you a one time ability to return to this portal once you have entered."
 	mech_sized = TRUE
 	keep = TRUE
+	density = FALSE
 	var/datum/outfit/equipment // optional outfit to equip upon entering
 	var/datum/outfit/recall_equipment // optional outfit to equip upon recalling
 
-/obj/effect/portal/permanent/one_way/recall/Crossed(atom/movable/AM, oldloc)
-	if(ismob(AM))
-		var/mob/user = AM
-		var/check = locate(/obj/effect/proc_holder/spell/portal_recall) in user.mind.spell_list
-		if(check)
-			var/obj/effect/proc_holder/spell/portal_recall/mob_recall = check
-			for(var/obj/effect/portal/permanent/one_way/recall/P in mob_recall.recall_portals)
-				if(src == P)
-					return ..(AM, oldloc, force_stop = TRUE) // don't teleport if they have a recall spell with this portal already (or have just teleported onto it)
-	return ..()
+/obj/effect/portal/permanent/one_way/recall/Entered(atom/movable/entering_atom, oldloc)
+	if(!ismob(entering_atom))
+		return
+	var/mob/user = entering_atom
+	var/check = locate(/datum/action/cooldown/spell/portal_recall) in user.actions
+	if(check)
+		var/datum/action/cooldown/spell/portal_recall/mob_recall = check
+		for(var/obj/effect/portal/permanent/one_way/recall/P in mob_recall.recall_portals)
+			if(src == P)
+				return // don't teleport if they have a recall spell with this portal already (or have just teleported onto it)
+	Bumped(user)
 
 /obj/effect/portal/permanent/one_way/recall/teleport(atom/movable/M, force = FALSE)
-	. = ..()
 	if(. && ismob(M))
 		var/mob/user = M
-		var/findspell = locate(/obj/effect/proc_holder/spell/portal_recall) in user.mind.spell_list
-		var/obj/effect/proc_holder/spell/portal_recall/personal_recall = findspell ? findspell : new
+		var/findspell = locate(/datum/action/cooldown/spell/portal_recall) in user.actions
+		var/datum/action/cooldown/spell/portal_recall/personal_recall = findspell ? findspell : new
 		personal_recall.recall_portals += src
 		if(!findspell)
-			user.mind.AddSpell(personal_recall)
+			personal_recall.Grant(user)
 		if(equipment && ishuman(user))
 			var/mob/living/carbon/human/H = user
 			H.delete_equipment()
 			H.equipOutfit(equipment)
+	. = ..()
 
 // the effect that happens when someone recalls to your portal
 /obj/effect/portal/permanent/one_way/recall/proc/recall_effect(mob/user)
 	return
 
-/obj/effect/proc_holder/spell/portal_recall
+/datum/action/cooldown/spell/portal_recall
 	name = "Portal Recall"
 	desc = "This will teleport you back to your previously used portal. One use only."
-	clothes_req = FALSE
-	action_icon_state = "blink"
+	button_icon_state = "blink"
+	spell_requirements = NONE
 	var/list/recall_portals = list()
 
-/obj/effect/proc_holder/spell/portal_recall/Click(mob/user = usr)
+/datum/action/cooldown/spell/portal_recall/Trigger()
+	. = ..()
+	if(!.)
+		return FALSE
 	if(!recall_portals.len)
-		user.mind.RemoveSpell(src) // remove spell if no portals left
+		Remove(owner)// remove spell if no portals left
 	var/obj/effect/portal/permanent/one_way/recall/last_portal = recall_portals[recall_portals.len]
 	var/turf/recall_turf = get_turf(last_portal)
 	if(recall_turf)
-		if(last_portal.recall_equipment && ishuman(user))
-			var/mob/living/carbon/human/H = user
+		if(last_portal.recall_equipment && ishuman(owner))
+			var/mob/living/carbon/human/H = owner
 			H.delete_equipment()
 			H.equipOutfit(last_portal.recall_equipment)
-		last_portal.recall_effect(user)
-		if(user)
-			do_teleport(user, recall_turf, 0, no_effects = FALSE, channel = TELEPORT_CHANNEL_BLUESPACE)
+		last_portal.recall_effect(owner)
+		if(owner)
+			do_teleport(owner, recall_turf, 0, no_effects = FALSE, channel = TELEPORT_CHANNEL_BLUESPACE)
 			recall_portals -= last_portal
 			if(!recall_portals.len)
-				user.mind.RemoveSpell(src) // remove spell if no portals left
+				Remove(owner)
 
 /obj/effect/mob_spawn/human/virtual_reality
 	name = "Network Relay"
@@ -120,7 +126,7 @@
 	light_power = 1
 	light_range = 3
 
-/obj/effect/portal/permanent/one_way/recall/syndicate/recall_effect(mob/user)
+/obj/effect/portal/permanent/one_way/recall/syndicate/recall_effect(mob/living/user)
 	// fuck this im not dealing with you fucks smuggling equipment out of the syndicate uplink
 	user.dust()
 	return
@@ -146,11 +152,13 @@
 /obj/effect/light_emitter/vr_hub
 	set_luminosity = 9
 	set_cap = 2.5
-	light_color = LIGHT_COLOR_WHITE
 
 /turf/closed/indestructible/iron
 	name = "rough metal wall"
 	desc = "A wall with rough metal plating."
 	icon = 'icons/turf/walls/iron_wall.dmi'
-	icon_state = "iron"
-	canSmoothWith = list(/turf/closed/indestructible/iron)
+	icon_state = "iron_wall-0"
+	base_icon_state = "iron_wall"
+	smoothing_flags = SMOOTH_BITMASK
+	smoothing_groups = SMOOTH_GROUP_IRON_WALLS + SMOOTH_GROUP_WALLS + SMOOTH_GROUP_CLOSED_TURFS
+	canSmoothWith = SMOOTH_GROUP_IRON_WALLS

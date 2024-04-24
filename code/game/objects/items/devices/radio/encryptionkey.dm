@@ -9,7 +9,7 @@
 	var/independent = FALSE
 	var/list/channels = list()
 
-/obj/item/encryptionkey/Initialize()
+/obj/item/encryptionkey/Initialize(mapload)
 	. = ..()
 	if(!channels.len)
 		desc = "An encryption key for a radio headset.  Has no special codes in it. You should probably tell a coder!"
@@ -123,6 +123,17 @@
 	name = "service radio encryption key"
 	icon_state = "srv_cypherkey"
 	channels = list(RADIO_CHANNEL_SERVICE = 1)
+
+/obj/item/encryptionkey/headset_synthetic
+	name = "synthetic radio encryption key"
+	icon_state = "rd_cypherkey"
+	channels = list(RADIO_CHANNEL_COMMAND = 1, RADIO_CHANNEL_ENGINEERING = 1, RADIO_CHANNEL_SCIENCE = 1, RADIO_CHANNEL_MEDICAL = 1, RADIO_CHANNEL_SUPPLY = 1, RADIO_CHANNEL_SERVICE = 1)
+	translate_binary = TRUE
+	item_flags = DROPDEL
+
+/obj/item/encryptionkey/headset_synthetic/Initialize(mapload)
+	. = ..()
+	ADD_TRAIT(src, TRAIT_NODROP, SYNTHETIC_TRAIT)
 
 /obj/item/encryptionkey/headset_cent
 	name = "\improper CentCom radio encryption key"

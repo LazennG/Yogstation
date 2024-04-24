@@ -24,8 +24,10 @@
 	obj_damage = 50
 	melee_damage_lower = 20
 	melee_damage_upper = 20
-	see_in_dark = 8
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE
+	// Oh you KNOW it's gonna be real green
+	lighting_cutoff_red = 10
+	lighting_cutoff_green = 35
+	lighting_cutoff_blue = 15
 	vision_range = 1 // Only attack when target is close
 	wander = FALSE
 	attack_vis_effect = ATTACK_EFFECT_BITE //nom nom nom
@@ -178,7 +180,7 @@
 /mob/living/simple_animal/hostile/morph/LoseAggro()
 	vision_range = initial(vision_range)
 
-/mob/living/simple_animal/hostile/morph/AIShouldSleep(var/list/possible_targets)
+/mob/living/simple_animal/hostile/morph/AIShouldSleep(list/possible_targets)
 	. = ..()
 	if(.)
 		var/list/things = list()

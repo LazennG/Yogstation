@@ -5,7 +5,6 @@
 	icon_state = "turnstile_map"
 	power_channel = AREA_USAGE_ENVIRON
 	density = TRUE
-	obj_integrity = 250
 	max_integrity = 250
 	//Robust! It'll be tough to break...
 	armor = list(MELEE = 50, BULLET = 20, LASER = 0, ENERGY = 80, BOMB = 10, BIO = 100, RAD = 100, FIRE = 90, ACID = 50)
@@ -14,8 +13,6 @@
 	idle_power_usage = 2
 	resistance_flags = LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
 	layer = OPEN_DOOR_LAYER
-	climbable = FALSE
-	CanAtmosPass = ATMOS_PASS_NO
 
 /obj/machinery/turnstile/brig
 	name = "Brig turnstile"
@@ -23,12 +20,12 @@
 	req_one_access = list(ACCESS_SEC_DOORS)
 	max_integrity = 400 /// Made of damn good steel
 	damage_deflection = 21 /// Same as airlocks!
-	
-/obj/machinery/turnstile/Initialize()
+
+/obj/machinery/turnstile/Initialize(mapload)
 	. = ..()
 	icon_state = "turnstile"
 
-/obj/machinery/turnstile/CanAtmosPass(turf/T)
+/obj/machinery/turnstile/can_atmos_pass(turf/target_turf, vertical = FALSE)
 	return TRUE
 
 /obj/machinery/turnstile/Cross(atom/movable/mover)

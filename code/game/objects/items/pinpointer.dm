@@ -21,7 +21,7 @@
 	var/ignore_suit_sensor_level = FALSE // Do we find people even if their suit sensors are turned off
 	var/alert = FALSE // TRUE to display things more seriously
 
-/obj/item/pinpointer/Initialize()
+/obj/item/pinpointer/Initialize(mapload)
 	. = ..()
 	GLOB.pinpointer_list += src
 
@@ -43,40 +43,40 @@
 	else
 		target = null
 		STOP_PROCESSING(SSfastprocess, src)
-	update_icon()
+	update_appearance()
 
 /obj/item/pinpointer/process()
 	if(!active)
 		return PROCESS_KILL
 	scan_for_target()
-	update_icon()
+	update_appearance()
 
 /obj/item/pinpointer/proc/scan_for_target()
 	return
 
-/obj/item/pinpointer/update_icon()
-	cut_overlays()
+/obj/item/pinpointer/update_overlays()
+	. = ..()
 	if(!active)
 		return
 	if(!target)
-		add_overlay("pinon[alert ? "alert" : ""]null")
+		. += "pinon[alert ? "alert" : ""]null"
 		return
 	var/turf/here = get_turf_global(src) // yogs - replace get_turf with get_turf_global
 	var/turf/there = get_turf_global(target) // yogs - replace get_turf with get_turf_global
 	if(here.z != there.z)
-		add_overlay("pinon[alert ? "alert" : ""]null")
+		. += "pinon[alert ? "alert" : ""]null"
 		return
 	if(get_dist_euclidian(here,there) <= minimum_range)
-		add_overlay("pinon[alert ? "alert" : ""]direct")
+		. += "pinon[alert ? "alert" : ""]direct"
 	else
 		setDir(get_dir(here, there))
 		switch(get_dist(here, there))
 			if(1 to 8)
-				add_overlay("pinon[alert ? "alert" : "close"]")
+				. += "pinon[alert ? "alert" : "close"]"
 			if(9 to 16)
-				add_overlay("pinon[alert ? "alert" : "medium"]")
+				. += "pinon[alert ? "alert" : "medium"]"
 			if(16 to INFINITY)
-				add_overlay("pinon[alert ? "alert" : "far"]")
+				. += "pinon[alert ? "alert" : "far"]"
 
 /obj/item/pinpointer/crew // A replacement for the old crew monitoring consoles
 	name = "crew pinpointer"
@@ -86,22 +86,16 @@
 	var/has_owner = FALSE
 	var/pinpointer_owner = null
 
-/obj/item/pinpointer/crew/proc/trackable(mob/living/carbon/human/H)
+/obj/item/pinpointer/crew/proc/trackable(mob/living/carbon/human/tracked_mob)
 	var/turf/here = get_turf(src)
-	var/nanite_sensors = FALSE
-	if(H in SSnanites.nanite_monitored_mobs)
-		nanite_sensors = TRUE
-	if((H.z == 0 || H.z == here.z) && (istype(H.w_uniform, /obj/item/clothing/under) || nanite_sensors))
-		if(!nanite_sensors) // Does the mob have monitoring nanite?
-			var/obj/item/clothing/under/U = H.w_uniform
-
-			// Suit sensors must be on maximum.
-			if(!U.has_sensor || (U.sensor_mode < SENSOR_COORDS && !ignore_suit_sensor_level))
-				return FALSE
-
-		var/turf/there = get_turf(H)
-		return (H.z != 0 || (there && there.z == here.z))
-
+	var/turf/there = get_turf(tracked_mob)
+	if(here && there && ((there.z in SSmapping.get_connected_levels(here)) || HAS_TRAIT(tracked_mob, TRAIT_MULTIZ_SUIT_SENSORS))) // Device and target should be on the same level or different levels of the same station
+		if(HAS_TRAIT(tracked_mob, TRAIT_SUITLESS_SENSORS))
+			return TRUE
+		if (istype(tracked_mob.w_uniform, /obj/item/clothing/under))
+			var/obj/item/clothing/under/U = tracked_mob.w_uniform
+			if(U.has_sensor && (U.sensor_mode >= SENSOR_COORDS || ignore_suit_sensor_level)) // Suit sensors must be on maximum or a contractor pinpointer
+				return TRUE
 	return FALSE
 
 /obj/item/pinpointer/crew/attack_self(mob/living/user)

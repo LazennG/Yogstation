@@ -1,22 +1,19 @@
 /datum/job/clown
 	title = "Clown"
 	description = "Entertain the crew, make bad jokes, go on a holy quest to find bananium, HONK!"
-	flag = CLOWN
 	orbit_icon = "face-grin-tears"
 	department_head = list("Head of Personnel")
-	department_flag = CIVILIAN
 	faction = "Station"
 	total_positions = 1
 	spawn_positions = 1
 	supervisors = "the head of personnel"
-	selection_color = "#dddddd"
 
 	outfit = /datum/outfit/job/clown
 
 	alt_titles = list("Entertainer", "Comedian", "Jester", "Improv Artist")
 
 	added_access = list()
-	base_access = list(ACCESS_THEATRE)
+	base_access = list(ACCESS_THEATRE, ACCESS_SERVHALL)
 	paycheck = PAYCHECK_MINIMAL
 	paycheck_department = ACCOUNT_SRV
 
@@ -30,10 +27,12 @@
 	mail_goodies = list(
 		/obj/item/reagent_containers/food/snacks/grown/banana = 100,
 		/obj/item/reagent_containers/food/snacks/pie/cream = 50,
-		/obj/item/clothing/shoes/clown_shoes/combat = 10,
-		/obj/item/reagent_containers/spray/waterflower/lube = 20 // lube
+		/obj/item/reagent_containers/spray/waterflower/lube = 20, // lube
+		/obj/item/clothing/shoes/clown_shoes/combat = 10
 		///obj/item/reagent_containers/spray/waterflower/superlube = 1 // Superlube, good lord.
 	)
+	
+	minimal_lightup_areas = list(/area/crew_quarters/theatre)
 
 	smells_like = "kinda funny"
 
@@ -46,7 +45,7 @@
 	name = "Clown"
 	jobtype = /datum/job/clown
 
-	pda_type = /obj/item/modular_computer/tablet/pda/preset/basic/clown
+	pda_type = /obj/item/modular_computer/tablet/pda/preset/clown
 
 	ears = /obj/item/radio/headset/headset_srv
 	uniform = /obj/item/clothing/under/rank/clown
@@ -66,7 +65,7 @@
 	satchel = /obj/item/storage/backpack/clown
 	duffelbag = /obj/item/storage/backpack/duffelbag/clown //strangely has a duffel
 
-	box = /obj/item/storage/box/hug/survival
+	box = /obj/item/storage/box/survival/hug
 
 	chameleon_extras = /obj/item/stamp/clown
 

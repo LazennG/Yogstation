@@ -8,7 +8,7 @@
 	instability = 30
 	synchronizer_coeff = 1
 	
-	var/datum/action/bloodsucker/olfaction/acquire_scent/lesser/smelling
+	var/datum/action/cooldown/bloodsucker/olfaction/acquire_scent/lesser/smelling
 
 /datum/mutation/human/olfaction/on_acquiring(mob/living/carbon/human/owner)
 	. = ..()
@@ -51,7 +51,7 @@
 	. = ..()
 	if(user)
 		sniffer = user
-	RegisterSignal(src, COMSIG_MOVABLE_CROSSED, .proc/Sniffed)
+	RegisterSignal(src, COMSIG_MOVABLE_CROSSED, PROC_REF(Sniffed))
 	if(!scent_color || color)
 		scent_color = sanitize_hexcolor(color, 6, TRUE, COLOR_RED)
 	
@@ -60,8 +60,7 @@
 		trail.Flip(dir)
 		trail.Turn(180)
 		
-	img = image(trail, loc = src, layer = HUD_LAYER)
-	img.layer = HUD_LAYER
+	img = image(trail, loc = src)
 	img.plane = HUD_PLANE
 	img.appearance_flags = NO_CLIENT_COLOR
 	img.alpha = 0
@@ -80,7 +79,7 @@
 /obj/effect/temp_visual/scent_trail/Destroy()
 	UnregisterSignal(src, COMSIG_MOVABLE_CROSSED)
 	animate(img, alpha = 0, time = 1 SECONDS, easing = EASE_OUT) //fade out
-	INVOKE_ASYNC(src, .proc/Fade)
+	INVOKE_ASYNC(src, PROC_REF(Fade))
 	return ..()
 
 /obj/effect/temp_visual/scent_trail/proc/Fade()

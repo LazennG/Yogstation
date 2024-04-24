@@ -26,9 +26,9 @@
 		var/list/unclean_mutations = (GLOB.not_good_mutations|GLOB.bad_mutations)
 		H.dna.remove_mutation_group(unclean_mutations)
 	if(efficiency > 5 && prob(20))
-		H.easy_randmut(POSITIVE)
+		H.easy_random_mutate(POSITIVE)
 	if(efficiency < 3 && prob(50))
-		var/mob/M = H.easy_randmut(NEGATIVE+MINOR_NEGATIVE)
+		var/mob/M = H.easy_random_mutate(NEGATIVE+MINOR_NEGATIVE)
 		if(ismob(M))
 			H = M
 
@@ -88,7 +88,7 @@
 
 	light_color = LIGHT_COLOR_BLUE
 
-/obj/machinery/computer/prototype_cloning/Initialize()
+/obj/machinery/computer/prototype_cloning/Initialize(mapload)
 	. = ..()
 	updatemodules(TRUE)
 
@@ -145,21 +145,20 @@
 	if(W.tool_behaviour == TOOL_MULTITOOL)
 		if(!multitool_check_buffer(user, W))
 			return
-		var/obj/item/multitool/P = W
-
-		if(istype(P.buffer, /obj/machinery/clonepod/experimental))
-			if(get_area(P.buffer) != get_area(src))
+		var/atom/buffer_atom = multitool_get_buffer(user, W)
+		if(istype(buffer_atom, /obj/machinery/clonepod/experimental))
+			if(get_area(buffer_atom) != get_area(src))
 				to_chat(user, "<font color = #666633>-% Cannot link machines across power zones. Buffer cleared %-</font color>")
-				P.buffer = null
+				multitool_set_buffer(user, W, null)
 				return
-			to_chat(user, "<font color = #666633>-% Successfully linked [P.buffer] with [src] %-</font color>")
-			var/obj/machinery/clonepod/experimental/pod = P.buffer
+			to_chat(user, "<font color = #666633>-% Successfully linked [buffer_atom] with [src] %-</font color>")
+			var/obj/machinery/clonepod/experimental/pod = buffer_atom
 			if(pod.connected)
 				pod.connected.DetachCloner(pod)
 			AttachCloner(pod)
 		else
-			P.buffer = src
-			to_chat(user, "<font color = #666633>-% Successfully stored [REF(P.buffer)] [P.buffer.name] in buffer %-</font color>")
+			multitool_set_buffer(user, W, src)
+			to_chat(user, "<font color = #666633>-% Successfully stored [REF(buffer_atom)] [buffer_atom.name] in buffer %-</font color>")
 		return
 	else
 		return ..()
@@ -298,6 +297,6 @@
 		temp = "<font class='bad'>Cloning cycle already in progress.</font>"
 		playsound(src, 'sound/machines/terminal_prompt_deny.ogg', 50, 0)
 	else
-		pod.growclone(mob_occupant.real_name, dna.uni_identity, dna.mutation_index, null, null, clone_species, dna.features, mob_occupant.faction)
+		pod.growclone(mob_occupant.real_name, dna.unique_identity, dna.mutation_index, null, null, clone_species, dna.features, mob_occupant.faction)
 		temp = "[mob_occupant.real_name] => <font class='good'>Cloning data sent to pod.</font>"
 		playsound(src, 'sound/machines/terminal_prompt_confirm.ogg', 50, 0)

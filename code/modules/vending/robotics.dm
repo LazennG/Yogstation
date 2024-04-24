@@ -4,6 +4,8 @@
 	desc = "All the tools you need to create your own robot army."
 	icon_state = "robotics"
 	icon_deny = "robotics-deny"
+	panel_type = "panel14"
+	light_mask = "robotics-light-mask"
 	req_access = list(ACCESS_ROBO_CONTROL)
 	products = list(/obj/item/stack/cable_coil = 4,
 					/obj/item/assembly/flash/handheld = 6,
@@ -12,8 +14,7 @@
 					/obj/item/assembly/signaler = 3,
 					/obj/item/healthanalyzer = 3,
 					/obj/item/storage/firstaid/regular/empty = 3,
-					/obj/item/reagent_containers/glass/bucket = 3,
-					/obj/item/ipcrevive = 2)
+					/obj/item/reagent_containers/glass/bucket = 3)
 	refill_canister = /obj/item/vending_refill/robotics
 	default_price = 50
 	extra_price = 75

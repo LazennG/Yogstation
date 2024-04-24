@@ -51,7 +51,7 @@
 	blood_state = BLOOD_STATE_OIL
 	bloodiness = BLOOD_AMOUNT_PER_DECAL
 
-/obj/effect/decal/cleanable/oil/Initialize()
+/obj/effect/decal/cleanable/oil/Initialize(mapload)
 	. = ..()
 	reagents.add_reagent(/datum/reagent/oil, 30)
 
@@ -76,6 +76,13 @@
 	icon_state = "streak1"
 	random_icon_states = list("streak1", "streak2", "streak3", "streak4", "streak5")
 
-/obj/effect/decal/cleanable/oil/slippery/ComponentInitialize()
+/obj/effect/decal/cleanable/oil/slippery/Initialize(mapload)
 	. = ..()
 	AddComponent(/datum/component/slippery, 80, (NO_SLIP_WHEN_WALKING | SLIDE))
+
+/obj/effect/decal/cleanable/oil/synth
+	name = "circulation fluid"
+	desc = "It's a white and viscous fluid used by synthetic crewmembers."
+	color = "#e6e6e6"
+	icon_state = "synthfloor1"
+	random_icon_states = list("synthfloor1", "synthfloor2", "synthfloor3", "synthfloor4", "synthfloor5", "synthfloor6", "synthfloor7")

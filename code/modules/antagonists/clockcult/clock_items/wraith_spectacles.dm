@@ -12,7 +12,7 @@
 	visor_vars_to_toggle = NONE //we don't actually toggle anything we just set it
 	tint = 3 //this'll get reset, but it won't handle vision updates properly otherwise
 
-/obj/item/clothing/glasses/wraith_spectacles/Initialize()
+/obj/item/clothing/glasses/wraith_spectacles/Initialize(mapload)
 	. = ..()
 	GLOB.all_clockwork_objects += src
 
@@ -49,24 +49,20 @@
 /obj/item/clothing/glasses/wraith_spectacles/proc/blind_cultist(mob/living/victim)
 	var/obj/item/organ/eyes/eyes = victim.getorganslot(ORGAN_SLOT_EYES)
 	if(iscultist(victim))
-		to_chat(victim, "[span_heavy_brass("\"It looks like Nar-Sie's dogs really don't value their eyes.\"")]")
+		to_chat(victim, "[span_heavy_brass("\"It looks like Nar'sie's dogs really don't value their eyes.\"")]")
 		to_chat(victim, span_userdanger("Your eyes explode with horrific pain!"))
 		victim.emote("scream")
 		eyes.applyOrganDamage(eyes.maxHealth)
-		victim.adjust_blurriness(30)
+		victim.adjust_eye_blur(30)
 		victim.adjust_blindness(30)
 		return TRUE
 
 /obj/item/clothing/glasses/wraith_spectacles/proc/set_vision_vars(update_vision)
-	lighting_alpha = null
 	tint = 0
 	vision_flags = NONE
-	darkness_view = 2
 	if(!up)
 		if(is_servant_of_ratvar(loc))
-			lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE
 			vision_flags = SEE_MOBS | SEE_TURFS | SEE_OBJS
-			darkness_view = 3
 		else
 			tint = 3
 	if(update_vision && iscarbon(loc))
@@ -75,7 +71,7 @@
 
 /obj/item/clothing/glasses/wraith_spectacles/equipped(mob/living/user, slot)
 	..()
-	if(slot != SLOT_GLASSES || up)
+	if(slot != ITEM_SLOT_EYES || up)
 		return
 	if(HAS_TRAIT(user, TRAIT_BLIND))
 		to_chat(user, "[span_heavy_brass("\"You're blind, idiot. Stop embarrassing yourself.\"")]" )
@@ -161,7 +157,7 @@
 	eyes.applyOrganDamage(0.5)
 	eye_damage_done += 0.5
 	if(eye_damage_done >= 20)
-		H.adjust_blurriness(2)
+		H.adjust_eye_blur(2)
 	if(eye_damage_done >= nearsight_breakpoint)
 		if(!HAS_TRAIT(H, TRAIT_NEARSIGHT))
 			to_chat(H, span_nzcrentr("Your vision doubles, then trembles. Darkness begins to close in. You can't keep this up!"))

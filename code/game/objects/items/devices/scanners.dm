@@ -69,10 +69,7 @@ GENE SCANNER
 		return
 	var/list/t_ray_images = list()
 	for(var/obj/O in orange(distance, viewer) )
-		if(O.level != 1)
-			continue
-
-		if(O.invisibility == INVISIBILITY_MAXIMUM || HAS_TRAIT(O, TRAIT_T_RAY_VISIBLE))
+		if(HAS_TRAIT(O, TRAIT_T_RAY_VISIBLE))
 			var/image/I = new(loc = get_turf(O))
 			var/mutable_appearance/MA = new(O)
 			MA.alpha = 128
@@ -80,7 +77,7 @@ GENE SCANNER
 			I.appearance = MA
 			t_ray_images += I
 	if(t_ray_images.len)
-		flick_overlay(t_ray_images, list(viewer.client), flick_time)
+		flick_overlay_global(t_ray_images, list(viewer.client), flick_time)
 
 /obj/item/healthanalyzer
 	name = "health analyzer"
@@ -221,7 +218,7 @@ GENE SCANNER
 		if(advanced)
 			combined_msg += "\t[span_info("Radiation Level: [M.radiation]%.")]"
 
-	if(advanced && M.hallucinating())
+	if(advanced && M.has_status_effect(/datum/status_effect/hallucination))
 		combined_msg += "\t[span_info("Subject is hallucinating.")]"
 
 	//Eyes and ears
@@ -362,7 +359,7 @@ GENE SCANNER
 		var/mob/living/carbon/human/H = M
 		var/datum/species/S = H.dna.species
 		var/mutant = FALSE
-		if (H.dna.check_mutation(HULK) || H.dna.check_mutation(ACTIVE_HULK))
+		if (H.dna.check_mutation(HULK))
 			mutant = TRUE
 		else if (S.mutantlungs != initial(S.mutantlungs))
 			mutant = TRUE
@@ -427,7 +424,7 @@ GENE SCANNER
 				if(H.is_bleeding())
 					combined_msg += span_danger("Subject is losing blood at a rate of [H.get_total_bleed_rate() * H.physiology?.bleed_mod] cl per process!")
 			var/blood_percent =  round((C.blood_volume / BLOOD_VOLUME_NORMAL(C))*100)
-			var/blood_type = C.dna.blood_type
+			var/blood_type = C.dna.blood_type.name
 			if(blood_id != /datum/reagent/blood)//special blood substance
 				var/datum/reagent/R = GLOB.chemical_reagents_list[blood_id]
 				if(R)
@@ -496,7 +493,7 @@ GENE SCANNER
 		return TRUE
 	return
 
-/obj/item/healthanalyzer/advanced/debug/Initialize()
+/obj/item/healthanalyzer/advanced/debug/Initialize(mapload)
 	. = ..()
 	advanced_surgeries = subtypesof(/datum/surgery)
 
@@ -608,27 +605,13 @@ GENE SCANNER
 	add_fingerprint(user)
 	scangasses(user)			//yogs start: Makes the gas scanning able to be used elseware
 
-/obj/item/analyzer/ranged
-	desc = "A hand-held long-range environmental scanner which reports current gas levels."
-	name = "Long-range gas analyzer"
-	icon_state = "analyzerranged"
-	item_state = "analyzerranged"
-	w_class = WEIGHT_CLASS_SMALL
-	materials = list(/datum/material/iron = 100, /datum/material/glass = 20, /datum/material/gold = 100, /datum/material/bluespace=100)
-	grind_results = list(/datum/reagent/mercury = 5, /datum/reagent/iron = 5, /datum/reagent/silicon = 5, /datum/reagent/bluespace = 10, /datum/reagent/gold = 10)
-
-/obj/item/analyzer/ranged/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
-	. = ..()
+/obj/item/analyzer/afterattack(atom/target as obj, mob/user, proximity)
+	if(!proximity)
+		return
 	add_fingerprint(user)
 	if(istype(target, /turf))
 		var/turf/U = get_turf(target)
 		atmosanalyzer_scan(user, U)
-	else if(istype(target, /obj/effect/anomaly))
-		var/obj/effect/anomaly/A = target
-		A.analyzer_act(user, src)
-		to_chat(user, span_notice("Analyzing... [A]'s unstable field is fluctuating along frequency [format_frequency(A.aSignal.frequency)], code [A.aSignal.code]."))
-	else
-		target.analyzer_act(user, src)
 
 /obj/item/proc/scangasses(mob/user)
 	var/list/combined_msg = list()
@@ -637,11 +620,14 @@ GENE SCANNER
 	if (user.stat || user.eye_blind)
 		return
 
-	var/turf/location = user.loc
-	if(!istype(location))
+	if(!isopenturf(get_turf(user)))
 		return
 
-	var/datum/gas_mixture/environment = location.return_air()
+	var/datum/gas_mixture/environment = user.return_air()
+
+	if(!environment)
+		to_chat(user, span_info("No air detected."))
+		return
 
 	var/pressure = environment.return_pressure()
 	var/total_moles = environment.total_moles()
@@ -652,36 +638,36 @@ GENE SCANNER
 	else
 		combined_msg += span_alert("Pressure: [round(pressure, 0.01)] kPa")
 	if(total_moles)
-		var/o2_concentration = environment.get_moles(/datum/gas/oxygen)/total_moles
-		var/n2_concentration = environment.get_moles(/datum/gas/nitrogen)/total_moles
-		var/co2_concentration = environment.get_moles(/datum/gas/carbon_dioxide)/total_moles
-		var/plasma_concentration = environment.get_moles(/datum/gas/plasma)/total_moles
+		var/o2_concentration = environment.get_moles(GAS_O2)/total_moles
+		var/n2_concentration = environment.get_moles(GAS_N2)/total_moles
+		var/co2_concentration = environment.get_moles(GAS_CO2)/total_moles
+		var/plasma_concentration = environment.get_moles(GAS_PLASMA)/total_moles
 
 		if(abs(n2_concentration - N2STANDARD) < 20)
-			combined_msg += span_info("Nitrogen: [round(n2_concentration*100, 0.01)] % ([round(environment.get_moles(/datum/gas/nitrogen), 0.01)] mol)")
+			combined_msg += span_info("Nitrogen: [round(n2_concentration*100, 0.01)] % ([round(environment.get_moles(GAS_N2), 0.01)] mol)")
 		else
-			combined_msg += span_alert("Nitrogen: [round(n2_concentration*100, 0.01)] % ([round(environment.get_moles(/datum/gas/nitrogen), 0.01)] mol)")
+			combined_msg += span_alert("Nitrogen: [round(n2_concentration*100, 0.01)] % ([round(environment.get_moles(GAS_N2), 0.01)] mol)")
 
 		if(abs(o2_concentration - O2STANDARD) < 2)
-			combined_msg += span_info("Oxygen: [round(o2_concentration*100, 0.01)] % ([round(environment.get_moles(/datum/gas/oxygen), 0.01)] mol)")
+			combined_msg += span_info("Oxygen: [round(o2_concentration*100, 0.01)] % ([round(environment.get_moles(GAS_O2), 0.01)] mol)")
 		else
-			combined_msg += span_alert("Oxygen: [round(o2_concentration*100, 0.01)] % ([round(environment.get_moles(/datum/gas/oxygen), 0.01)] mol)")
+			combined_msg += span_alert("Oxygen: [round(o2_concentration*100, 0.01)] % ([round(environment.get_moles(GAS_O2), 0.01)] mol)")
 
 		if(co2_concentration > 0.01)
-			combined_msg += span_alert("CO2: [round(co2_concentration*100, 0.01)] % ([round(environment.get_moles(/datum/gas/carbon_dioxide), 0.01)] mol)")
+			combined_msg += span_alert("CO2: [round(co2_concentration*100, 0.01)] % ([round(environment.get_moles(GAS_CO2), 0.01)] mol)")
 		else
-			combined_msg += span_info("CO2: [round(co2_concentration*100, 0.01)] % ([round(environment.get_moles(/datum/gas/carbon_dioxide), 0.01)] mol)")
+			combined_msg += span_info("CO2: [round(co2_concentration*100, 0.01)] % ([round(environment.get_moles(GAS_CO2), 0.01)] mol)")
 
 		if(plasma_concentration > 0.005)
-			combined_msg += span_alert("Plasma: [round(plasma_concentration*100, 0.01)] % ([round(environment.get_moles(/datum/gas/plasma), 0.01)] mol)")
+			combined_msg += span_alert("Plasma: [round(plasma_concentration*100, 0.01)] % ([round(environment.get_moles(GAS_PLASMA), 0.01)] mol)")
 		else
-			combined_msg += span_info("Plasma: [round(plasma_concentration*100, 0.01)] % ([round(environment.get_moles(/datum/gas/plasma), 0.01)] mol)")
+			combined_msg += span_info("Plasma: [round(plasma_concentration*100, 0.01)] % ([round(environment.get_moles(GAS_PLASMA), 0.01)] mol)")
 
 		for(var/id in environment.get_gases())
 			if(id in GLOB.hardcoded_gases)
 				continue
 			var/gas_concentration = environment.get_moles(id)/total_moles
-			combined_msg += span_alert("[GLOB.meta_gas_info[id][META_GAS_NAME]]: [round(gas_concentration*100, 0.01)] % ([round(environment.get_moles(id), 0.01)] mol)")
+			combined_msg += span_alert("[GLOB.gas_data.names[id]]: [round(gas_concentration*100, 0.01)] % ([round(environment.get_moles(id), 0.01)] mol)") 
 		combined_msg += span_info("Temperature: [round(environment.return_temperature()-T0C, 0.01)] &deg;C ([round(environment.return_temperature(), 0.01)] K)")
 	to_chat(user, examine_block(combined_msg.Join("\n")))
 
@@ -778,7 +764,7 @@ GENE SCANNER
 
 			for(var/id in air_contents.get_gases())
 				var/gas_concentration = air_contents.get_moles(id)/total_moles
-				combined_msg += span_notice("[GLOB.meta_gas_info[id][META_GAS_NAME]]: [round(gas_concentration*100, 0.01)] % ([round(air_contents.get_moles(id), 0.01)] mol)")
+				combined_msg += span_notice("[GLOB.gas_data.names[id]]: [round(gas_concentration*100, 0.01)] % ([round(air_contents.get_moles(id), 0.01)] mol)")
 			combined_msg += span_notice("Temperature: [round(temperature - T0C,0.01)] &deg;C ([round(temperature, 0.01)] K)")
 
 		else
@@ -904,6 +890,7 @@ GENE SCANNER
 	if (!HAS_TRAIT(M, TRAIT_GENELESS) && !HAS_TRAIT(M, TRAIT_BADDNA)) //no scanning if its a husk or DNA-less Species
 		user.visible_message(span_notice("[user] has analyzed [M]'s genetic sequence."))
 		gene_scan(M, user)
+		playsound(src, 'sound/effects/fastbeep.ogg', 20)
 
 	else
 		user.visible_message(span_notice("[user] failed to analyse [M]'s genetic sequence."), span_warning("[M] has no readable genetic sequence!"))
@@ -963,7 +950,7 @@ GENE SCANNER
 
 		ready = FALSE
 		icon_state = "[icon_state]_recharging"
-		addtimer(CALLBACK(src, .proc/recharge), cooldown, TIMER_UNIQUE)
+		addtimer(CALLBACK(src, PROC_REF(recharge)), cooldown, TIMER_UNIQUE)
 
 /obj/item/sequence_scanner/proc/recharge()
 	icon_state = initial(icon_state)

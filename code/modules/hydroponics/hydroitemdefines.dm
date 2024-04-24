@@ -100,7 +100,7 @@
 	hitsound = 'sound/weapons/bladeslice.ogg'
 	sharpness = SHARP_EDGED
 
-/obj/item/hatchet/Initialize()
+/obj/item/hatchet/Initialize(mapload)
 	. = ..()
 	AddComponent(/datum/component/butchering, 70, 100)
 
@@ -140,8 +140,9 @@
 	sharpness = SHARP_POINTY
 	var/swiping = FALSE
 
-/obj/item/scythe/Initialize()
+/obj/item/scythe/Initialize(mapload)
 	. = ..()
+	AddComponent(/datum/component/cleave_attack, arc_size=180)
 	AddComponent(/datum/component/butchering, 90, 105)
 
 /obj/item/scythe/suicide_act(mob/user)
@@ -154,20 +155,6 @@
 			playsound(src,pick('sound/misc/desceration-01.ogg','sound/misc/desceration-02.ogg','sound/misc/desceration-01.ogg') ,50, 1, -1)
 	return (BRUTELOSS)
 
-/obj/item/scythe/pre_attack(atom/A, mob/living/user, params)
-	if(swiping || !istype(A, /obj/structure/spacevine) || get_turf(A) == get_turf(user))
-		return ..()
-	else
-		var/turf/user_turf = get_turf(user)
-		var/dir_to_target = get_dir(user_turf, get_turf(A))
-		swiping = TRUE
-		var/static/list/scythe_slash_angles = list(0, 45, 90, -45, -90)
-		for(var/i in scythe_slash_angles)
-			var/turf/T = get_step(user_turf, turn(dir_to_target, i))
-			for(var/obj/structure/spacevine/V in T)
-				if(user.Adjacent(V))
-					melee_attack_chain(user, V)
-		swiping = FALSE
 
 // *************************************
 // Nutrient defines for hydroponics
@@ -180,7 +167,7 @@
 	amount_per_transfer_from_this = 10
 	possible_transfer_amounts = list(1,2,5,10,15,25,50)
 
-/obj/item/reagent_containers/glass/bottle/nutrient/Initialize()
+/obj/item/reagent_containers/glass/bottle/nutrient/Initialize(mapload)
 	. = ..()
 	pixel_x = rand(-5, 5)
 	pixel_y = rand(-5, 5)

@@ -4,6 +4,8 @@
 	product_slogans = "Try our new nougat bar!;Twice the calories for half the price!"
 	product_ads = "The healthiest!;Award-winning chocolate bars!;Mmm! So good!;Oh my god it's so juicy!;Have a snack.;Snacks are good for you!;Have some more Getmore!;Best quality snacks straight from mars.;We love chocolate!;Try our new jerky!"
 	icon_state = "snack"
+	panel_type = "panel2"
+	light_mask = "snack-light-mask"
 	products = list(/obj/item/reagent_containers/food/snacks/spacetwinkie = 6,
 					/obj/item/reagent_containers/food/snacks/cheesiehonkers = 6,
 					/obj/item/reagent_containers/food/snacks/candy = 6,
@@ -41,19 +43,12 @@
 		S.forceMove(get_turf(src))
 	return ..()
 
-/obj/machinery/vending/snack/proc/food_load(obj/item/reagent_containers/food/snacks/S)
-	if(vending_machine_input[S.name])
-		vending_machine_input[S.name]++
-	else
-		vending_machine_input[S.name] = 1
-	sortList(vending_machine_input)
-
 /obj/machinery/vending/snack/random
 	name = "\improper Random Snackies"
 	icon_state = "random_snack"
 	desc = "Uh oh!"
 
-/obj/machinery/vending/snack/random/Initialize()
+/obj/machinery/vending/snack/random/Initialize(mapload)
 	..()
 	var/T = pick(subtypesof(/obj/machinery/vending/snack) - /obj/machinery/vending/snack/random)
 	new T(loc)

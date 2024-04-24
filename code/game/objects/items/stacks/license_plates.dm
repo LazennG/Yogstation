@@ -1,6 +1,6 @@
 /obj/item/stack/license_plates
 	name = "invalid plate"
-	desc = "someone fucked up"
+	desc = "Someone fucked up."
 	icon = 'icons/obj/machines/prison.dmi'
 	icon_state = "empty_plate"
 	novariants = FALSE
@@ -23,7 +23,7 @@
 	merge_type = /obj/item/stack/license_plates/filled
 
 ///Override to allow for variations
-/obj/item/stack/license_plates/filled/update_icon()
+/obj/item/stack/license_plates/filled/update_icon_state()
 	. = ..()
 	if(novariants)
 		return

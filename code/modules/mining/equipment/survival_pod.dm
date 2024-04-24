@@ -2,7 +2,7 @@
 /area/survivalpod
 	name = "\improper Emergency Shelter"
 	icon_state = "away"
-	dynamic_lighting = DYNAMIC_LIGHTING_FORCED
+	static_lighting = TRUE
 	requires_power = FALSE
 	has_gravity = STANDARD_GRAVITY
 	valid_territory = FALSE
@@ -83,9 +83,11 @@
 /obj/structure/window/shuttle/survival_pod
 	name = "pod window"
 	icon = 'icons/obj/smooth_structures/pod_window.dmi'
-	icon_state = "smooth"
-	smooth = SMOOTH_MORE
-	canSmoothWith = list(/turf/closed/wall/mineral/titanium/survival, /obj/machinery/door/airlock/survival_pod, /obj/structure/window/shuttle/survival_pod)
+	icon_state = "pod_window-0"
+	base_icon_state = "pod_window"
+	smoothing_flags = SMOOTH_BITMASK
+	smoothing_groups = SMOOTH_GROUP_SHUTTLE_PARTS + SMOOTH_GROUP_SURVIVAL_TITANIUM_POD
+	canSmoothWith = SMOOTH_GROUP_SURVIVAL_TITANIUM_POD
 
 /obj/structure/window/shuttle/survival_pod/spawner/north
 	dir = NORTH
@@ -131,31 +133,39 @@
 /obj/structure/table/survival_pod
 	icon = 'icons/obj/lavaland/survival_pod.dmi'
 	icon_state = "table"
-	smooth = SMOOTH_FALSE
+	smoothing_flags = NONE
+	smoothing_groups = null
+	canSmoothWith = null
 
 //Sleeper
 /obj/machinery/sleeper/survival_pod
 	icon = 'icons/obj/lavaland/survival_pod.dmi'
 	icon_state = "sleeper"
+	base_icon_state = "sleeper"
 
-/obj/machinery/sleeper/survival_pod/update_icon()
-	if(state_open)
-		cut_overlays()
-	else
-		add_overlay("sleeper_cover")
+/obj/machinery/sleeper/survival_pod/update_icon_state()
+	. = ..()
+	icon_state = base_icon_state
+
+/obj/machinery/sleeper/survival_pod/update_overlays()
+	. = ..()
+	if(!state_open)
+		. += "[base_icon_state]_cover"
 
 //Lifeform Stasis Unit
 /obj/machinery/stasis/survival_pod
 	icon = 'icons/obj/lavaland/survival_pod.dmi'
 	icon_state = "sleeper"
+	base_icon_state = "sleeper"
 	mattress_state = null
 	buckle_lying = 270
 
 /obj/machinery/stasis/survival_pod/play_power_sound()
 	return
 
-/obj/machinery/stasis/survival_pod/update_icon()
-	return
+/obj/machinery/stasis/survival_pod/Initialize(mapload)
+	AddElement(/datum/element/update_icon_blocker)
+	return ..()
 
 //Computer
 /obj/item/gps/computer
@@ -206,8 +216,9 @@
 	pitches = FALSE
 	var/empty = FALSE
 
-/obj/machinery/smartfridge/survival_pod/update_icon()
-	return
+/obj/machinery/smartfridge/survival_pod/Initialize(mapload)
+	AddElement(/datum/element/update_icon_blocker)
+	return ..()
 
 /obj/machinery/smartfridge/survival_pod/Initialize(mapload)
 	. = ..()
@@ -241,7 +252,7 @@
 	density = TRUE
 	var/buildstacktype = /obj/item/stack/sheet/metal
 	var/buildstackamount = 5
-	CanAtmosPass = ATMOS_PASS_NO
+	can_atmos_pass = ATMOS_PASS_NO
 
 /obj/structure/fans/deconstruct()
 	if(!(flags_1 & NODECONSTRUCT_1))
@@ -269,7 +280,7 @@
 
 /obj/structure/fans/Initialize(mapload)
 	. = ..()
-	air_update_turf(1)
+	air_update_turf()
 
 //Inivisible, indestructible fans
 /obj/structure/fans/tiny/invisible
@@ -319,10 +330,9 @@
 						/obj/item/gun/magic/wand/fireball,
 						/obj/item/stack/telecrystal/twenty,
 						/obj/item/nuke_core,
-						/obj/item/phylactery,
 						/obj/item/bikehorn)
 
-/obj/item/fakeartefact/Initialize()
+/obj/item/fakeartefact/Initialize(mapload)
 	. = ..()
 	var/obj/item/I = pick(possible)
 	name = initial(I.name)

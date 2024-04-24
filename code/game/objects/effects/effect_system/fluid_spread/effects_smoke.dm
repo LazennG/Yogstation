@@ -16,7 +16,7 @@
 	var/lifetime = 10 SECONDS
 	/// Makes the smoke react to changes on/of its turf.
 	var/static/loc_connections = list(
-		COMSIG_TURF_CALCULATED_ADJACENT_ATMOS = .proc/react_to_atmos_adjacency_changes
+		COMSIG_TURF_CALCULATED_ADJACENT_ATMOS = PROC_REF(react_to_atmos_adjacency_changes)
 	)
 
 /obj/effect/particle_effect/fluid/smoke/Initialize(mapload, datum/fluid_group/group, ...)
@@ -40,7 +40,7 @@
 	SSsmoke.stop_processing(src)
 	if (spread_bucket)
 		SSsmoke.cancel_spread(src)
-	INVOKE_ASYNC(src, .proc/fade_out)
+	INVOKE_ASYNC(src, PROC_REF(fade_out))
 	QDEL_IN(src, 1 SECONDS)
 
 /**
@@ -63,7 +63,7 @@
 
 	var/time_to_transparency = round(((alpha - 160) / alpha) * frames)
 	if(time_to_transparency >= 1)
-		addtimer(CALLBACK(src, /atom.proc/set_opacity, FALSE), time_to_transparency)
+		addtimer(CALLBACK(src, TYPE_PROC_REF(/atom, set_opacity), FALSE), time_to_transparency)
 	else
 		set_opacity(FALSE)
 	animate(src, time = frames, alpha = 0)
@@ -156,6 +156,19 @@
 /obj/effect/particle_effect/fluid/smoke/transparent
 	opacity = FALSE
 
+/// Special smoke used for the RCS thruster
+/obj/effect/particle_effect/fluid/smoke/trail
+	lifetime = 1 SECONDS
+	opacity = FALSE
+	alpha = 100
+
+/obj/effect/particle_effect/fluid/smoke/trail/Initialize(mapload, datum/fluid_group/group, ...)
+	. = ..()
+	var/matrix/start_transform = matrix(transform)/2
+	var/matrix/end_transform = matrix(transform)
+	transform = start_transform
+	animate(src, alpha = 0, transform = end_transform, time = lifetime)
+
 /**
  * A helper proc used to spawn small puffs of smoke.
  *
@@ -195,9 +208,9 @@
 /obj/effect/particle_effect/fluid/smoke/bad/Initialize(mapload)
 	. = ..()
 	/*var/static/list/loc_connections = list(
-		COMSIG_ATOM_ENTERED = .proc/on_entered,
+		COMSIG_ATOM_ENTERED = PROC_REF(on_entered),
 	)*/
-	RegisterSignal(src, COMSIG_ATOM_ENTERED, .proc/on_entered)
+	RegisterSignal(src, COMSIG_ATOM_ENTERED, PROC_REF(on_entered))
 	//AddElement(/datum/element/connect_loc, loc_connections)
 
 /obj/effect/particle_effect/fluid/smoke/bad/smoke_mob(mob/living/carbon/smoker)
@@ -220,8 +233,8 @@
  */
 /obj/effect/particle_effect/fluid/smoke/bad/proc/on_entered(datum/source, atom/movable/arrived, atom/oldloc)
 	SIGNAL_HANDLER
-	if(istype(arrived, /obj/item/projectile/beam))
-		var/obj/item/projectile/beam/beam = arrived
+	if(istype(arrived, /obj/projectile/beam))
+		var/obj/projectile/beam/beam = arrived
 		beam.damage = (beam.damage/2)
 
 /// A factory which produces smoke that makes you cough.
@@ -294,24 +307,23 @@
 		if(!distcheck || get_dist(location, chilly) < blast) // Otherwise we'll get silliness like people using Nanofrost to kill people through walls with cold air
 			air.set_temperature(temperature)
 		
-		if(air.get_moles(/datum/gas/plasma))
-			air.adjust_moles(/datum/gas/nitrogen, air.get_moles(/datum/gas/plasma))
-			air.set_moles(/datum/gas/plasma, 0)
+		if(air.get_moles(GAS_PLASMA))
+			air.adjust_moles(GAS_N2, air.get_moles(GAS_PLASMA))
+			air.set_moles(GAS_PLASMA, 0)
 
 		for(var/obj/effect/hotspot/fire in chilly)
 			qdel(fire)
-		chilly.air_update_turf()
 
 	if(weldvents)
 		for(var/obj/machinery/atmospherics/components/unary/comp in chilly)
 			if(!isnull(comp.welded) && !comp.welded) //must be an unwelded vent pump or vent scrubber.
 				comp.welded = TRUE
-				comp.update_icon()
+				comp.update_appearance(UPDATE_ICON)
 				comp.visible_message(span_danger("[comp] is frozen shut!"))
 
 	// Extinguishes everything in the turf
 	for(var/mob/living/potential_tinder in chilly)
-		potential_tinder.ExtinguishMob()
+		potential_tinder.extinguish_mob()
 	for(var/obj/item/potential_tinder in chilly)
 		potential_tinder.extinguish()
 
@@ -371,7 +383,7 @@
 	for(var/atom/movable/thing as anything in location)
 		if(thing == src)
 			continue
-		if(location.intact && thing.level == 1) //hidden under the floor
+		if(location.underfloor_accessibility < UNDERFLOOR_INTERACTABLE && HAS_TRAIT(thing, TRAIT_T_RAY_VISIBLE))
 			continue
 		reagents.reaction(thing, TOUCH, fraction)
 
@@ -453,3 +465,10 @@
 
 /datum/effect_system/fluid_spread/smoke/chem/quick
 	effect_type = /obj/effect/particle_effect/fluid/smoke/chem/quick
+
+/datum/effect_system/fluid_spread/smoke/chem/darkspawn
+	effect_type = /obj/effect/particle_effect/fluid/smoke/chem/darkspawn
+
+/obj/effect/particle_effect/fluid/smoke/chem/darkspawn
+	lifetime = 10 SECONDS
+	opacity = FALSE

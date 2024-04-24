@@ -5,7 +5,7 @@
 
 /obj/machinery/telecomms/allinone
 	name = "telecommunications mainframe"
-	icon_state = "comm_server"
+	icon_state = "server"
 	desc = "A compact machine used for portable subspace telecommunications processing."
 	density = TRUE
 	use_power = NO_POWER_USE
@@ -16,8 +16,10 @@
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
 	flags_1 = NODECONSTRUCT_1
 
-/obj/machinery/telecomms/allinone/Initialize()
+/obj/machinery/telecomms/allinone/Initialize(mapload)
 	. = ..()
+	id = "Telecommunicatons Mainframe" //Does nothing, just prevents from showing NULL
+	network = "SyndiMain"
 	if (intercept)
 		freq_listening = list(FREQ_SYNDICATE)
 

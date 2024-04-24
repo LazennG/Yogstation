@@ -26,10 +26,10 @@
 			species.disliked_food &= ~MEAT
 
 /datum/quirk/vegetarian/check_quirk(datum/preferences/prefs)
-	var/species_type = prefs.read_preference(/datum/preference/choiced/species)
+	var/datum/species/species_type = prefs.read_preference(/datum/preference/choiced/species)
 	var/datum/species/species = new species_type
 
-	var/disallowed_trait = (NOMOUTH in species.species_traits) // Cant eat
+	var/disallowed_trait = (NOMOUTH in initial(species_type.species_traits)) // Cant eat
 	qdel(species)
 
 	if(disallowed_trait)
@@ -57,11 +57,8 @@
 		species.liked_food &= ~PINEAPPLE
 
 /datum/quirk/pineapple_liker/check_quirk(datum/preferences/prefs)
-	var/species_type = prefs.read_preference(/datum/preference/choiced/species)
-	var/datum/species/species = new species_type
-
-	var/disallowed_trait = (NOMOUTH in species.species_traits) // Cant eat
-	qdel(species)
+	var/datum/species/species_type = prefs.read_preference(/datum/preference/choiced/species)
+	var/disallowed_trait = (NOMOUTH in initial(species_type.species_traits)) // Cant eat
 
 	if(disallowed_trait)
 		return "You don't have the ability to eat!"
@@ -88,11 +85,8 @@
 		species.disliked_food &= ~PINEAPPLE
 
 /datum/quirk/pineapple_hater/check_quirk(datum/preferences/prefs)
-	var/species_type = prefs.read_preference(/datum/preference/choiced/species)
-	var/datum/species/species = new species_type
-
-	var/disallowed_trait = (NOMOUTH in species.species_traits) // Cant eat
-	qdel(species)
+	var/datum/species/species_type = prefs.read_preference(/datum/preference/choiced/species)
+	var/disallowed_trait = (NOMOUTH in initial(species_type.species_traits)) // Cant eat
 
 	if(disallowed_trait)
 		return "You don't have the ability to eat!"
@@ -122,11 +116,8 @@
 		species.disliked_food = initial(species.disliked_food)
 
 /datum/quirk/deviant_tastes/check_quirk(datum/preferences/prefs)
-	var/species_type = prefs.read_preference(/datum/preference/choiced/species)
-	var/datum/species/species = new species_type
-
-	var/disallowed_trait = (NOMOUTH in species.species_traits) // Cant eat
-	qdel(species)
+	var/datum/species/species_type = prefs.read_preference(/datum/preference/choiced/species)
+	var/disallowed_trait = (NOMOUTH in initial(species_type.species_traits)) // Cant eat
 
 	if(disallowed_trait)
 		return "You don't have the ability to eat!"
@@ -153,7 +144,7 @@
 /datum/quirk/random_accent/post_add()
 	var/mob/living/carbon/human/H = quirk_holder
 	if(!H.mind.accent_name)
-		H.mind.RegisterSignal(H, COMSIG_MOB_SAY, /datum/mind/.proc/handle_speech)
+		H.mind.RegisterSignal(H, COMSIG_MOB_SAY, TYPE_PROC_REF(/datum/mind, handle_speech))
 	H.mind.accent_name = pick(assoc_to_keys(GLOB.accents_name2file))// Right now this pick just picks a straight random one from all implemented.
 
 /datum/quirk/colorist
@@ -168,9 +159,9 @@
 	var/mob/living/carbon/human/H = quirk_holder
 	var/obj/item/dyespray/spraycan = new(get_turf(H))
 	var/list/slots = list(
-		"in your left pocket" = SLOT_L_STORE,
-		"in your right pocket" = SLOT_R_STORE,
-		"in your backpack" = SLOT_IN_BACKPACK
+		"in your left pocket" = ITEM_SLOT_LPOCKET,
+		"in your right pocket" = ITEM_SLOT_RPOCKET,
+		"in your backpack" = ITEM_SLOT_BACKPACK
 	)
 	where = H.equip_in_one_of_slots(spraycan, slots, FALSE) || "at your feet"
 
@@ -182,11 +173,8 @@
 	to_chat(quirk_holder, span_boldnotice("Your bottle of hair dye spray is [where]."))
 
 /datum/quirk/colorist/check_quirk(datum/preferences/prefs)
-	var/species_type = prefs.read_preference(/datum/preference/choiced/species)
-	var/datum/species/species = new species_type
-
-	var/disallowed_trait = (HAIR in species.species_traits) // No Hair
-	qdel(species)
+	var/datum/species/species_type = prefs.read_preference(/datum/preference/choiced/species)
+	var/disallowed_trait = (HAIR in initial(species_type.species_traits)) // No Hair
 
 	if(!disallowed_trait)
 		return "You don't have hair!"
@@ -197,7 +185,7 @@
 	desc = "You are the current owner of an heirloom, passed down for generations. You have to keep it safe!"
 	icon = "toolbox"
 	value = 0
-	mood_quirk = FALSE
+	mood_quirk = TRUE
 	var/obj/item/heirloom
 	var/where
 	medical_record_text = "Patient demonstrates an unnatural attachment to a family heirloom."
@@ -287,9 +275,9 @@
 		/obj/item/dice/d20)
 	heirloom = new heirloom_type(get_turf(quirk_holder))
 	var/list/slots = list(
-		"in your left pocket" = SLOT_L_STORE,
-		"in your right pocket" = SLOT_R_STORE,
-		"in your backpack" = SLOT_IN_BACKPACK
+		"in your left pocket" = ITEM_SLOT_LPOCKET,
+		"in your right pocket" = ITEM_SLOT_RPOCKET,
+		"in your backpack" = ITEM_SLOT_BACKPACK
 	)
 	where = H.equip_in_one_of_slots(heirloom, slots, FALSE) || "at your feet"
 
@@ -306,7 +294,7 @@
 	heirloom.AddComponent(/datum/component/heirloom, quirk_holder.mind, family_name)
 
 /datum/quirk/family_heirloom/on_process()
-	if(heirloom in quirk_holder.GetAllContents())
+	if(heirloom in quirk_holder.get_all_contents())
 		SEND_SIGNAL(quirk_holder, COMSIG_CLEAR_MOOD_EVENT, "family_heirloom_missing")
 		SEND_SIGNAL(quirk_holder, COMSIG_ADD_MOOD_EVENT, "family_heirloom", /datum/mood_event/family_heirloom)
 	else
@@ -319,3 +307,121 @@
 /datum/quirk/family_heirloom/on_clone(data)
 	heirloom = data
 
+/datum/quirk/bald
+	name = "Smooth-Headed"
+	desc = "You have no hair and are quite insecure about it! Keep your head covered."
+	value = 0
+	icon = "fa-egg"
+	mob_trait = TRAIT_BALD
+	gain_text = span_notice("Your head is as smooth as can be, it's terrible.")
+	lose_text = span_notice("Your head itches, could it be... growing hair?!")
+	medical_record_text = "Patient starkly refused to take off headwear during examination."
+	/// Their original hairstyle before becoming bald
+	var/old_hair
+
+/datum/quirk/bald/add()
+	var/mob/living/carbon/human/H = quirk_holder
+	old_hair = H.hair_style
+	H.hair_style = "Bald"
+	H.update_body_parts()
+	H.update_hair()
+	RegisterSignal(H, COMSIG_CARBON_EQUIP_HAT, PROC_REF(equip_hat))
+	RegisterSignal(H, COMSIG_CARBON_UNEQUIP_HAT, PROC_REF(unequip_hat))
+
+/datum/quirk/bald/on_spawn()
+	var/mob/living/carbon/human/H = quirk_holder
+	var/obj/item/clothing/head/wig/natural/W = new(get_turf(H))
+	if(old_hair == "Bald")
+		W.hair_style = pick(GLOB.hair_styles_list - "Bald")
+	else
+		W.hair_style = old_hair
+	W.update_icon()
+	var/list/slots = list(
+		"head" = ITEM_SLOT_HEAD,
+		"backpack" = ITEM_SLOT_BACKPACK,
+		"hands" = ITEM_SLOT_HANDS
+	)
+	H.equip_in_one_of_slots(W, slots, qdel_on_fail = TRUE)
+
+/datum/quirk/bald/remove()
+	. = ..()
+	var/mob/living/carbon/human/H = quirk_holder
+	if(QDELETED(H)) // uh oh
+		return
+	H.hair_style = old_hair
+	H.update_body_parts()
+	H.update_hair()
+	UnregisterSignal(H, COMSIG_CARBON_EQUIP_HAT)
+	UnregisterSignal(H, COMSIG_CARBON_UNEQUIP_HAT)
+	SEND_SIGNAL(H, COMSIG_CLEAR_MOOD_EVENT, "bad_hair_day")
+
+/datum/quirk/bald/proc/equip_hat(mob/user, obj/item/hat)
+	if(istype(hat, /obj/item/clothing/head/wig))
+		SEND_SIGNAL(quirk_holder, COMSIG_ADD_MOOD_EVENT, "bad_hair_day", /datum/mood_event/confident_mane)
+	else
+		SEND_SIGNAL(quirk_holder, COMSIG_CLEAR_MOOD_EVENT, "bad_hair_day")
+
+/datum/quirk/bald/proc/unequip_hat(mob/user, obj/item/hat)
+	SEND_SIGNAL(quirk_holder, COMSIG_ADD_MOOD_EVENT, "bad_hair_day", /datum/mood_event/bald)
+
+/datum/quirk/sheltered
+	name = "Sheltered"
+	desc = "You never learned to speak galactic common."
+	icon = "comment-dots"
+	value = 0
+	mob_trait = TRAIT_SHELTERED
+	gain_text = span_danger("You do not speak galactic common.")
+	lose_text = span_notice("You start to put together how to speak galactic common.")
+	medical_record_text = "Patient looks perplexed when questioned in galactic common."
+	job_blacklist = list("Captain", "Head of Personnel", "Research Director", "Chief Medical Officer", "Chief Engineer", "Head of Security", "Security Officer", "Warden")
+
+/datum/quirk/sheltered/on_clone(data)
+	var/mob/living/carbon/human/H = quirk_holder
+	H.remove_language(/datum/language/common, FALSE, TRUE)
+	if(!H.get_selected_language())
+		H.grant_language(/datum/language/japanese)
+
+/datum/quirk/sheltered/on_spawn()
+	var/mob/living/carbon/human/H = quirk_holder
+	H.remove_language(/datum/language/common, FALSE, TRUE)
+	if(!H.get_selected_language())
+		H.grant_language(/datum/language/japanese)
+
+//regular cybernetic organs
+/datum/quirk/cyberorgan/lungs
+	name = "Cybernetic Organ (Lungs)"
+	desc = "Due to a past incident you lost function of your lungs, but now have cybernetic lungs!"
+	organ_list = list(ORGAN_SLOT_LUNGS = /obj/item/organ/lungs/cybernetic)
+	medical_record_text = "During physical examination, patient was found to have cybernetic lungs."
+	value = 0
+	quality = "regular cybernetic"
+
+/datum/quirk/cyberorgan/lungs/check_quirk(datum/preferences/prefs)
+	var/datum/species/species_type = prefs.read_preference(/datum/preference/choiced/species)
+	var/datum/species/species = new species_type
+	if(TRAIT_NOBREATH in species.inherent_traits) // species with TRAIT_NOBREATH don't have lungs
+		return "You don't have lungs!"
+	return ..()
+
+/datum/quirk/cyberorgan/heart
+	name = "Cybernetic Organ (Heart)"
+	desc = "Due to a past incident you lost function of your heart, but now have a cybernetic heart!"
+	organ_list = list(ORGAN_SLOT_HEART = /obj/item/organ/heart/cybernetic)
+	medical_record_text = "During physical examination, patient was found to have a cybernetic heart."
+	value = 0
+	quality = "regular cybernetic"
+
+/datum/quirk/cyberorgan/heart/check_quirk(datum/preferences/prefs)
+	var/datum/species/species_type = prefs.read_preference(/datum/preference/choiced/species)
+	var/datum/species/species = new species_type
+	if(NOBLOOD in species.species_traits) // species with NOBLOOD don't have a heart
+		return "You don't have a heart!"
+	return ..()
+
+/datum/quirk/cyberorgan/liver
+	name = "Cybernetic Organ (Liver)"
+	desc = "Due to a past incident you lost function of your liver, but now have a cybernetic liver!"
+	organ_list = list(ORGAN_SLOT_LIVER = /obj/item/organ/liver/cybernetic)
+	medical_record_text = "During physical examination, patient was found to have a cybernetic liver."
+	value = 0
+	quality = "regular cybernetic"

@@ -26,7 +26,8 @@
 
 	var/obj/structure/cable/attached		// the attached cable
 
-/obj/item/powersink/update_icon()
+/obj/item/powersink/update_icon_state()
+	. = ..()
 	icon_state = "powersink[mode == OPERATING]"
 
 /obj/item/powersink/proc/set_mode(value)
@@ -56,14 +57,14 @@
 			density = TRUE
 
 	mode = value
-	update_icon()
+	update_appearance(UPDATE_ICON)
 	set_light(0)
 
 /obj/item/powersink/attackby(obj/item/I, mob/user, params)
 	if(I.tool_behaviour == TOOL_SCREWDRIVER)
 		if(mode == DISCONNECTED)
 			var/turf/T = loc
-			if(isturf(T) && !T.intact)
+			if(isturf(T) && T.underfloor_accessibility >= UNDERFLOOR_INTERACTABLE)
 				attached = locate() in T
 				if(!attached)
 					to_chat(user, span_warning("This device must be placed over an exposed, powered cable node!"))

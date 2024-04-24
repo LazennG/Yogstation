@@ -9,6 +9,13 @@
 	var/armed = FALSE
 
 
+/obj/item/assembly/mousetrap/Initialize(mapload)
+	. = ..()
+	var/static/list/loc_connections = list(
+		COMSIG_ATOM_ENTERED = PROC_REF(trap_stepped_on),
+	)
+	AddElement(/datum/element/connect_loc, loc_connections)
+
 /obj/item/assembly/mousetrap/examine(mob/user)
 	. = ..()
 	. += span_notice("The pressure plate is [armed?"primed":"safe"].")
@@ -22,16 +29,20 @@
 				if((HAS_TRAIT(user, TRAIT_DUMB) || HAS_TRAIT(user, TRAIT_CLUMSY)) && prob(50))
 					to_chat(user, span_warning("Your hand slips, setting off the trigger!"))
 					pulse(FALSE)
-		update_icon()
+		update_appearance(UPDATE_ICON)
 		playsound(src, 'sound/weapons/handcuffs.ogg', 30, TRUE, -3)
 
-/obj/item/assembly/mousetrap/update_icon()
+/obj/item/assembly/mousetrap/update_icon(updates=ALL)
+	. = ..()
+	if(holder)
+		holder.update_icon(updates)
+
+/obj/item/assembly/mousetrap/update_icon_state()
+	. = ..()
 	if(armed)
 		icon_state = "mousetraparmed"
 	else
 		icon_state = "mousetrap"
-	if(holder)
-		holder.update_icon()
 
 /obj/item/assembly/mousetrap/proc/triggered(mob/target, type = "feet")
 	if(!armed)
@@ -42,7 +53,7 @@
 		if(HAS_TRAIT(H, TRAIT_PIERCEIMMUNE))
 			playsound(src, 'sound/effects/snap.ogg', 50, TRUE)
 			armed = FALSE
-			update_icon()
+			update_appearance(UPDATE_ICON)
 			pulse(FALSE)
 			return FALSE
 		switch(type)
@@ -69,7 +80,7 @@
 		M.splat()
 	playsound(src, 'sound/effects/snap.ogg', 50, TRUE)
 	armed = FALSE
-	update_icon()
+	update_appearance(UPDATE_ICON)
 	pulse(FALSE)
 
 
@@ -87,7 +98,7 @@
 			return
 		to_chat(user, span_notice("You disarm [src]."))
 	armed = !armed
-	update_icon()
+	update_appearance(UPDATE_ICON)
 	playsound(src, 'sound/weapons/handcuffs.ogg', 30, TRUE, -3)
 
 
@@ -105,7 +116,7 @@
 	return ..()
 
 
-/obj/item/assembly/mousetrap/Crossed(atom/movable/AM as mob|obj)
+/obj/item/assembly/mousetrap/proc/trap_stepped_on(datum/source, atom/movable/AM, ...)
 	if(armed)
 		if(ismob(AM))
 			var/mob/MM = AM
@@ -120,7 +131,7 @@
 					triggered(MM)
 		else if(AM.density) // For mousetrap grenades, set off by anything heavy
 			triggered(AM)
-	..()
+	return
 
 
 /obj/item/assembly/mousetrap/on_found(mob/finder)

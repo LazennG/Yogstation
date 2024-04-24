@@ -1,10 +1,11 @@
 /obj/item/clothing/under
-	icon = 'icons/obj/clothing/uniforms.dmi'
 	name = "under"
+	icon = 'icons/obj/clothing/uniforms.dmi'
+	lefthand_file = 'icons/mob/inhands/clothing/suits_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/clothing/suits_righthand.dmi'
 	body_parts_covered = CHEST|GROIN|LEGS|ARMS
-	permeability_coefficient = 0.9
 	slot_flags = ITEM_SLOT_ICLOTHING
-	armor = list(MELEE = 0, BULLET = 0, LASER = 0,ENERGY = 0, BOMB = 0, BIO = 0, RAD = 0, FIRE = 0, ACID = 0, WOUND = 5)
+	armor = list(MELEE = 0, BULLET = 0, LASER = 0,ENERGY = 0, BOMB = 0, BIO = 5, RAD = 0, FIRE = 0, ACID = 0, WOUND = 5)
 	equip_sound = 'sound/items/handling/jumpsuit_equip.ogg'
 	drop_sound = 'sound/items/handling/cloth_drop.ogg'
 	pickup_sound =  'sound/items/handling/cloth_pickup.ogg'
@@ -22,13 +23,15 @@
 	var/freshly_laundered = FALSE
 	tearable = TRUE //all jumpsuits can be torn down and used for cloth in an emergency | yogs
 
-/obj/item/clothing/under/worn_overlays(isinhands = FALSE)
-	. = list()
+/obj/item/clothing/under/worn_overlays(mutable_appearance/standing, isinhands = FALSE, icon_file)
+	. = ..()
 	if(!isinhands)
 		if(damaged_clothes)
 			. += mutable_appearance('icons/effects/item_damage.dmi', "damageduniform")
 		if(HAS_BLOOD_DNA(src))
-			. += mutable_appearance('icons/effects/blood.dmi', "uniformblood")
+			var/mutable_appearance/bloody_uniform = mutable_appearance('icons/effects/blood.dmi', "uniformblood")
+			bloody_uniform.color = get_blood_dna_color(return_blood_DNA())
+			. += bloody_uniform
 		if(accessory_overlay)
 			. += accessory_overlay
 
@@ -52,7 +55,7 @@
 	else if(damaged_state == CLOTHING_PRISTINE && has_sensor == BROKEN_SENSORS)
 		has_sensor = HAS_SENSORS
 
-/obj/item/clothing/under/Initialize()
+/obj/item/clothing/under/Initialize(mapload)
 	. = ..()
 	if(random_sensor)
 		//make the sensor mode favor higher levels, except coords.
@@ -66,7 +69,7 @@
 /obj/item/clothing/under/emp_act()
 	. = ..()
 	if(has_sensor > NO_SENSORS)
-		sensor_mode = pick(SENSOR_OFF, SENSOR_OFF, SENSOR_OFF, SENSOR_LIVING, SENSOR_LIVING, SENSOR_VITALS, SENSOR_VITALS, SENSOR_COORDS)
+		sensor_mode = min(pick(SENSOR_OFF, SENSOR_LIVING, SENSOR_VITALS, SENSOR_COORDS), max(sensor_mode - 1, SENSOR_OFF))//pick a random sensor level below the current one
 		if(ismob(loc))
 			var/mob/M = loc
 			to_chat(M,span_warning("The sensors on the [src] change rapidly!"))
@@ -79,7 +82,7 @@
 		if(!alt_covers_chest)
 			body_parts_covered |= CHEST
 
-	if(slot == SLOT_W_UNIFORM && freshly_laundered)
+	if(slot == ITEM_SLOT_ICLOTHING && freshly_laundered)
 		freshly_laundered = FALSE
 		SEND_SIGNAL(user, COMSIG_ADD_MOOD_EVENT, "fresh_laundry", /datum/mood_event/fresh_laundry)
 
@@ -102,10 +105,13 @@
 			adjusted = ALT_STYLE
 		H.update_inv_w_uniform()
 //Yogs End
-	if(attached_accessory && slot != SLOT_HANDS)
+	if(attached_accessory && slot != ITEM_SLOT_HANDS)
 		attached_accessory.on_clothing_equip(src, user)
 		if(attached_accessory.above_suit)
 			H.update_inv_wear_suit()
+	if(is_synth(user) && has_sensor)
+		to_chat(user, span_notice("Suit sensors disabled due to non-compatible user."))
+		sensor_mode = SENSOR_OFF
 
 /obj/item/clothing/under/dropped(mob/user)
 	if(attached_accessory)

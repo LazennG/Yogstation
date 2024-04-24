@@ -11,9 +11,10 @@
 	var/mission = "Assist the station."
 	var/teamsize = 5
 	var/polldesc
+	var/dusting = FALSE
 
 	// this can be safely set as default because it doesnt do anything unless specifically making uplinked ERT
-	var/obj/item/uplinktype = /obj/item/ntuplink/official 
+	var/obj/item/uplinktype = /obj/item/ntuplink/official
 
 /datum/ert/New()
 	if (!polldesc)
@@ -41,7 +42,7 @@
 	polldesc = "the Peacekeeping Force"
 	teamsize = 5 // redundant but keeping this here for clarity
 	leader_role = /datum/antagonist/ert/occupying/commander
-	roles = list(/datum/antagonist/ert/occupying,/datum/antagonist/ert/occupying/heavy,/datum/antagonist/ert/occupying,/datum/antagonist/ert/occupying) 
+	roles = list(/datum/antagonist/ert/occupying,/datum/antagonist/ert/occupying/heavy,/datum/antagonist/ert/occupying,/datum/antagonist/ert/occupying)
 
 /datum/ert/red
 	leader_role = /datum/antagonist/ert/commander/red
@@ -56,6 +57,14 @@
 	code = "Delta"
 	mission = "Leave no witnesses."
 	polldesc = "an elite Nanotrasen Strike Team"
+
+/datum/ert/mining
+	leader_role = /datum/antagonist/ert/mining
+	roles = list(/datum/antagonist/ert/mining)
+	rename_team = "Megafauna Kill Team"
+	code = "Rock and STONE"
+	mission = "Eliminate hostile fauna while minimizing casualties."
+	polldesc = "A merry band of Megafauna-hunting dwarves"
 
 /datum/ert/official
 	code = "Green"
@@ -152,3 +161,11 @@
 	mission = "HONK them into submission."
 	polldesc = "an elite Nanotrasen tactical pranking squad"
 	code = "HOOOOOOOOOONK"
+
+/datum/ert/imperial
+	roles = list(/datum/antagonist/ert/imperial, /datum/antagonist/ert/imperial, /datum/antagonist/ert/imperial/hotshot, /datum/antagonist/ert/imperial/sniper, /datum/antagonist/ert/imperial, /datum/antagonist/ert/imperial/plasma)
+	leader_role = /datum/antagonist/ert/imperial/sergeant
+	teamsize = 7
+	rename_team = "Imperial Guard"
+	mission = "Eliminate the threat to the station."
+	polldesc = "the Imperial Guard Task Force"

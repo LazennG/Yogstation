@@ -95,24 +95,6 @@
 			return -1
 		tool = I
 
-	if(isipc(target))
-		if(istype(tool, /obj/item/organ/brain/positron))
-			var/obj/item/bodypart/affected = target.get_bodypart(check_zone(target_zone))
-			if(!affected)
-				return -1
-			if(affected.status != ORGAN_ROBOTIC)
-				to_chat(user, "<span class='notice'>You can't put [tool] into a meat enclosure!</span>")
-				return -1
-			if(target_zone != BODY_ZONE_CHEST)
-				to_chat(user, "<span class='notice'>You have to install [tool] in [target]'s chest!</span>")
-				return -1
-			if(target.getorganslot(ORGAN_SLOT_BRAIN))
-				to_chat(user, "<span class='notice'>[target] already has a brain! You'd rather not find out what would happen with two in there.</span>")
-				return -1
-		else if(istype(tool, /obj/item/organ/brain))
-			to_chat(user, "<span class='notice'>[target] does not have the proper connectors to interface with [tool].</span>")
-			return -1
-
 	if(isorgan(tool))
 		current_type = "insert"
 		preop_sound = initial(preop_sound)
@@ -120,6 +102,11 @@
 		I = tool
 		if(target_zone != I.zone || target.getorganslot(I.slot))
 			to_chat(user, span_notice("There is no room for [I] in [target]'s [parse_zone(target_zone)]!"))
+			return -1
+
+		var/obj/item/organ/O = tool
+		if(!(O.compatible_biotypes & target.mob_biotypes))
+			to_chat(user, span_notice("[target] is not compatible with [O]!"))
 			return -1
 
 		display_results(user, target, span_notice("You begin to insert [tool] into [target]'s [parse_zone(target_zone)]..."),
@@ -142,8 +129,10 @@
 		else
 			var/list/radial_menu = list()
 			for(var/obj/item/organ/O in organs)
+				
 				O.on_find(user)
-				radial_menu[O] = image(O)
+				if(O.can_extract())
+					radial_menu[O] = image(O)
 			I = show_radial_menu(user, target, radial_menu, tooltips = TRUE)
 			if(I && user && target && user.Adjacent(target) && user.get_active_held_item() == tool)
 				display_results(user, target, span_notice("You begin to extract [I] from [target]'s [parse_zone(target_zone)]..."),
@@ -181,6 +170,10 @@
 			H.leave_victim()
 			return FALSE
 		if(I && I.owner == target)
+			if(istype(I, /obj/item/organ/shadowtumor))//Thralls resist deconversion
+				var/obj/item/organ/shadowtumor/tumor = I
+				if(tumor.resist(target))
+					return FALSE
 			display_results(user, target, span_notice("You successfully extract [I] from [target]'s [parse_zone(target_zone)]."),
 				"[user] successfully extracts [I] from [target]'s [parse_zone(target_zone)]!",
 				"[user] successfully extracts something from [target]'s [parse_zone(target_zone)]!")

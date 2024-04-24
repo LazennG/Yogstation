@@ -12,7 +12,7 @@
 	icon_state = "metal"
 	max_integrity = 200
 	armor = list(MELEE = 10, BULLET = 0, LASER = 0, ENERGY = 100, BOMB = 10, BIO = 100, RAD = 100, FIRE = 50, ACID = 50)
-	CanAtmosPass = ATMOS_PASS_DENSITY
+	can_atmos_pass = ATMOS_PASS_DENSITY
 	flags_1 = RAD_PROTECT_CONTENTS_1 | RAD_NO_CONTAMINATE_1
 	rad_insulation = RAD_MEDIUM_INSULATION
 
@@ -26,10 +26,10 @@
 	var/sheetType = /obj/item/stack/sheet/metal //what we're made of
 	var/sheetAmount = 7 //how much we drop when deconstructed
 
-/obj/structure/mineral_door/Initialize()
+/obj/structure/mineral_door/Initialize(mapload)
 	. = ..()
 
-	air_update_turf(TRUE)
+	air_update_turf()
 
 /obj/structure/mineral_door/Move()
 	var/turf/T = loc
@@ -94,12 +94,12 @@
 	density = FALSE
 	door_opened = TRUE
 	layer = OPEN_DOOR_LAYER
-	air_update_turf(1)
-	update_icon()
+	air_update_turf()
+	update_appearance(UPDATE_ICON)
 	isSwitchingStates = FALSE
 
 	if(close_delay != -1)
-		addtimer(CALLBACK(src, .proc/Close), close_delay)
+		addtimer(CALLBACK(src, PROC_REF(Close)), close_delay)
 
 /obj/structure/mineral_door/proc/Close()
 	if(isSwitchingStates || !door_opened)
@@ -115,11 +115,12 @@
 	set_opacity(TRUE)
 	door_opened = FALSE
 	layer = initial(layer)
-	air_update_turf(1)
-	update_icon()
+	air_update_turf()
+	update_appearance(UPDATE_ICON)
 	isSwitchingStates = FALSE
 
-/obj/structure/mineral_door/update_icon()
+/obj/structure/mineral_door/update_icon_state()
+	. = ..()
 	icon_state = "[initial(icon_state)][door_opened ? "open":""]"
 
 /obj/structure/mineral_door/attackby(obj/item/I, mob/user)
@@ -133,7 +134,7 @@
 /obj/structure/mineral_door/setAnchored(anchorvalue) //called in default_unfasten_wrench() chain
 	. = ..()
 	set_opacity(anchored ? !door_opened : FALSE)
-	air_update_turf(TRUE)
+	air_update_turf()
 
 /obj/structure/mineral_door/wrench_act(mob/living/user, obj/item/I)
 	default_unfasten_wrench(user, I, 40)
@@ -219,9 +220,6 @@
 	max_integrity = 300
 	light_range = 2
 
-/obj/structure/mineral_door/uranium/ComponentInitialize()
-	return
-
 /obj/structure/mineral_door/sandstone
 	name = "sandstone door"
 	icon_state = "sandstone"
@@ -240,9 +238,6 @@
 	name = "plasma door"
 	icon_state = "plasma"
 	sheetType = /obj/item/stack/sheet/mineral/plasma
-
-/obj/structure/mineral_door/transparent/plasma/ComponentInitialize()
-	return
 
 /obj/structure/mineral_door/transparent/plasma/welder_act(mob/living/user, obj/item/I)
 	return
@@ -307,13 +302,19 @@
 	resistance_flags = FLAMMABLE
 	max_integrity = 20
 
-/obj/structure/mineral_door/paperframe/Initialize()
+/obj/structure/mineral_door/paperframe/Initialize(mapload)
 	. = ..()
-	queue_smooth_neighbors(src)
+	if(smoothing_flags & (SMOOTH_CORNERS|SMOOTH_BITMASK))
+		QUEUE_SMOOTH_NEIGHBORS(src)
+
+/obj/structure/mineral_door/paperframe/Destroy()
+	if(smoothing_flags & (SMOOTH_CORNERS|SMOOTH_BITMASK))
+		QUEUE_SMOOTH_NEIGHBORS(src)
+	return ..()
 
 /obj/structure/mineral_door/paperframe/examine(mob/user)
 	. = ..()
-	if(obj_integrity < max_integrity)
+	if(atom_integrity < max_integrity)
 		. += span_info("It looks a bit damaged, you may be able to fix it with some <b>paper</b>.")
 
 /obj/structure/mineral_door/paperframe/pickaxe_door(mob/living/user, obj/item/I)
@@ -330,19 +331,12 @@
 		fire_act(I.is_hot())
 		return
 
-	if((user.a_intent != INTENT_HARM) && istype(I, /obj/item/paper) && (obj_integrity < max_integrity))
+	if((user.a_intent != INTENT_HARM) && istype(I, /obj/item/paper) && (atom_integrity < max_integrity))
 		user.visible_message("[user] starts to patch the holes in [src].", span_notice("You start patching some of the holes in [src]!"))
 		if(do_after(user, 2 SECONDS, src))
-			obj_integrity = min(obj_integrity+4,max_integrity)
+			update_integrity(min(atom_integrity + 4, max_integrity))
 			qdel(I)
 			user.visible_message("[user] patches some of the holes in [src].", span_notice("You patch some of the holes in [src]!"))
 			return TRUE
 
-	return ..()
-
-/obj/structure/mineral_door/paperframe/ComponentInitialize()
-	return
-
-/obj/structure/mineral_door/paperframe/Destroy()
-	queue_smooth_neighbors(src)
 	return ..()

@@ -5,9 +5,11 @@
 	icon = 'icons/effects/effects.dmi'
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF | FREEZE_PROOF
 	move_resist = INFINITY
-	obj_flags = 0
+	uses_integrity = FALSE
+	obj_flags = NONE
+	blocks_emissive = EMISSIVE_BLOCK_GENERIC
 
-/obj/effect/take_damage(damage_amount, damage_type = BRUTE, damage_flag = 0, sound_effect = 1, attack_dir)
+/obj/effect/take_damage(damage_amount, damage_type = BRUTE, damage_flag = 0, sound_effect = TRUE, attack_dir, armour_penetration = 0)
 	return
 
 /obj/effect/fire_act(exposed_temperature, exposed_volume)
@@ -16,7 +18,7 @@
 /obj/effect/acid_act()
 	return
 
-/obj/effect/mech_melee_attack(obj/mecha/M, equip_allowed)
+/obj/effect/mech_melee_attack(obj/mecha/M, punch_force, equip_allowed = TRUE)
 	return 0
 
 /obj/effect/blob_act(obj/structure/blob/B)

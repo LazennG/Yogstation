@@ -2,7 +2,6 @@
 	name = "shuttle component"
 	desc = "Something for shuttles."
 	density = TRUE
-	obj_integrity = 250
 	max_integrity = 250
 	icon = 'icons/turf/shuttle.dmi'
 	icon_state = "burst_plasma"
@@ -12,7 +11,7 @@
 	var/icon_state_open = "burst_plasma_open"
 	var/icon_state_off = "burst_plasma_off"
 
-/obj/machinery/shuttle/Initialize()
+/obj/machinery/shuttle/Initialize(mapload)
 	. = ..()
 	GLOB.custom_shuttle_machines += src
 

@@ -31,7 +31,7 @@
 			next_extinguish = world.time + extinguish_cooldown
 			extinguishes_left--
 			H.visible_message(span_warning("[H]'s suit automatically extinguishes [H.p_them()]!"),span_warning("Your suit automatically extinguishes you."))
-			H.ExtinguishMob()
+			H.extinguish_mob()
 			new /obj/effect/particle_effect/water(get_turf(H))
 
 
@@ -47,21 +47,21 @@
 	light_system = MOVABLE_LIGHT
 	light_range = 4
 	light_on = FALSE
-	var/helmet_on = FALSE
 	actions_types = list(/datum/action/item_action/toggle_helmet_light)
 	flash_protect = 0
-	var/mutable_appearance/helmet_mob_overlay
-	var/saved_style = null //our helmet style to apply overlay
-	var/pref_alteration = TRUE ///set to true if the item will be modified by player's "plasmaman helmet style pref"
+	clothing_traits = list(TRAIT_SAFEWELD)
+	var/helmet_on = FALSE
+	///Boolean on whether the item will be modified by player's "plasmaman helmet style pref"
+	var/pref_alteration = TRUE
+	///The saved preference style on the helmet.
+	var/helmet_pref_style
 
 /obj/item/clothing/head/helmet/space/plasmaman/attack_self(mob/user)
 	toggle_helmet_light(user)
 
 /obj/item/clothing/head/helmet/space/plasmaman/proc/toggle_helmet_light(mob/user)
 	helmet_on = !helmet_on
-	icon_state = "[initial(icon_state)][helmet_on ? "-light":""]"
-	item_state = icon_state
-	update_icon(user)
+	update_appearance(UPDATE_ICON)
 	
 	set_light_on(helmet_on)
 
@@ -71,35 +71,45 @@
 	if(!ishuman(user))
 		return
 	var/style = user.dna?.features["plasmaman_helmet"]
-	user.cut_overlay(helmet_mob_overlay)
-	if(style && (style in GLOB.plasmaman_helmet_list))
-		if(style == "None")
-			return
-		saved_style = "enviro[GLOB.plasmaman_helmet_list[style]]"
-		add_overlay(mutable_appearance('icons/obj/clothing/hats.dmi', saved_style))
-		helmet_mob_overlay = mutable_appearance('icons/mob/clothing/head/head.dmi', saved_style)
-		update_icon(user)
-
-/obj/item/clothing/head/helmet/space/plasmaman/update_icon(mob/living/carbon/human/user)
-	if(!user)
+	if(!style || (style == "None") || !(style in GLOB.plasmaman_helmet_list))
 		return
-	user.cut_overlay(helmet_mob_overlay)
-	if(saved_style)
-		user.add_overlay(helmet_mob_overlay)
-	user.update_inv_head()
+	helmet_pref_style = "enviro[GLOB.plasmaman_helmet_list[style]]"
+	update_appearance(UPDATE_ICON)
+
+/obj/item/clothing/head/helmet/space/plasmaman/update_icon(updates=ALL)
+	. = ..()
+	icon_state = "[initial(icon_state)][helmet_on ? "-light":""]"
+	item_state = icon_state
+	if(!ismob(loc))
+		return
+	var/mob/loc_mob = loc
+	loc_mob.update_inv_head()
 	for(var/datum/action/A as anything in actions)
-		A.UpdateButtonIcon()
+		A.build_all_button_icons()
+
+/obj/item/clothing/head/helmet/space/plasmaman/worn_overlays(mutable_appearance/standing, isinhands = FALSE, icon_file)
+	. = ..()
+	if(isinhands)
+		return
+	if(helmet_pref_style)
+		var/mutable_appearance/helmet_mob_overlay = mutable_appearance('icons/mob/clothing/head/head.dmi', helmet_pref_style)
+		. += helmet_mob_overlay
+
+/obj/item/clothing/head/helmet/space/plasmaman/update_overlays()
+	. = ..()
+	if(!ismob(loc))
+		return
+	if(helmet_pref_style)
+		var/mutable_appearance/helmet_overlay = mutable_appearance('icons/obj/clothing/hats/hats.dmi', helmet_pref_style)
+		. += helmet_overlay
 
 /obj/item/clothing/head/helmet/space/plasmaman/equipped(mob/living/user, slot)
 	. = ..()
-	if(slot != SLOT_HEAD)
-		user.cut_overlay(helmet_mob_overlay)
-		return
-	update_icon(user)
+	update_appearance(UPDATE_ICON)
 
 /obj/item/clothing/head/helmet/space/plasmaman/dropped(mob/living/user)
-	user.cut_overlay(helmet_mob_overlay)
-	. = ..()
+	update_appearance(UPDATE_ICON)
+	return ..()
 
 /obj/item/clothing/head/helmet/space/plasmaman/security
 	name = "security envirosuit helmet"
@@ -134,7 +144,16 @@
 	desc = "A tougher, space-worthy envirohelm designed for engineering personnel."
 	icon_state = "engineer_envirohelm"
 	item_state = "engineer_envirohelm"
-	armor = list(MELEE = 15, BULLET = 5, LASER = 20, ENERGY = 10, BOMB = 20, BIO = 100, RAD = 20, FIRE = 100, ACID = 75, WOUND = 10)
+	max_heat_protection_temperature = FIRE_IMMUNITY_MAX_TEMP_PROTECT
+	armor = list(MELEE = 15, BULLET = 5, LASER = 20, ENERGY = 10, BOMB = 20, BIO = 100, RAD = 20, FIRE = 100, ACID = 75, WOUND = 10, ELECTRIC = 100)
+
+/obj/item/clothing/head/helmet/space/plasmaman/chief_engineer
+	name = "chief engineer's envirosuit helmet"
+	desc = "A tougher, space-worthy, yet still comfortable envirohelm designed for plasmamen with the rank of \"Chief Engineer\"."
+	icon_state = "ce_envirohelm"
+	item_state = "ce_envirohelm"
+	max_heat_protection_temperature = FIRE_IMMUNITY_MAX_TEMP_PROTECT
+	armor = list(MELEE = 15, BULLET = 5, LASER = 20, ENERGY = 10, BOMB = 20, BIO = 100, RAD = 20, FIRE = 100, ACID = 75, WOUND = 10, ELECTRIC = 100)
 
 /obj/item/clothing/head/helmet/space/plasmaman/curator
 	name = "prototype envirosuit helmet"

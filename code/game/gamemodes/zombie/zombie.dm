@@ -13,7 +13,7 @@ GLOBAL_LIST_EMPTY(zombies)
 	antag_flag = ROLE_ZOMBIE
 	false_report_weight = 10
 	restricted_jobs = list("AI", "Cyborg")
-	protected_jobs = list("Security Officer", "Warden", "Detective", "Head of Security", "Captain", "Head of Personnel", "Chief Medical Officer", "Brig Physician") //Yogs: Added Brig Physician
+	protected_jobs = list("Security Officer", "Warden", "Detective", "Head of Security", "Captain", "Head of Personnel", "Chief Medical Officer", "Brig Physician", "Synthetic") //Yogs: Added Brig Physician
 	required_players = 40
 	required_enemies = 3
 	recommended_enemies = 3
@@ -91,14 +91,14 @@ GLOBAL_LIST_EMPTY(zombies)
 		if(!istype(antag))
 			continue
 		actual_roundstart_zombies++
-		antag.start_timer()
+//		antag.start_timer()
 
-	addtimer(CALLBACK(src, .proc/call_shuttle), 60 MINUTES) //Shuttle called after 1 hour if it hasn't been
+	addtimer(CALLBACK(src, PROC_REF(call_shuttle)), 60 MINUTES) //Shuttle called after 1 hour if it hasn't been
 	. = ..()
 
 /datum/game_mode/zombie/proc/call_shuttle()
 	priority_announce("Foreign Biosignatures present onboard station. Activating automatic evacuation system...")
-	SSshuttle.emergencyNoRecall = TRUE
+	SSshuttle.emergency_no_recall = TRUE
 	if(EMERGENCY_IDLE_OR_RECALLED)
 		SSshuttle.emergency.request(null, set_coefficient=0.5)
 

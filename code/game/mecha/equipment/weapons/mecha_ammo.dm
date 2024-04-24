@@ -17,7 +17,8 @@
 	/// Type of ammo. used to make sure the ammo type is compatable with the weapon itself
 	var/ammo_type
 
-/obj/item/mecha_ammo/proc/update_name()
+/obj/item/mecha_ammo/update_name(updates=ALL)
+	. = ..()
 	if(!rounds)
 		name = "empty ammo box"
 		desc = "An exosuit ammuniton box that has since been emptied. Please recycle."
@@ -59,6 +60,20 @@
 	icon_state = "lmg"
 	rounds = 300
 	ammo_type = "lmg"
+
+/obj/item/mecha_ammo/bfg
+	name = "energy packs"
+	desc = "A box of energy packs, designed to power the BFG-90 Radioactive Cannon."
+	icon_state = "bfg"
+	rounds = 5
+	ammo_type = "bfg"
+
+/obj/item/mecha_ammo/venom
+	name = "venom ammo"
+	desc = "A box of venom ammunition for use with the Syndicate LIGMA Snakebite Carbine. No, they don't fit in your C-20r, stop trying."
+	icon_state = "venom"
+	rounds = 24
+	ammo_type = "venom"
 
 /obj/item/mecha_ammo/missiles_br
 	name = "breaching missiles"

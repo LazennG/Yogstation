@@ -4,7 +4,8 @@
 	name = "Snowdin"
 	icon_state = "awaycontent1"
 	requires_power = FALSE
-	dynamic_lighting = DYNAMIC_LIGHTING_DISABLED
+	static_lighting = FALSE
+	base_lighting_alpha = 255
 
 /area/awaymission/snowdin/outside
 	name = "Snowdin Tundra Plains"
@@ -14,7 +15,8 @@
 	name = "Snowdin Outpost"
 	icon_state = "awaycontent2"
 	requires_power = TRUE
-	dynamic_lighting = DYNAMIC_LIGHTING_ENABLED
+	static_lighting = TRUE
+	base_lighting_alpha = 0
 
 /area/awaymission/snowdin/post/medbay
 	name = "Snowdin Outpost - Medbay"
@@ -96,12 +98,14 @@
 /area/awaymission/snowdin/igloo
 	name = "Snowdin Igloos"
 	icon_state = "awaycontent14"
-	dynamic_lighting = DYNAMIC_LIGHTING_FORCED
+	static_lighting = TRUE
+	base_lighting_alpha = 0
 
 /area/awaymission/snowdin/cave
 	name = "Snowdin Caves"
 	icon_state = "awaycontent15"
-	dynamic_lighting = DYNAMIC_LIGHTING_FORCED
+	static_lighting = TRUE
+	base_lighting_alpha = 0
 
 /area/awaymission/snowdin/cave/cavern
 	name = "Snowdin Depths"
@@ -115,18 +119,21 @@
 /area/awaymission/snowdin/base
 	name = "Snowdin Main Base"
 	icon_state = "awaycontent16"
-	dynamic_lighting = DYNAMIC_LIGHTING_ENABLED
+	static_lighting = TRUE
+	base_lighting_alpha = 0
 	requires_power = TRUE
 
 /area/awaymission/snowdin/dungeon1
 	name = "Snowdin Depths"
 	icon_state = "awaycontent17"
-	dynamic_lighting = DYNAMIC_LIGHTING_ENABLED
+	static_lighting = TRUE
+	base_lighting_alpha = 0
 
 /area/awaymission/snowdin/sekret
 	name = "Snowdin Operations"
 	icon_state = "awaycontent18"
-	dynamic_lighting = DYNAMIC_LIGHTING_ENABLED
+	static_lighting = TRUE
+	base_lighting_alpha = 0
 	requires_power = TRUE
 
 /area/shuttle/snowdin/elevator1
@@ -151,20 +158,21 @@
 
 /turf/open/floor/plasteel/dark/snowdin
 	initial_gas_mix = FROZEN_ATMOS
-	planetary_atmos = 1
-	temperature = 180
+	planetary_atmos = TRUE
+	initial_temperature = 180
 
 /turf/open/lava/plasma
 	name = "liquid plasma"
 	desc = "A flowing stream of chilled liquid plasma. You probably shouldn't get in."
 	icon_state = "liquidplasma"
-	initial_gas_mix = "o2=0;n2=82;plasma=24;TEMP=120"
+	initial_gas_mix = BURNING_COLD
 	baseturfs = /turf/open/lava/plasma
 	slowdown = 2
 
 	light_range = 3
 	light_power = 0.75
 	light_color = LIGHT_COLOR_PURPLE
+	lava_temperature = 73 // cold, not hot
 
 /turf/open/lava/plasma/attackby(obj/item/I, mob/user, params)
 	var/obj/item/reagent_containers/glass/C = I
@@ -218,8 +226,8 @@
 					var/list/plasma_parts = list()//a list of the organic parts to be turned into plasma limbs
 					var/list/robo_parts = list()//keep a reference of robotic parts so we know if we can turn them into a plasmaman
 					var/mob/living/carbon/human/PP = L
-					var/S = PP.dna.species
-					if(istype(S, /datum/species/plasmaman) || istype(S, /datum/species/android) || istype(S, /datum/species/synth)) //ignore plasmamen/robotic species
+					var/datum/species/S = PP.dna.species
+					if(istype(S, /datum/species/plasmaman) || (S.inherent_biotypes & MOB_ROBOTIC)) //ignore plasmamen/robotic species
 						continue
 
 					for(var/BP in PP.bodyparts)
@@ -241,7 +249,7 @@
 							PP.visible_message(span_warning("[L] screams in pain as [L.p_their()] [NB] melts down to the bone!"), \
 											  span_userdanger("You scream out in pain as your [NB] melts down to the bone, leaving an eerie plasma-like glow where flesh used to be!"))
 						if(!plasma_parts.len && !robo_parts.len) //a person with no potential organic limbs left AND no robotic limbs, time to turn them into a plasmaman
-							PP.IgniteMob()
+							PP.ignite_mob()
 							PP.set_species(/datum/species/plasmaman)
 							PP.visible_message(span_warning("[L] bursts into a brilliant purple flame as [L.p_their()] entire body is that of a skeleton!"), \
 											  span_userdanger("Your senses numb as all of your remaining flesh is turned into a purple slurry, sloshing off your body and leaving only your bones to show in a vibrant purple!"))
@@ -473,8 +481,8 @@
 	name = "dungeon lite"
 	loot = list(/obj/item/melee/classic_baton = 11,
 				/obj/item/melee/classic_baton/telescopic = 12,
-				/obj/item/book/granter/spell/smoke = 10,
-				/obj/item/book/granter/spell/blind = 10,
+				/obj/item/book/granter/action/spell/smoke = 10,
+				/obj/item/book/granter/action/spell/blind = 10,
 				/obj/item/storage/firstaid/regular = 45,
 				/obj/item/storage/firstaid/toxin = 35,
 				/obj/item/storage/firstaid/brute = 27,
@@ -497,9 +505,9 @@
 				/obj/item/gun/magic/wand/fireball/inert = 3,
 				/obj/item/pneumatic_cannon = 15,
 				/obj/item/melee/transforming/energy/sword = 7,
-				/obj/item/book/granter/spell/knock = 15,
-				/obj/item/book/granter/spell/summonitem = 20,
-				/obj/item/book/granter/spell/forcewall = 17,
+				/obj/item/book/granter/action/spell/knock = 15,
+				/obj/item/book/granter/action/spell/summonitem = 20,
+				/obj/item/book/granter/action/spell/forcewall = 17,
 				/obj/item/storage/backpack/holding = 12,
 				/obj/item/grenade/spawnergrenade/manhacks = 6,
 				/obj/item/grenade/spawnergrenade/spesscarp = 7,
@@ -508,7 +516,7 @@
 				/obj/item/stack/sheet/mineral/uranium{amount = 15} = 10,
 				/obj/item/stack/sheet/mineral/plasma{amount = 15} = 10,
 				/obj/item/stack/sheet/mineral/gold{amount = 15} = 10,
-				/obj/item/book/granter/spell/barnyard = 4,
+				/obj/item/book/granter/action/spell/barnyard = 4,
 				/obj/item/pickaxe/drill/diamonddrill = 6,
 				/obj/item/borg/upgrade/vtec = 7,
 				/obj/item/borg/upgrade/disablercooler = 7)
@@ -516,19 +524,19 @@
 
 /obj/effect/spawner/lootdrop/snowdin/dungeonheavy
 	name = "dungeon heavy"
-	loot = list(/obj/item/twohanded/singularityhammer = 25,
-				/obj/item/twohanded/mjollnir = 10,
-				/obj/item/twohanded/fireaxe = 25,
+	loot = list(/obj/item/singularityhammer = 25,
+				/obj/item/mjolnir = 10,
+				/obj/item/fireaxe = 25,
 				/obj/item/organ/brain/alien = 17,
-				/obj/item/twohanded/dualsaber = 15,
+				/obj/item/melee/dualsaber = 15,
 				/obj/item/organ/heart/demon = 7,
 				/obj/item/gun/ballistic/automatic/c20r/unrestricted = 16,
 				/obj/item/gun/magic/wand/resurrection/inert = 15,
 				/obj/item/gun/magic/wand/resurrection = 10,
 				/obj/item/uplink/old = 2,
-				/obj/item/book/granter/spell/charge = 12,
+				/obj/item/book/granter/action/spell/charge = 12,
 				/obj/item/grenade/clusterbuster/syndie/spawner_manhacks = 15,
-				/obj/item/book/granter/spell/fireball = 10,
+				/obj/item/book/granter/action/spell/fireball = 10,
 				/obj/item/pickaxe/drill/jackhammer = 30,
 				/obj/item/borg/upgrade/syndicate = 13,
 				/obj/item/borg/upgrade/selfrepair = 17)
@@ -541,7 +549,7 @@
 	loot = list(/obj/item/stack/sheet/mineral/snow{amount = 25} = 10,
 				/obj/item/toy/snowball = 15,
 				/obj/item/shovel = 10,
-				/obj/item/twohanded/spear = 8,
+				/obj/item/melee/spear = 8,
 				)
 
 //special items//--
@@ -611,7 +619,7 @@
 	back = /obj/item/storage/backpack
 	mask = /obj/item/clothing/mask/breath
 	r_pocket = /obj/item/tank/internals/emergency_oxygen/engi
-	internals_slot = SLOT_R_STORE
+	internals_slot = ITEM_SLOT_RPOCKET
 
 /obj/effect/mob_spawn/human/syndicatesoldier/coldres/alive/female
 	mob_gender = FEMALE

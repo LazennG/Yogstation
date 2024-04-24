@@ -18,6 +18,7 @@
 	anchored = FALSE
 	density = FALSE
 	dir = NORTH
+	obj_flags = CAN_BE_HIT | BLOCKS_CONSTRUCTION_DIR
 
 	var/ini_dir
 	var/obj/item/electronics/airlock/electronics = null
@@ -27,18 +28,18 @@
 	var/facing = "l"	//Does the windoor open to the left or right?
 	var/secure = FALSE		//Whether or not this creates a secure windoor
 	var/state = "01"	//How far the door assembly has progressed
-	CanAtmosPass = ATMOS_PASS_PROC
+	can_atmos_pass = ATMOS_PASS_PROC
 
 /obj/structure/windoor_assembly/New(loc, set_dir)
 	..()
 	if(set_dir)
 		setDir(set_dir)
 	ini_dir = dir
-	air_update_turf(1)
+	air_update_turf()
 
 /obj/structure/windoor_assembly/Destroy()
 	density = FALSE
-	air_update_turf(1)
+	air_update_turf()
 	return ..()
 
 /obj/structure/windoor_assembly/Move()
@@ -47,7 +48,8 @@
 	setDir(ini_dir)
 	move_update_air(T)
 
-/obj/structure/windoor_assembly/update_icon()
+/obj/structure/windoor_assembly/update_icon_state()
+	. = ..()
 	icon_state = "[facing]_[secure ? "secure_" : ""]windoor_assembly[state]"
 
 /obj/structure/windoor_assembly/CanAllowThrough(atom/movable/mover, turf/target)
@@ -67,11 +69,11 @@
 	else if(istype(mover, /obj/machinery/door/window) && !valid_window_location(loc, mover.dir))
 		return FALSE
 
-/obj/structure/windoor_assembly/CanAtmosPass(turf/T)
-	if(get_dir(loc, T) == dir)
+/obj/structure/windoor_assembly/can_atmos_pass(turf/target_turf, vertical = FALSE)
+	if(get_dir(loc, target_turf) == dir)
 		return !density
 	else
-		return 1
+		return TRUE
 
 /obj/structure/windoor_assembly/CheckExit(atom/movable/mover as mob|obj, turf/target)
 	if(istype(mover) && (mover.pass_flags & PASSGLASS))
@@ -309,29 +311,37 @@
 				return ..()
 
 	//Update to reflect changes(if applicable)
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
 
 
-/obj/structure/windoor_assembly/ComponentInitialize()
+/obj/structure/windoor_assembly/Initialize(mapload)
 	. = ..()
 	var/static/rotation_flags = ROTATION_ALTCLICK | ROTATION_CLOCKWISE | ROTATION_COUNTERCLOCKWISE | ROTATION_VERBS
-	AddComponent(/datum/component/simple_rotation, rotation_flags, can_be_rotated=CALLBACK(src, .proc/can_be_rotated), after_rotation=CALLBACK(src,.proc/after_rotation))
+	AddComponent(/datum/component/simple_rotation, rotation_flags, can_be_rotated=CALLBACK(src, PROC_REF(can_be_rotated)), after_rotation=CALLBACK(src, PROC_REF(after_rotation)))
 
-/obj/structure/windoor_assembly/proc/can_be_rotated(mob/user,rotation_type)
+/obj/structure/windoor_assembly/proc/can_be_rotated(mob/user, rotation_type)
+	var/silent = FALSE
+	if(!Adjacent(user))
+		silent = TRUE
+
 	if(anchored)
-		to_chat(user, span_warning("[src] cannot be rotated while it is fastened to the floor!"))
+		if (!silent)
+			to_chat(user, span_warning("[src] cannot be rotated while it is fastened to the floor!"))
 		return FALSE
+
 	var/target_dir = turn(dir, rotation_type == ROTATION_CLOCKWISE ? -90 : 90)
 
 	if(!valid_window_location(loc, target_dir))
-		to_chat(user, span_warning("[src] cannot be rotated in that direction!"))
+		if (!silent)
+			to_chat(user, span_warning("[src] cannot be rotated in that direction!"))
 		return FALSE
+
 	return TRUE
 
 /obj/structure/windoor_assembly/proc/after_rotation(mob/user)
 	ini_dir = dir
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
 //Flips the windoor assembly, determines whather the door opens to the left or the right
 /obj/structure/windoor_assembly/verb/flip()
@@ -353,5 +363,5 @@
 		facing = "l"
 		to_chat(usr, span_notice("The windoor will now slide to the left."))
 
-	update_icon()
+	update_appearance(UPDATE_ICON)
 	return

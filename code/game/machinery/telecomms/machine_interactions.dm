@@ -12,7 +12,7 @@
 
 /obj/machinery/telecomms/attackby(obj/item/P, mob/user, params)
 	if(default_deconstruction_screwdriver(user, "[initial(icon_state)]_o", initial(icon_state), P))
-		update_icon()
+		update_appearance(UPDATE_ICON)
 		return
 	// Using a multitool lets you access the receiver's interface
 	else if(P.tool_behaviour == TOOL_MULTITOOL)
@@ -46,11 +46,11 @@
 	data["maxfreq"] = MAX_FREE_FREQ
 	data["frequency"] = tempfreq
 
-	var/obj/item/multitool/heldmultitool = get_multitool(user)
+	var/obj/item/heldmultitool = get_multitool(user)
 	data["multitool"] = heldmultitool
 
 	if(heldmultitool)
-		data["multibuff"] = (obj_flags & EMAGGED) ? Gibberish("MULTITOOL BUFFER: NULL (NULL)",100) : heldmultitool.buffer
+		data["multibuff"] = (obj_flags & EMAGGED) ? Gibberish("MULTITOOL BUFFER: NULL (NULL)",100) : multitool_get_buffer(user, heldmultitool)
 
 	data["toggled"] = toggled
 	data["id"] = id
@@ -89,13 +89,13 @@
 		//if(!istype(operator.get_active_held_item(), /obj/item/multitool))
 			//return
 
-	var/obj/item/multitool/heldmultitool = get_multitool(operator)
+	var/obj/item/heldmultitool = get_multitool(operator)
 
 	switch(action)
 		if("toggle")
 			toggled = !toggled
 			update_power()
-			update_icon()
+			update_appearance(UPDATE_ICON)
 			log_game("[key_name(operator)] toggled [toggled ? "On" : "Off"] [src] at [AREACOORD(src)].")
 			. = TRUE
 		if("id")
@@ -149,22 +149,22 @@
 				. = TRUE
 		if("link")
 			if(heldmultitool)
-				var/obj/machinery/telecomms/T = heldmultitool.buffer
-				if(istype(T) && T != src)
-					if(!(src in T.links))
-						T.links += src
-					if(!(T in links))
-						links += T
-						log_game("[key_name(operator)] linked [src] for [T] at [AREACOORD(src)].")
+				var/obj/machinery/telecomms/tcomms_machine = multitool_get_buffer(src, heldmultitool)
+				if(istype(tcomms_machine) && tcomms_machine != src)
+					if(!(src in tcomms_machine.links))
+						tcomms_machine.links += src
+					if(!(tcomms_machine in links))
+						links += tcomms_machine
+						log_game("[key_name(operator)] linked [src] for [tcomms_machine] at [AREACOORD(src)].")
 						. = TRUE
 		if("buffer") // Yogs start -- holotool support
 			if(heldmultitool)
-				heldmultitool.buffer = src
+				multitool_set_buffer(usr, heldmultitool, src)
 			. = TRUE
 		if("flush")
 			if(heldmultitool)
-				heldmultitool.buffer = null // Yogs end
-			. = TRUE
+				multitool_set_buffer(usr, heldmultitool, null)
+			. = TRUE // Yogs end
 
 	add_act(action, params)
 	. = TRUE

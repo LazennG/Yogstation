@@ -9,10 +9,11 @@
 	icon_dead = "base_dead"
 	icon_gib = "carp_gib"
 	health_doll_icon = "megacarp"
-	mob_biotypes = list(MOB_ORGANIC, MOB_BEAST)
+	mob_biotypes = MOB_ORGANIC|MOB_BEAST
 	speak_chance = 0
 	turns_per_move = 5
 	butcher_results = list(/obj/item/reagent_containers/food/snacks/carpmeat = 2)
+	greyscale_config = /datum/greyscale_config/carp
 	response_help = "pets"
 	response_disarm = "gently pushes aside"
 	response_harm = "hits"
@@ -23,7 +24,6 @@
 	health = 25
 	spacewalk = TRUE
 
-	harm_intent_damage = 8
 	obj_damage = 50
 	melee_damage_lower = 20
 	melee_damage_upper = 20
@@ -44,24 +44,24 @@
 	var/random_color = TRUE //if the carp uses random coloring
 	var/rarechance = 1 //chance for rare color variant
 
-	var/static/list/carp_colors = list(\
-	"lightpurple" = "#c3b9f1", \
-	"lightpink" = "#da77a8", \
-	"green" = "#70ff25", \
-	"grape" = "#df0afb", \
-	"swamp" = "#e5e75a", \
-	"turquoise" = "#04e1ed", \
-	"brown" = "#ca805a", \
-	"teal" = "#20e28e", \
-	"lightblue" = "#4d88cc", \
-	"rusty" = "#dd5f34", \
-	"beige" = "#bbaeaf", \
-	"yellow" = "#f3ca4a", \
-	"blue" = "#09bae1", \
-	"palegreen" = "#7ef099", \
-	)
-	var/static/list/carp_colors_rare = list(\
-	"silver" = "#fdfbf3", \
+	/// Weighted list of colours a carp can be
+	/// Weighted list of usual carp colors
+	var/static/list/carp_colors = list(
+		COLOR_CARP_PURPLE = 7,
+		COLOR_CARP_PINK = 7,
+		COLOR_CARP_GREEN = 7,
+		COLOR_CARP_GRAPE = 7,
+		COLOR_CARP_SWAMP = 7,
+		COLOR_CARP_TURQUOISE = 7,
+		COLOR_CARP_BROWN = 7,
+		COLOR_CARP_TEAL = 7,
+		COLOR_CARP_LIGHT_BLUE = 7,
+		COLOR_CARP_RUSTY = 7,
+		COLOR_CARP_RED = 7,
+		COLOR_CARP_YELLOW = 7,
+		COLOR_CARP_BLUE = 7,
+		COLOR_CARP_PALE_GREEN = 7,
+		COLOR_CARP_SILVER = 1, // The rare silver carp
 	)
 
 /mob/living/simple_animal/hostile/carp/loan
@@ -69,61 +69,18 @@
 
 /mob/living/simple_animal/hostile/carp/Initialize(mapload)
 	. = ..()
-	carp_randomify(rarechance)
-	update_icons()
+	apply_color()
 
-/mob/living/simple_animal/hostile/carp/proc/carp_randomify(rarechance)
-	if(random_color)
-		var/our_color
-		if(prob(rarechance))
-			our_color = pick(carp_colors_rare)
-			add_atom_colour(carp_colors_rare[our_color], FIXED_COLOUR_PRIORITY)
-		else
-			our_color = pick(carp_colors)
-			add_atom_colour(carp_colors[our_color], FIXED_COLOUR_PRIORITY)
-		add_carp_overlay()
-
-/mob/living/simple_animal/hostile/carp/proc/add_carp_overlay()
-	if(!random_color)
+/// Set a random colour on the carp, override to do something else
+/mob/living/simple_animal/hostile/carp/proc/apply_color()
+	if (!greyscale_config)
 		return
-	cut_overlays()
-	var/mutable_appearance/base_overlay = mutable_appearance(icon, "base_mouth")
-	base_overlay.appearance_flags = RESET_COLOR
-	add_overlay(base_overlay)
-
-/mob/living/simple_animal/hostile/carp/proc/add_dead_carp_overlay()
-	if(!random_color)
-		return
-	cut_overlays()
-	var/mutable_appearance/base_dead_overlay = mutable_appearance(icon, "base_dead_mouth")
-	base_dead_overlay.appearance_flags = RESET_COLOR
-	add_overlay(base_dead_overlay)
-
-/mob/living/simple_animal/hostile/carp/death(gibbed)
-	. = ..()
-	cut_overlays()
-	if(!random_color || gibbed)
-		return
-	add_dead_carp_overlay()
-
-/mob/living/simple_animal/hostile/carp/revive(full_heal = 0, admin_revive = 0)
-	. = ..()
-	if(.)
-		regenerate_icons()
-
-/mob/living/simple_animal/hostile/carp/regenerate_icons()
-	cut_overlays()
-	if(!random_color)
-		return
-	if(stat != DEAD)
-		add_carp_overlay()
-	else
-		add_dead_carp_overlay()
-	..()
+	set_greyscale(colors = list(pickweight(carp_colors)))
 
 /mob/living/simple_animal/hostile/carp/holocarp
 	icon_state = "holocarp"
 	icon_living = "holocarp"
+	greyscale_config = null //no current config for holocarps :(
 	maxbodytemp = INFINITY
 	gold_core_spawnable = NO_SPAWN
 	del_on_death = 1
@@ -133,15 +90,17 @@
 	icon = 'icons/mob/broadMobs.dmi'
 	name = "Mega Space Carp"
 	desc = "A ferocious, fang bearing creature that resembles a shark. This one seems especially ticked off."
-	icon_state = "megacarp"
-	icon_living = "megacarp"
-	icon_dead = "megacarp_dead"
+	icon_state = "megacarp_greyscale"
+	icon_living = "megacarp_greyscale"
+	icon_dead = "megacarp_dead_greyscale"
 	icon_gib = "megacarp_gib"
+	health_doll_icon = "megacarp"
 	maxHealth = 20
 	health = 20
 	pixel_x = -16
 	mob_size = MOB_SIZE_LARGE
 	random_color = FALSE
+	greyscale_config = /datum/greyscale_config/carp_mega
 
 	obj_damage = 80
 	melee_damage_lower = 20
@@ -149,7 +108,7 @@
 
 	var/regen_cooldown = 0
 
-/mob/living/simple_animal/hostile/carp/megacarp/Initialize()
+/mob/living/simple_animal/hostile/carp/megacarp/Initialize(mapload)
 	. = ..()
 	name = "[pick(GLOB.megacarp_first_names)] [pick(GLOB.megacarp_last_names)]"
 	melee_damage_lower += rand(2, 10)
@@ -162,10 +121,13 @@
 	if(.)
 		regen_cooldown = world.time + REGENERATION_DELAY
 
-/mob/living/simple_animal/hostile/carp/megacarp/Life()
+/mob/living/simple_animal/hostile/carp/megacarp/Life(seconds_per_tick = SSMOBS_DT, times_fired)
 	. = ..()
 	if(regen_cooldown < world.time)
 		heal_overall_damage(4)
+
+/// Boosted chance for Cayenne to be silver
+#define RARE_CAYENNE_CHANCE 10
 
 /mob/living/simple_animal/hostile/carp/cayenne
 	name = "Cayenne"
@@ -177,4 +139,11 @@
 	AIStatus = AI_OFF
 	rarechance = 10
 
+/mob/living/simple_animal/hostile/carp/cayenne/apply_color()
+	if (prob(RARE_CAYENNE_CHANCE))
+		set_greyscale(colors = list(COLOR_CARP_SILVER))
+	else
+		return ..()
+
+#undef RARE_CAYENNE_CHANCE
 #undef REGENERATION_DELAY

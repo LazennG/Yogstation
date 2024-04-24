@@ -26,24 +26,24 @@
 	range = initial(range)
 	range *= E
 
-/obj/machinery/launchpad/Initialize()
+/obj/machinery/launchpad/Initialize(mapload)
 	. = ..()
 	prepare_huds()
 	for(var/datum/atom_hud/data/diagnostic/diag_hud in GLOB.huds)
-		diag_hud.add_to_hud(src)
+		diag_hud.add_atom_to_hud(src)
 
+	update_hud()
+
+/obj/machinery/launchpad/proc/update_hud()
 	var/image/holder = hud_list[DIAG_LAUNCHPAD_HUD]
-	var/mutable_appearance/MA = new /mutable_appearance()
-	MA.icon = 'icons/effects/effects.dmi'
-	MA.icon_state = "launchpad_target"
-	MA.layer = ABOVE_OPEN_TURF_LAYER
-	MA.plane = 0
-	holder.appearance = MA
+	var/mutable_appearance/target = mutable_appearance('icons/effects/effects.dmi', "launchpad_target", ABOVE_OPEN_TURF_LAYER, src, GAME_PLANE)
+	holder.appearance = target
 
 	update_indicator()
 
 /obj/machinery/launchpad/Destroy()
-	qdel(hud_list[DIAG_LAUNCHPAD_HUD])
+	for(var/datum/atom_hud/data/diagnostic/diag_hud in GLOB.huds)
+		diag_hud.remove_atom_from_hud(src)
 	return ..()
 
 /obj/machinery/launchpad/examine(mob/user)
@@ -61,8 +61,7 @@
 			if(I.tool_behaviour == TOOL_MULTITOOL)
 				if(!multitool_check_buffer(user, I))
 					return
-				var/obj/item/multitool/M = I
-				M.buffer = src
+				multitool_set_buffer(user, I, src)
 				to_chat(user, span_notice("You save the data in the [I.name]'s buffer."))
 				return 1
 
@@ -71,7 +70,7 @@
 
 	return ..()
 
-/obj/machinery/launchpad/proc/isAvailable()
+/obj/machinery/launchpad/proc/IsAvailable(feedback = FALSE)
 	if(stat & NOPOWER)
 		return FALSE
 	if(panel_open)
@@ -81,7 +80,7 @@
 /obj/machinery/launchpad/proc/update_indicator()
 	var/image/holder = hud_list[DIAG_LAUNCHPAD_HUD]
 	var/turf/target_turf
-	if(isAvailable())
+	if(IsAvailable(feedback = FALSE))
 		target_turf = locate(x + x_offset, y + y_offset, z)
 	if(target_turf)
 		holder.icon_state = indicator_icon
@@ -133,7 +132,7 @@
 	indicator_icon = "launchpad_target"
 	update_indicator()
 
-	if(QDELETED(src) || !isAvailable())
+	if(QDELETED(src) || !IsAvailable(feedback = FALSE))
 		return
 
 	teleporting = FALSE
@@ -232,7 +231,7 @@
 	QDEL_NULL(briefcase)
 	return ..()
 
-/obj/machinery/launchpad/briefcase/isAvailable()
+/obj/machinery/launchpad/briefcase/IsAvailable(feedback = FALSE)
 	if(closed)
 		return FALSE
 	return ..()
@@ -265,7 +264,7 @@
 /obj/item/storage/briefcase/launchpad
 	var/obj/machinery/launchpad/briefcase/pad
 
-/obj/item/storage/briefcase/launchpad/Initialize()
+/obj/item/storage/briefcase/launchpad/Initialize(mapload)
 	pad = new(null, src) //spawns pad in nullspace to hide it from briefcase contents
 	. = ..()
 
@@ -352,7 +351,7 @@
 	if(QDELETED(pad))
 		to_chat(user, span_warning("ERROR: Launchpad not responding. Check launchpad integrity."))
 		return
-	if(!pad.isAvailable())
+	if(!pad.IsAvailable(feedback = FALSE))
 		to_chat(user, span_warning("ERROR: Launchpad not operative. Make sure the launchpad is ready and powered."))
 		return
 	pad.doteleport(user, sending)

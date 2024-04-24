@@ -132,7 +132,7 @@
 	for(var/mob/dead/observer/O in GLOB.player_list)
 		if(O.key == expected_key)
 			if(O.client)
-				new /atom/movable/screen/splash(O.client, TRUE)
+				new /atom/movable/screen/splash(null, O.client, TRUE)
 			break
 
 /datum/world_topic/adminmsg
@@ -241,7 +241,7 @@
 			.["real_mode"] = SSticker.mode.name
 			// Key-authed callers may know the truth behind the "secret"
 
-	.["security_level"] = get_security_level()
+	.["security_level"] = SSsecurity_level.get_current_level_as_text()
 	.["round_duration"] = SSticker ? round((world.time-SSticker.round_start_time)/10) : 0
 	// Amount of world's ticks in seconds, useful for calculating round duration
 
@@ -269,4 +269,47 @@
 
 /datum/world_topic/systemmsg/Run(list/input)
 	to_chat(world, span_boldannounce(input["message"]))
+
+
+//////// Discord Tickets ///////////
+/datum/world_topic/ticket_administer
+	keyword = "ticket_administer"
+	require_comms_key = TRUE
+
+/datum/world_topic/ticket_administer/Run(list/input)
+	var/id = text2num(input["id"])
+	if(!id) return "ERROR: [input["id"]] is not a number"
+	var/datum/admin_help/ticket = GLOB.ahelp_tickets.TicketByID(id)
+	if(!ticket) return "ERROR: Ticket not found"
+	return ticket.DiscordAdminister(input["ckey"], TRUE)
+
+/datum/world_topic/ticket_reply
+	keyword = "ticket_reply"
+	require_comms_key = TRUE
+
+/datum/world_topic/ticket_reply/Run(list/input)
+	var/id = text2num(input["id"])
+	if(!id) return "ERROR: [input["id"]] is not a number"
+	var/datum/admin_help/ticket = GLOB.ahelp_tickets.TicketByID(id)
+	if(!ticket) return "ERROR: Ticket not found"
+	return ticket.DiscordReply(input["ckey"], url_decode(input["message"]))
+
+/datum/world_topic/ticket_resolve
+	keyword = "ticket_resolve"
+	require_comms_key = TRUE
+
+/datum/world_topic/ticket_resolve/Run(list/input)
+	var/id = text2num(input["id"])
+	if(!id) return "ERROR: [input["id"]] is not a number"
+	var/datum/admin_help/ticket = GLOB.ahelp_tickets.TicketByID(id)
+	if(!ticket) return "ERROR: Ticket not found"
+	return ticket.DiscordResolve(input["ckey"])
+
+/datum/world_topic/ticket_status
+	keyword = "ticket_status"
+	require_comms_key = TRUE
+
+/datum/world_topic/ticket_status/Run(list/input)
+	webhook_send_ticket_refresh() // Sending by webhook to not break things
+	return "Data sent"
 

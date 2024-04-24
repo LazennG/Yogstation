@@ -567,7 +567,7 @@
 /area/shuttle/caravan/pirate)
 "qC" = (
 /obj/structure/table,
-/obj/item/storage/box/fancy/donut_box{
+/obj/item/storage/fancy/donut_box{
 	pixel_y = 18
 	},
 /obj/item/storage/box/donkpockets{
@@ -932,7 +932,7 @@
 	dir = 2;
 	dwidth = 14;
 	height = 13;
-	id = "caravanpirate";
+	shuttle_id = "caravanpirate";
 	movement_force = list("KNOCKDOWN" = 0, "THROW" = 0);
 	name = "Pirate Cutter";
 	port_direction = 8;

@@ -6,35 +6,34 @@
 	lefthand_file = 'icons/mob/inhands/equipment/toolbox_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/equipment/toolbox_righthand.dmi'
 	flags_1 = CONDUCT_1
-	force = 12
-	throwforce = 12
+	force = 15
+	throwforce = 15
 	throw_speed = 2
 	throw_range = 7
 	w_class = WEIGHT_CLASS_BULKY
-	materials = list(/datum/material/iron = 500)
+	custom_materials = list(/datum/material/iron = 500) //Toolboxes by default use iron as their core, custom material.
 	attack_verb = list("robusted")
 	hitsound = 'sound/weapons/smash.ogg'
 	drop_sound = 'sound/items/handling/toolbox_drop.ogg'
 	pickup_sound =  'sound/items/handling/toolbox_pickup.ogg'
-	custom_materials = list(/datum/material/iron = 500) //Toolboxes by default use iron as their core, custom material.
+	material_flags = MATERIAL_EFFECTS
 	var/latches = "single_latch"
 	var/has_latches = TRUE
 	wound_bonus = 5
 
-/obj/item/storage/toolbox/Initialize()
+/obj/item/storage/toolbox/Initialize(mapload)
 	. = ..()
 	if(has_latches)
 		if(prob(10))
 			latches = "double_latch"
 			if(prob(1))
 				latches = "triple_latch"
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
-/obj/item/storage/toolbox/update_icon()
-	..()
-	cut_overlays()
+/obj/item/storage/toolbox/update_overlays()
+	. = ..()
 	if(has_latches)
-		add_overlay(latches)
+		. += latches
 
 
 /obj/item/storage/toolbox/suicide_act(mob/user)
@@ -45,7 +44,6 @@
 	name = "emergency toolbox"
 	icon_state = "red"
 	item_state = "toolbox_red"
-	material_flags = MATERIAL_NO_COLOR
 
 /obj/item/storage/toolbox/emergency/PopulateContents()
 	new /obj/item/crowbar/red(src)
@@ -68,13 +66,11 @@
 	name = "rusty red toolbox"
 	icon_state = "toolbox_red_old"
 	has_latches = FALSE
-	material_flags = MATERIAL_NO_COLOR
 
 /obj/item/storage/toolbox/mechanical
 	name = "mechanical toolbox"
 	icon_state = "blue"
 	item_state = "toolbox_blue"
-	material_flags = MATERIAL_NO_COLOR
 
 /obj/item/storage/toolbox/mechanical/PopulateContents()
 	new /obj/item/screwdriver(src)
@@ -88,12 +84,11 @@
 	name = "rusty blue toolbox"
 	icon_state = "toolbox_blue_old"
 	has_latches = FALSE
-	material_flags = MATERIAL_NO_COLOR
 
 /obj/item/storage/toolbox/mechanical/old/heirloom
 	name = "toolbox" //this will be named "X family toolbox"
 	desc = "It's seen better days."
-	force = 5
+	force = 8
 	w_class = WEIGHT_CLASS_NORMAL
 
 /obj/item/storage/toolbox/mechanical/old/heirloom/PopulateContents()
@@ -105,15 +100,15 @@
 	icon_state = "oldtoolboxclean"
 	item_state = "toolbox_blue"
 	has_latches = FALSE
-	force = 19
-	throwforce = 22
+	force = 22
+	throwforce = 25
 
 /obj/item/storage/toolbox/mechanical/old/clean/proc/calc_damage()
 	var/power = 0
-	for (var/obj/item/stack/telecrystal/TC in GetAllContents())
+	for (var/obj/item/stack/telecrystal/TC in get_all_contents())
 		power += TC.amount
-	force = 19 + power
-	throwforce = 22 + power
+	force = initial(force) + power
+	throwforce = initial(throwforce) + power
 
 /obj/item/storage/toolbox/mechanical/old/clean/attack(mob/target, mob/living/user)
 	calc_damage()
@@ -136,31 +131,29 @@
 	name = "electrical toolbox"
 	icon_state = "yellow"
 	item_state = "toolbox_yellow"
-	material_flags = MATERIAL_NO_COLOR
 
 /obj/item/storage/toolbox/electrical/PopulateContents()
-	var/pickedcolor = pick("red","yellow","green","blue","pink","orange","cyan","white")
+	var/pickedcolor = pick(GLOB.cable_colors)
 	new /obj/item/screwdriver(src)
 	new /obj/item/wirecutters(src)
 	new /obj/item/t_scanner(src)
 	new /obj/item/crowbar(src)
-	new /obj/item/stack/cable_coil(src,MAXCOIL,pickedcolor)
-	new /obj/item/stack/cable_coil(src,MAXCOIL,pickedcolor)
+	new /obj/item/stack/cable_coil(src, MAXCOIL, pickedcolor)
+	new /obj/item/stack/cable_coil(src, MAXCOIL, pickedcolor)
 	if(prob(50))
 		new /obj/item/clothing/gloves/color/fyellow(src)
 	else
-		new /obj/item/stack/cable_coil(src,MAXCOIL,pickedcolor)
+		new /obj/item/stack/cable_coil(src, MAXCOIL, pickedcolor)
 
 /obj/item/storage/toolbox/syndicate
 	name = "suspicious looking toolbox"
 	icon_state = "syndicate"
 	item_state = "toolbox_syndi"
-	force = 15
-	throwforce = 18
+	force = 18
+	throwforce = 21
 	w_class = WEIGHT_CLASS_NORMAL
-	material_flags = MATERIAL_NO_COLOR
 
-/obj/item/storage/toolbox/syndicate/ComponentInitialize()
+/obj/item/storage/toolbox/syndicate/Initialize(mapload)
 	. = ..()
 	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
 	STR.silent = TRUE
@@ -177,11 +170,16 @@
 	for(var/obj/item/I in contents)
 		I.toolspeed = 0.5
 
+/obj/item/storage/toolbox/syndicate/real/PopulateContents()
+	. = ..()
+	for(var/obj/item/I in contents)
+		I.toolspeed = 0.33
+		I.name = "syndicate [I.name]"
+
 /obj/item/storage/toolbox/drone
 	name = "mechanical toolbox"
 	icon_state = "blue"
 	item_state = "toolbox_blue"
-	material_flags = MATERIAL_NO_COLOR
 
 /obj/item/storage/toolbox/drone/PopulateContents()
 	var/pickedcolor = pick("red","yellow","green","blue","pink","orange","cyan","white")
@@ -203,9 +201,8 @@
 	w_class = WEIGHT_CLASS_HUGE
 	attack_verb = list("robusted", "crushed", "smashed")
 	var/fabricator_type = /obj/item/clockwork/replica_fabricator/scarab
-	material_flags = MATERIAL_NO_COLOR
 
-/obj/item/storage/toolbox/brass/ComponentInitialize()
+/obj/item/storage/toolbox/brass/Initialize(mapload)
 	. = ..()
 	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
 	STR.max_w_class = WEIGHT_CLASS_NORMAL
@@ -243,7 +240,7 @@
 	item_state = "artistic_toolbox"
 	w_class = WEIGHT_CLASS_GIGANTIC //Holds more than a regular toolbox!
 
-/obj/item/storage/toolbox/artistic/ComponentInitialize()
+/obj/item/storage/toolbox/artistic/Initialize(mapload)
 	. = ..()
 	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
 	STR.max_combined_w_class = 20
@@ -284,7 +281,8 @@
 							/obj/item/storage/toolbox/electrical,
 							/obj/item/storage/toolbox/mechanical,
 							/obj/item/storage/toolbox/artistic,
-							/obj/item/storage/toolbox/syndicate)
+							/obj/item/storage/toolbox/syndicate,
+							/obj/item/storage/toolbox/syndicate/real)
 
 	if(!istype(T, /obj/item/stack/tile/plasteel))
 		..()
@@ -308,8 +306,10 @@
 				B.toolbox_color = "g"
 			if(/obj/item/storage/toolbox/syndicate)
 				B.toolbox_color = "s"
+			if(/obj/item/storage/toolbox/syndicate/real)
+				B.toolbox_color = "s"
 		user.put_in_hands(B)
-		B.update_icon()
+		B.update_appearance(UPDATE_ICON)
 		to_chat(user, span_notice("You add the tiles into the empty [name]. They protrude from the top."))
 		qdel(src)
 	else

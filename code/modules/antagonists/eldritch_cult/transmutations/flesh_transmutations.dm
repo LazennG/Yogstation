@@ -1,7 +1,7 @@
 /datum/eldritch_transmutation/flesh_blade
 	name = "Flesh Blade"
 	required_atoms = list(/obj/item/kitchen/knife,/obj/effect/decal/cleanable/blood)
-	result_atoms = list(/obj/item/gun/magic/hook/sickly_blade/flesh)
+	result_atoms = list(/obj/item/melee/sickly_blade/flesh)
 	required_shit_list = "A pool of blood and a knife."
 
 /datum/eldritch_transmutation/voiceless_dead
@@ -49,7 +49,7 @@
 	var/datum/antagonist/heretic/master = user.mind.has_antag_datum(/datum/antagonist/heretic)
 	heretic_monster.set_owner(master)
 	atoms -= humie
-	RegisterSignal(humie,COMSIG_GLOB_MOB_DEATH,.proc/remove_ghoul)
+	RegisterSignal(humie,COMSIG_GLOB_MOB_DEATH, PROC_REF(remove_ghoul))
 	ghouls += humie
 
 /datum/eldritch_transmutation/voiceless_dead/proc/remove_ghoul(datum/source)
@@ -75,6 +75,12 @@
 	required_atoms = list(/obj/effect/decal/cleanable/ash,/obj/item/bodypart/head,/obj/item/book)
 	mob_to_summon = /mob/living/simple_animal/hostile/eldritch/ash_spirit
 	required_shit_list = "A pile of ash, a head, and a book."
+
+/datum/eldritch_transmutation/summon/fire_shark
+	name = "Summon Fire Shark"
+	required_atoms = list(/obj/item/organ/eyes,/obj/effect/decal/cleanable/ash,/obj/item/stack/sheet/mineral/plasma)
+	mob_to_summon = /mob/living/simple_animal/hostile/eldritch/fire_shark
+	required_shit_list = "A pile of ash, a pair of eyes, and a stack of plasma."
 
 /datum/eldritch_transmutation/summon/rusty
 	name = "Summon Rustwalker"
@@ -110,7 +116,7 @@
 			ghoul2.max_amt *= 3
 			var/mob/dead/observer/ghost_candidate = pick(candidates)
 			priority_announce("Immense destabilization of the bluespace veil has been observed. Our scanners report two entitites of immeasurable power, one of which is of a considerable volume of organic mass. Immediate evacuation is advised.", "Anomaly Alert", ANNOUNCER_SPANOMALIES)
-			set_security_level(SEC_LEVEL_GAMMA)
+
 			log_game("[key_name_admin(ghost_candidate)] has taken control of ([key_name_admin(summoned)]).")
 			summoned.ghostize(FALSE)
 			summoned.key = ghost_candidate.key
@@ -123,12 +129,19 @@
 			var/mob/living/summoned = new /mob/living/simple_animal/hostile/eldritch/armsy/prime(loc,TRUE,10)
 			summoned.ghostize(0)
 			user.SetImmobilized(0)
-			for(var/obj/effect/proc_holder/spell/S in user.mind.spell_list)
-				if(istype(S, /obj/effect/proc_holder/spell/targeted/ethereal_jaunt/shift/ash)) //vitally important since ashen passage breaks the shit out of armsy
-					user.mind.spell_list.Remove(S)
-					qdel(S)
-			priority_announce("Immense destabilization of the bluespace veil has been observed. Our scanners report a singular entity of immeasurable power that is quickly growing in volume. Immediate evacuation is advised.", "Anomaly Alert", ANNOUNCER_SPANOMALIES)
-			set_security_level(SEC_LEVEL_GAMMA)
+			for(var/datum/action/cooldown/spell/spells in user.actions)
+				if(istype(spells, /datum/action/cooldown/spell/jaunt/ethereal_jaunt/ash)) //vitally important since ashen passage breaks the shit out of armsy
+					spells.Remove(user)
+					qdel(spells)
+			priority_announce("$^@&#*$^@(#&$(@&#^$&#^@# Fear the dark, for King of Arms has ascended! Our Lord of the Night has come! $^@&#*$^@(#&$(@&#^$&#^@#","#$^@&#*$^@(#&$(@&#^$&#^@#", ANNOUNCER_SPANOMALIES)
+			SSsecurity_level.set_level(SEC_LEVEL_GAMMA)
+			var/atom/movable/gravity_lens/shockwave = new(get_turf(user))
+
+			shockwave.transform = matrix().Scale(0.5)
+			shockwave.pixel_x = -240
+			shockwave.pixel_y = -240
+			animate(shockwave, alpha = 0, transform = matrix().Scale(20), time = 10 SECONDS, easing = QUAD_EASING)
+			QDEL_IN(shockwave, 10.5 SECONDS)
 			log_game("[user.real_name] ascended as [summoned.real_name].")
 			var/mob/living/carbon/carbon_user = user
 			var/datum/antagonist/heretic/ascension = carbon_user.mind.has_antag_datum(/datum/antagonist/heretic)

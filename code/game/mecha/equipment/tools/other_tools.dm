@@ -254,8 +254,8 @@
 	if(h_boost < 0)
 		chassis.take_damage(-h_boost)
 		repaired = 1
-	if(chassis.obj_integrity < chassis.max_integrity && h_boost > 0)
-		chassis.obj_integrity += min(h_boost, chassis.max_integrity-chassis.obj_integrity)
+	if(chassis.get_integrity() < chassis.max_integrity && h_boost > 0)
+		chassis.update_integrity(chassis.get_integrity() + min(h_boost, chassis.max_integrity-chassis.get_integrity()))
 		repaired = 1
 	if(repaired)
 		if(!chassis.use_power(energy_drain))
@@ -296,12 +296,12 @@
 	if(equip_ready) //disabled
 		return
 	var/area/A = get_area(chassis)
-	var/pow_chan = GET_MUTATION_POWER_channel(A)
+	var/pow_chan = get_mutation_power_channel(A)
 	if(pow_chan)
 		return 1000 //making magic
 
 
-/obj/item/mecha_parts/mecha_equipment/tesla_energy_relay/proc/GET_MUTATION_POWER_channel(var/area/A)
+/obj/item/mecha_parts/mecha_equipment/tesla_energy_relay/proc/get_mutation_power_channel(area/A)
 	var/pow_chan
 	if(A)
 		for(var/c in use_channels)
@@ -370,7 +370,7 @@
 	var/fuel_per_cycle_active = 200
 	var/power_per_cycle = 20
 
-/obj/item/mecha_parts/mecha_equipment/generator/Initialize()
+/obj/item/mecha_parts/mecha_equipment/generator/Initialize(mapload)
 	. = ..()
 	generator_init()
 
@@ -409,7 +409,7 @@
 		if(result)
 			send_byjax(chassis.occupant,"exosuit.browser","[REF(src)]",src.get_equip_info())
 
-/obj/item/mecha_parts/mecha_equipment/generator/proc/load_fuel(var/obj/item/stack/sheet/P)
+/obj/item/mecha_parts/mecha_equipment/generator/proc/load_fuel(obj/item/stack/sheet/P)
 	if(P.type == fuel.type && P.amount > 0)
 		var/to_load = max(max_fuel - fuel.amount*fuel.mats_per_stack,0)
 		if(to_load)
@@ -470,3 +470,120 @@
 /obj/item/mecha_parts/mecha_equipment/generator/nuclear/process()
 	if(..())
 		radiation_pulse(get_turf(src), rad_per_cycle)
+
+/////////////////////////////////////////// THRUSTERS /////////////////////////////////////////////
+
+/obj/item/mecha_parts/mecha_equipment/thrusters
+	name = "generic exosuit thrusters" //parent object, in-game sources will be a child object
+	desc = "A generic set of thrusters, from an unknown source. Uses not-understood methods to propel exosuits seemingly for free."
+	icon_state = "thrusters"
+	equip_actions = list(/datum/action/innate/mecha/equipment/toggle_thrusters)
+	selectable = FALSE
+	var/thrusters_active = FALSE
+	var/datum/effect_system/trail_follow/thrust_trail = /datum/effect_system/trail_follow/sparks
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/Initialize(mapload)
+	. = ..()
+	thrust_trail = new thrust_trail
+	thrust_trail.set_up(src)
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/try_attach_part(mob/user, obj/mecha/M)
+	for(var/obj/item/mecha_parts/mecha_equipment/equip as anything in M.equipment)
+		if(istype(equip, type))
+			to_chat(user, span_warning("[src] already has thrusters!"))
+			return FALSE
+	return ..()
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/attach(obj/mecha/M)
+	. = ..()
+	if(thrusters_active)
+		thrust_trail.start()
+	RegisterSignal(M, COMSIG_MOVABLE_SPACEMOVE, PROC_REF(thrust))
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/detach(atom/moveto)
+	UnregisterSignal(chassis, COMSIG_MOVABLE_SPACEMOVE)
+	if(thrusters_active)
+		thrust_trail.stop()
+	return ..()
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/proc/thrust(obj/mecha/exo, movement_dir)
+	if(!thrusters_active)
+		return
+	if(!chassis)
+		return
+	return COMSIG_MOVABLE_ALLOW_SPACEMOVE //This parent should never exist in-game outside admeme use, so why not let it be a creative thruster?
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/get_equip_info()
+	return "[..()] \[<b>Thrusters: </b> [thrusters_active ? "Enabled" : "Disabled"]\]"
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/gas
+	name = "RCS thruster package"
+	desc = "A set of thrusters that allow for exosuit movement in zero-gravity environments, by expelling gas from the internal life support tank."
+	thrust_trail = /datum/effect_system/trail_follow/smoke
+	var/move_cost = 0.05 // moles per step (5 times more than human jetpacks)
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/gas/thrust(obj/mecha/exo, movement_dir)
+	if(!thrusters_active)
+		return
+	if(!movement_dir)
+		return
+	var/obj/machinery/portable_atmospherics/canister/internal_tank = chassis.internal_tank
+	if(!internal_tank)
+		return
+	var/datum/gas_mixture/our_mix = internal_tank.return_air()
+	var/moles = our_mix.total_moles()
+	if(moles < move_cost)
+		thrusters_active = FALSE
+		thrust_trail.stop()
+		our_mix.remove(moles)
+		return
+	our_mix.remove(move_cost)
+	return COMSIG_MOVABLE_ALLOW_SPACEMOVE
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/ion //for mechs with built-in thrusters, should never really exist un-attached to a mech
+	name = "ion thruster package"
+	desc = "A set of thrusters that allow for exosuit movement in zero-gravity environments."
+	thrust_trail = /datum/effect_system/trail_follow/ion
+	salvageable = FALSE
+
+/obj/item/mecha_parts/mecha_equipment/thrusters/ion/thrust(obj/mecha/exo, movement_dir)
+	if(!thrusters_active)
+		return
+	if(!chassis.use_power(chassis.step_energy_drain))
+		thrusters_active = FALSE
+		thrust_trail.stop()
+		return
+	return COMSIG_MOVABLE_ALLOW_SPACEMOVE
+
+/datum/action/innate/mecha/equipment/toggle_thrusters
+	name = "Toggle Thrusters"
+	button_icon_state = "mech_thrusters_off"
+
+/datum/action/innate/mecha/equipment/toggle_thrusters/Activate()
+	var/obj/item/mecha_parts/mecha_equipment/thrusters/thruster = equipment
+	thruster.thrusters_active = !thruster.thrusters_active
+	if(thruster.thrusters_active)
+		thruster.thrust_trail.start()
+	else
+		thruster.thrust_trail.stop()
+	chassis.log_message("Toggled thrusters.", LOG_MECHA)
+	chassis.occupant_message("<font color='[thruster.thrusters_active ?"blue":"red"]'>Thrusters [thruster.thrusters_active ?"en":"dis"]abled.")
+	button_icon_state = "mech_thrusters_[thruster.thrusters_active ? "on" : "off"]"
+	build_all_button_icons()
+
+/////////////////////////////////////////// EJECTION /////////////////////////////////////////////
+
+/obj/item/mecha_parts/mecha_equipment/emergency_eject
+	name = "emergency ejection system"
+	desc = "An emergency quick-eject system designed to protect the pilot from injury if the exosuit suffers catastrophic damage."
+	icon_state = "mecha_eject"
+	var/ejection_distance = 8
+
+/obj/item/mecha_parts/mecha_equipment/emergency_eject/attach(obj/mecha/M)
+	. = ..()
+	M.ejection_distance += ejection_distance
+
+/obj/item/mecha_parts/mecha_equipment/emergency_eject/detach(atom/moveto)
+	if(chassis)
+		chassis.ejection_distance -= ejection_distance
+	. = ..()

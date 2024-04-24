@@ -48,6 +48,26 @@
 		/obj/item/cautery/alien,
 	)
 
+/obj/effect/spawner/lootdrop/engineering_tool_advanced
+	name = "Advanced engineering tool spawner"
+	loot = list( // Mail loot spawner. Drop pool of advanced engineering tools typically from research. Not endgame content.
+		/obj/item/handdrill,
+		/obj/item/jawsoflife,
+		/obj/item/multitool/tricorder,
+		/obj/item/weldingtool/experimental,
+	)
+
+/obj/effect/spawner/lootdrop/engineering_tool_alien
+	name = "Rare engineering tool spawner"
+	loot = list( // Mail loot spawner. Some sort of random and rare engineering tool. Alien tech found here.
+		/obj/item/wrench/abductor,
+		/obj/item/wirecutters/abductor,
+		/obj/item/screwdriver/abductor,
+		/obj/item/crowbar/abductor,
+		/obj/item/weldingtool/abductor,
+		/obj/item/multitool/abductor,
+	)
+
 /obj/effect/spawner/lootdrop/memeorgans
 	name = "meme organ spawner"
 	lootcount = 5
@@ -67,6 +87,7 @@
 		/obj/item/organ/appendix,
 		/obj/item/organ/liver/fly,
 		/obj/item/organ/lungs/plasmaman,
+		/obj/item/organ/lungs/ethereal,
 		/obj/item/organ/tail/cat,
 		/obj/item/organ/tail/lizard,
 	)
@@ -74,7 +95,7 @@
 /obj/effect/spawner/lootdrop/plushies
 	name = "random plushie"
 	lootcount = 1
-	loot = list( // /obj/item/seeds/random is not a random seed, but an exotic seed.
+	loot = list(
 		/obj/item/toy/plush/bubbleplush,
 		/obj/item/toy/plush/carpplushie,
 		/obj/item/toy/plush/lizardplushie,
@@ -109,6 +130,19 @@
 		/obj/item/ammo_casing/shotgun/thundershot,
 		/obj/item/ammo_casing/shotgun/uraniumpenetrator,
 		/obj/item/ammo_casing/shotgun/cryoshot
+	)
+
+/obj/effect/spawner/lootdrop/coin
+	name = "random coin spawner"
+	lootcount = 1
+	loot = list(
+		/obj/item/coin/iron,
+		/obj/item/coin/silver,
+		/obj/item/coin/gold,
+		/obj/item/coin/plasma,
+		/obj/item/coin/uranium,
+		/obj/item/coin/diamond,
+		/obj/item/coin/bananium
 	)
 
 /obj/effect/spawner/lootdrop/armory_contraband
@@ -505,7 +539,7 @@
 /obj/effect/spawner/lootdrop/costume
 	name = "random costume spawner"
 
-/obj/effect/spawner/lootdrop/costume/Initialize()
+/obj/effect/spawner/lootdrop/costume/Initialize(mapload)
 	loot = list()
 	for(var/path in subtypesof(/obj/effect/spawner/bundle/costume))
 		loot[path] = TRUE
@@ -575,7 +609,8 @@
 				/obj/item/aiModule/core/full/construction,
 				/obj/item/aiModule/core/full/researcher,
 				/obj/item/aiModule/core/full/clown,
-				/obj/item/aiModule/core/full/detective
+				/obj/item/aiModule/core/full/detective,
+				/obj/item/aiModule/core/full/wafflehouse
 				)
 
 /obj/effect/spawner/lootdrop/aimodule_harmful // These will get the shuttle called
@@ -670,14 +705,14 @@
 				/obj/item/circuitboard/machine/smoke_machine,
 				/obj/item/circuitboard/machine/chem_master,
 				/obj/item/circuitboard/machine/clonescanner,
-				/obj/item/circuitboard/computer/pandemic
+				/obj/item/circuitboard/computer/pandemic,
+				/obj/item/circuitboard/machine/chem_heater
 				)
 
 /obj/effect/spawner/lootdrop/techstorage/AI
 	name = "secure AI circuit board spawner"
 	loot = list(
 				/obj/item/circuitboard/computer/aiupload,
-				/obj/item/circuitboard/computer/ai_upload_download,
 				/obj/item/circuitboard/computer/borgupload
 				)
 

@@ -14,7 +14,7 @@
 	user.visible_message(span_suicide("[user] begins putting \the [src]'s antenna up [user.p_their()] nose! It looks like [user.p_theyre()] trying to give [user.p_them()]self cancer!"))
 	return TOXLOSS
 
-/obj/item/radio/headset/Initialize()
+/obj/item/radio/headset/Initialize(mapload)
 	. = ..()
 	recalculateChannels()
 
@@ -44,20 +44,20 @@
 	icon_state = "syndie_headset"
 	item_state = "syndie_headset"
 
-/obj/item/radio/headset/syndicate/alt/ComponentInitialize()
+/obj/item/radio/headset/syndicate/alt/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/wearertargeting/earprotection, list(SLOT_EARS))
+	AddComponent(/datum/component/wearertargeting/earprotection, list(ITEM_SLOT_EARS))
 
 /obj/item/radio/headset/syndicate/alt/leader
 	name = "team leader headset"
 	command = TRUE
 
-/obj/item/radio/headset/syndicate/Initialize()
+/obj/item/radio/headset/syndicate/Initialize(mapload)
 	. = ..()
 	make_syndie()
 
 /obj/item/radio/headset/binary
-/obj/item/radio/headset/binary/Initialize()
+/obj/item/radio/headset/binary/Initialize(mapload)
 	. = ..()
 	qdel(keyslot)
 	keyslot = new /obj/item/encryptionkey/binary
@@ -75,9 +75,9 @@
 	icon_state = "sec_headset_alt"
 	item_state = "sec_headset_alt"
 
-/obj/item/radio/headset/headset_sec/alt/ComponentInitialize()
+/obj/item/radio/headset/headset_sec/alt/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/wearertargeting/earprotection, list(SLOT_EARS))
+	AddComponent(/datum/component/wearertargeting/earprotection, list(ITEM_SLOT_EARS))
 
 /obj/item/radio/headset/headset_eng
 	name = "engineering radio headset"
@@ -142,9 +142,9 @@
 	icon_state = "com_headset_alt"
 	item_state = "com_headset_alt"
 
-/obj/item/radio/headset/heads/captain/alt/ComponentInitialize()
+/obj/item/radio/headset/heads/captain/alt/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/wearertargeting/earprotection, list(SLOT_EARS))
+	AddComponent(/datum/component/wearertargeting/earprotection, list(ITEM_SLOT_EARS))
 
 /obj/item/radio/headset/heads/rd
 	name = "\proper the research director's headset"
@@ -164,9 +164,9 @@
 	icon_state = "com_headset_alt"
 	item_state = "com_headset_alt"
 
-/obj/item/radio/headset/heads/hos/ComponentInitialize()
+/obj/item/radio/headset/heads/hos/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/wearertargeting/earprotection, list(SLOT_EARS))
+	AddComponent(/datum/component/wearertargeting/earprotection, list(ITEM_SLOT_EARS))
 
 /obj/item/radio/headset/heads/ce
 	name = "\proper the chief engineer's headset"
@@ -204,9 +204,26 @@
 	icon_state = "srv_headset"
 	keyslot = new /obj/item/encryptionkey/headset_service
 
+/obj/item/radio/headset/headset_synthetic
+	name = "synthetic radio headset"
+	desc = "Headset used by the onboard synthetic units. This one is integrated directly into the unit and is not possible to remove."
+	icon_state = "com_headset"
+	keyslot = new /obj/item/encryptionkey/headset_synthetic
+	item_flags = DROPDEL
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
+
+/obj/item/radio/headset/headset_synthetic/Initialize(mapload)
+	. = ..()
+	ADD_TRAIT(src, TRAIT_NODROP, SYNTHETIC_TRAIT)
+	ADD_TRAIT(src, TRAIT_EMPPROOF_CONTENTS, SYNTHETIC_TRAIT)
+	ADD_TRAIT(src, TRAIT_EMPPROOF_SELF, SYNTHETIC_TRAIT)
+	
+/obj/item/radio/headset/headset_synthetic/attackby(obj/item/W, mob/user, params)
+	return FALSE
+
 /obj/item/radio/headset/headset_cent
 	name = "\improper CentCom headset"
-	desc = "A headset used by the upper echelons of NanoTrasen."
+	desc = "A headset used by the upper echelons of Nanotrasen."
 	icon_state = "cent_headset"
 	keyslot = new /obj/item/encryptionkey/headset_com
 	keyslot2 = new /obj/item/encryptionkey/headset_cent
@@ -224,9 +241,9 @@
 	icon_state = "cent_headset_alt"
 	item_state = "cent_headset_alt"
 
-/obj/item/radio/headset/headset_cent/bowman/ComponentInitialize()
+/obj/item/radio/headset/headset_cent/bowman/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/wearertargeting/earprotection, list(SLOT_EARS))
+	AddComponent(/datum/component/wearertargeting/earprotection, list(ITEM_SLOT_EARS))
 
 /obj/item/radio/headset/headset_cent/commander
 	name = "\improper CentCom bowman headset"
@@ -235,9 +252,9 @@
 	item_state = "cent_headset_alt"
 	keyslot = new /obj/item/encryptionkey/heads/captain
 
-/obj/item/radio/headset/headset_cent/alt/ComponentInitialize()
+/obj/item/radio/headset/headset_cent/alt/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/wearertargeting/earprotection, list(SLOT_EARS))
+	AddComponent(/datum/component/wearertargeting/earprotection, list(ITEM_SLOT_EARS))
 
 /obj/item/radio/headset/silicon/pai
 	name = "\proper mini Integrated Subspace Transceiver "

@@ -5,7 +5,7 @@
 	icon_state = "triangle"
 	icon_living = "triangle"
 	icon_dead = "triangle_dead"
-	mob_biotypes = list(MOB_ORGANIC, MOB_BUG)
+	mob_biotypes = MOB_ORGANIC|MOB_BUG
 	emote_hear = list("chitters")
 	speak_chance = 5
 	turns_per_move = 5
@@ -26,5 +26,3 @@
 	attack_sound = 'sound/weapons/bite.ogg'
 	unique_name = 1
 	gold_core_spawnable = HOSTILE_SPAWN
-	see_in_dark = 4
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE

@@ -22,8 +22,11 @@
 	var/buildstackamount = 2
 	var/bolts = TRUE
 
-/obj/structure/bed/ComponentInitialize()
-	AddComponent(/datum/component/surgery_bed, 0.8)
+/obj/structure/bed/Initialize(mapload)
+	. = ..()
+	AddComponent(/datum/component/surgery_bed, \
+		success_chance = 0.85, \
+	)
 
 /obj/structure/bed/examine(mob/user)
 	. = ..()
@@ -97,7 +100,7 @@
 	icon_state = "up"
 	M.pixel_y = initial(M.pixel_y)
 
-/obj/structure/bed/roller/Moved()
+/obj/structure/bed/roller/Moved(atom/old_loc, movement_dir, forced, list/old_locs, momentum_change)
 	. = ..()
 	if(has_gravity())
 		playsound(src, 'sound/effects/roll.ogg', 100, 1)
@@ -148,7 +151,7 @@
 	desc = "A collapsed roller bed that can be ejected for emergency use. Must be collected or replaced after use."
 	var/obj/structure/bed/roller/loaded = null
 
-/obj/item/roller/robo/Initialize()
+/obj/item/roller/robo/Initialize(mapload)
 	. = ..()
 	loaded = new(src)
 
@@ -225,8 +228,8 @@
 	can_buckle = TRUE
 	density = FALSE
 
-/obj/structure/bed/grip/Initialize()
+/obj/structure/bed/grip/Initialize(mapload)
 	. = ..()
 
-/obj/structure/bed/roller/post_unbuckle_mob(mob/living/M)
+/obj/structure/bed/grip/post_unbuckle_mob(mob/living/M)
 	qdel(src)

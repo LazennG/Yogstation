@@ -23,7 +23,7 @@
 	desc = "Death to Nanotrasen. This variant comes in MECHA DEATH flavour."
 	wanted_objects = list()
 	search_objects = 0
-	mob_biotypes = list(MOB_ORGANIC, MOB_HUMANOID)
+	mob_biotypes = MOB_ORGANIC|MOB_HUMANOID
 
 	var/spawn_mecha_type = /obj/mecha/combat/marauder/mauler/loaded
 	var/obj/mecha/mecha //Ref to pilot's mecha instance
@@ -40,7 +40,7 @@
 	spawn_mecha_type = null
 	search_objects = 2
 
-/mob/living/simple_animal/hostile/syndicate/mecha_pilot/no_mech/Initialize()
+/mob/living/simple_animal/hostile/syndicate/mecha_pilot/no_mech/Initialize(mapload)
 	. = ..()
 	wanted_objects = typecacheof(/obj/mecha/combat, TRUE)
 
@@ -60,12 +60,12 @@
 	faction = list("nanotrasen")
 
 
-/mob/living/simple_animal/hostile/syndicate/mecha_pilot/Initialize()
+/mob/living/simple_animal/hostile/syndicate/mecha_pilot/Initialize(mapload)
 	. = ..()
 	if(spawn_mecha_type)
 		var/obj/mecha/M = new spawn_mecha_type (get_turf(src))
 		if(istype(M))
-			INVOKE_ASYNC(src, .proc/enter_mecha, M)
+			INVOKE_ASYNC(src, PROC_REF(enter_mecha), M)
 
 
 /mob/living/simple_animal/hostile/syndicate/mecha_pilot/proc/enter_mecha(obj/mecha/M)
@@ -123,7 +123,7 @@
 		return 0
 	if(!M.has_charge(required_mecha_charge))
 		return 0
-	if(M.obj_integrity < M.max_integrity*0.5)
+	if(M.get_integrity() < M.max_integrity*0.5)
 		return 0
 	return 1
 
@@ -183,7 +183,7 @@
 
 		if(mecha.melee_can_hit)
 			mecha_face_target(target)
-			target.mech_melee_attack(mecha, TRUE)
+			target.mech_melee_attack(mecha, mecha.force, TRUE)
 	else
 		if(ismecha(target))
 			var/obj/mecha/M = target
@@ -217,7 +217,7 @@
 				return
 
 			//Too Much Damage - Eject
-			if(mecha.obj_integrity < mecha.max_integrity*0.1)
+			if(mecha.get_integrity() < mecha.max_integrity*0.1)
 				exit_mecha(mecha)
 				return
 
@@ -227,18 +227,18 @@
 					mecha.smoke_action.Activate()
 
 			//Heavy damage - defence Power or Retreat
-			if(mecha.obj_integrity < mecha.max_integrity*0.25)
+			if(mecha.get_integrity() < mecha.max_integrity*0.25)
 				if(prob(defence_mode_chance))
 					if(mecha.defence_action && mecha.defence_action.owner && !mecha.defence_mode)
 						mecha.leg_overload_mode = 0
 						mecha.defence_action.Activate(TRUE)
-						addtimer(CALLBACK(mecha.defence_action, /datum/action/innate/mecha/mech_defence_mode.proc/Activate, FALSE), 100) //10 seconds of defence, then toggle off
+						addtimer(CALLBACK(mecha.defence_action, TYPE_PROC_REF(/datum/action/innate/mecha/mech_defence_mode, Activate), FALSE), 100) //10 seconds of defence, then toggle off
 
 				else if(prob(retreat_chance))
 					//Speed boost if possible
 					if(mecha.overload_action && mecha.overload_action.owner && !mecha.leg_overload_mode)
 						mecha.overload_action.Activate(TRUE)
-						addtimer(CALLBACK(mecha.overload_action, /datum/action/innate/mecha/mech_defence_mode.proc/Activate, FALSE), 100) //10 seconds of speeeeed, then toggle off
+						addtimer(CALLBACK(mecha.overload_action, TYPE_PROC_REF(/datum/action/innate/mecha/mech_defence_mode, Activate), FALSE), 100) //10 seconds of speeeeed, then toggle off
 
 					retreat_distance = 50
 					spawn(100)

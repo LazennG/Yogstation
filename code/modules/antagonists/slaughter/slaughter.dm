@@ -13,7 +13,7 @@
 	icon = 'icons/mob/mob.dmi'
 	icon_state = "daemon"
 	icon_living = "daemon"
-	mob_biotypes = list(MOB_ORGANIC, MOB_HUMANOID)
+	mob_biotypes = MOB_ORGANIC|MOB_HUMANOID
 	speed = 1
 	a_intent = INTENT_HARM
 	stop_automated_movement = 1
@@ -33,8 +33,9 @@
 	obj_damage = 50
 	melee_damage_lower = 30
 	melee_damage_upper = 30
-	see_in_dark = 8
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE
+	lighting_cutoff_red = 22
+	lighting_cutoff_green = 5
+	lighting_cutoff_blue = 5
 	bloodcrawl = BLOODCRAWL_EAT
 	var/playstyle_string = "<span class='big bold'>You are a slaughter demon,</span><B> a terrible creature from another realm. You have a single desire: To kill.  \
 							You may use the \"Blood Crawl\" ability near blood pools to travel through them, appearing and disappearing from the station at will. \
@@ -47,7 +48,7 @@
 	del_on_death = 1
 	deathmessage = "screams in anger as it collapses into a puddle of viscera!"
 
-/mob/living/simple_animal/slaughter/Initialize()
+/mob/living/simple_animal/slaughter/Initialize(mapload)
 	..()
 	var/obj/effect/proc_holder/spell/bloodcrawl/bloodspell = new
 	AddSpell(bloodspell)
@@ -65,7 +66,7 @@
 /mob/living/simple_animal/slaughter/phasein()
 	. = ..()
 	add_movespeed_modifier(MOVESPEED_ID_SLAUGHTER, update=TRUE, priority=100, multiplicative_slowdown=-1)
-	addtimer(CALLBACK(src, .proc/remove_movespeed_modifier, MOVESPEED_ID_SLAUGHTER, TRUE), 6 SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE)
+	addtimer(CALLBACK(src, PROC_REF(remove_movespeed_modifier), MOVESPEED_ID_SLAUGHTER, TRUE), 6 SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE)
 
 
 //The loot from killing a slaughter demon - can be consumed to allow the user to blood crawl
@@ -75,8 +76,9 @@
 	icon = 'icons/obj/surgery.dmi'
 	icon_state = "demon_heart-on"
 
-/obj/item/organ/heart/demon/update_icon()
-	return //always beating visually
+/obj/item/organ/heart/demon/Initialize(mapload)
+	AddElement(/datum/element/update_icon_blocker)
+	return ..()
 
 /obj/item/organ/heart/demon/attack(mob/M, mob/living/carbon/user, obj/target)
 	if(M != user)
@@ -175,7 +177,7 @@
 			playsound(T, feast_sound, 50, 1, -1)
 			to_chat(M, span_clown("You leave [src]'s warm embrace,	and feel ready to take on the world."))
 
-/mob/living/simple_animal/slaughter/laughter/bloodcrawl_swallow(var/mob/living/victim)
+/mob/living/simple_animal/slaughter/laughter/bloodcrawl_swallow(mob/living/victim)
 	if(consumed_mobs)
 		// Keep their corpse so rescue is possible
 		consumed_mobs += victim

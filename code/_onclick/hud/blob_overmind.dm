@@ -126,53 +126,50 @@
 	..()
 	var/atom/movable/screen/using
 
-	blobpwrdisplay = new /atom/movable/screen()
+	blobpwrdisplay = new /atom/movable/screen(src)
 	blobpwrdisplay.name = "blob power"
 	blobpwrdisplay.icon_state = "block"
 	blobpwrdisplay.screen_loc = ui_health
 	blobpwrdisplay.mouse_opacity = MOUSE_OPACITY_TRANSPARENT
-	blobpwrdisplay.layer = ABOVE_HUD_LAYER
-	blobpwrdisplay.plane = ABOVE_HUD_PLANE
+	SET_PLANE_EXPLICIT(blobpwrdisplay, ABOVE_HUD_PLANE, owner)
 	infodisplay += blobpwrdisplay
 
-	healths = new /atom/movable/screen/healths/blob()
+	healths = new /atom/movable/screen/healths/blob(src)
 	infodisplay += healths
 
-	using = new /atom/movable/screen/blob/BlobHelp()
+	using = new /atom/movable/screen/blob/BlobHelp(src)
 	using.screen_loc = "WEST:6,NORTH:-3"
 	static_inventory += using
 
-	using = new /atom/movable/screen/blob/JumpToNode()
+	using = new /atom/movable/screen/blob/JumpToNode(src)
 	using.screen_loc = ui_inventory
 	static_inventory += using
 
-	using = new /atom/movable/screen/blob/JumpToCore()
+	using = new /atom/movable/screen/blob/JumpToCore(src)
 	using.screen_loc = ui_zonesel
-	using.hud = src
 	static_inventory += using
 
-	using = new /atom/movable/screen/blob/Blobbernaut()
+	using = new /atom/movable/screen/blob/Blobbernaut(src)
 	using.screen_loc = ui_belt
 	static_inventory += using
 
-	using = new /atom/movable/screen/blob/ResourceBlob()
+	using = new /atom/movable/screen/blob/ResourceBlob(src)
 	using.screen_loc = ui_back
 	static_inventory += using
 
-	using = new /atom/movable/screen/blob/NodeBlob()
+	using = new /atom/movable/screen/blob/NodeBlob(src)
 	using.screen_loc = ui_hand_position(2)
 	static_inventory += using
 
-	using = new /atom/movable/screen/blob/FactoryBlob()
+	using = new /atom/movable/screen/blob/FactoryBlob(src)
 	using.screen_loc = ui_hand_position(1)
 	static_inventory += using
 
-	using = new /atom/movable/screen/blob/ReadaptStrain()
+	using = new /atom/movable/screen/blob/ReadaptStrain(src)
 	using.screen_loc = ui_storage1
-	using.hud = src
 	static_inventory += using
 
-	using = new /atom/movable/screen/blob/RelocateCore()
+	using = new /atom/movable/screen/blob/RelocateCore(src)
 	using.screen_loc = ui_storage2
 	static_inventory += using
 

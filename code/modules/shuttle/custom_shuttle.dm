@@ -50,8 +50,8 @@
 		dat += "Fuel Consumption: [calculated_consumption]units per distance<br>"
 		dat += "Engine Cooldown: [calculated_cooldown]s<hr>"
 		var/destination_found
-		for(var/obj/docking_port/stationary/S in SSshuttle.stationary)
-			if(!options.Find(S.id))
+		for(var/obj/docking_port/stationary/S in SSshuttle.stationary_docking_ports)
+			if(!options.Find(S.port_destinations))
 				continue
 			if(!M.check_dock(S, silent=TRUE))
 				continue
@@ -59,7 +59,7 @@
 				break
 			destination_found = TRUE
 			var/dist = round(calculateDistance(S))
-			dat += "<A href='?src=[REF(src)];setloc=[S.id]'>Target [S.name] (Dist: [dist] | Fuel Cost: [round(dist * calculated_consumption)] | Time: [round(dist / calculated_speed)])</A><br>"
+			dat += "<A href='?src=[REF(src)];setloc=[S.shuttle_id]'>Target [S.name] (Dist: [dist] | Fuel Cost: [round(dist * calculated_consumption)] | Time: [round(dist / calculated_speed)])</A><br>"
 		if(!destination_found)
 			dat += "<B>No valid destinations</B><br>"
 		dat += "<hr>[targetLocation ? "Target Location : [targetLocation]" : "No Target Location"]"
@@ -98,17 +98,17 @@
 		ui_interact(usr)
 		return
 
-/obj/machinery/computer/custom_shuttle/proc/calculateDistance(var/obj/port)
+/obj/machinery/computer/custom_shuttle/proc/calculateDistance(obj/port)
 	var/deltaX = port.x - x
 	var/deltaY = port.y - y
 	var/deltaZ = (port.z - z) * Z_DIST
 	return sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ) * distance_multiplier
 
-/obj/machinery/computer/custom_shuttle/proc/linkShuttle(var/new_id)
+/obj/machinery/computer/custom_shuttle/proc/linkShuttle(new_id)
 	shuttleId = new_id
 	possible_destinations = "whiteship_home;auxiliary_construction;spacebar;shuttle[new_id]_custom"
 
-/obj/machinery/computer/custom_shuttle/proc/calculateStats(var/useFuel = FALSE, var/dist = 0, var/ignore_cooldown = FALSE)
+/obj/machinery/computer/custom_shuttle/proc/calculateStats(useFuel = FALSE, dist = 0, ignore_cooldown = FALSE)
 	if(!ignore_cooldown && stat_calc_cooldown >= world.time)
 		to_chat(usr, "<span>You are using this too fast, please slow down</span>")
 		return
@@ -150,7 +150,7 @@
 	calculated_speed = (calculated_dforce*1000) / (calculated_mass*100)
 	return TRUE
 
-/obj/machinery/computer/custom_shuttle/proc/consumeFuel(var/dist)
+/obj/machinery/computer/custom_shuttle/proc/consumeFuel(dist)
 	var/obj/docking_port/mobile/M = SSshuttle.getShuttle(shuttleId)
 	if(!M)
 		return FALSE
@@ -168,7 +168,7 @@
 			resolvedHeater?.consumeFuel(dist * shuttle_machine.fuel_use)
 		shuttle_machine.fireEngine()
 
-/obj/machinery/computer/custom_shuttle/proc/SetTargetLocation(var/newTarget)
+/obj/machinery/computer/custom_shuttle/proc/SetTargetLocation(newTarget)
 	if(!(newTarget in params2list(possible_destinations)))
 		log_admin("[usr] attempted to href dock exploit on [src] with target location \"[newTarget]\"")
 		message_admins("[usr] just attempted to href dock exploit on [src] with target location \"[newTarget]\"")
@@ -218,9 +218,17 @@
 			to_chat(usr, "<span class='notice'>Unable to comply.</span>")
 	return
 
-/obj/machinery/computer/custom_shuttle/connect_to_shuttle(obj/docking_port/mobile/port, obj/docking_port/stationary/dock, idnum, override=FALSE)
-	if(port && (shuttleId == initial(shuttleId) || override))
-		linkShuttle(port.id)
+/obj/machinery/computer/custom_shuttle/connect_to_shuttle(mapload, obj/docking_port/mobile/port, obj/docking_port/stationary/dock, idnum, override=FALSE)
+	if(!mapload)
+		return
+	if(!port)
+		return
+	//Remove old custom port id and ";;"
+	var/find_old = findtextEx(possible_destinations, "[shuttleId]_custom")
+	if(find_old)
+		possible_destinations = replacetext(replacetextEx(possible_destinations, "[shuttleId]_custom", ""), ";;", ";")
+	shuttleId = port.shuttle_id
+	possible_destinations += ";[port.shuttle_id]_custom"
 
 //Custom shuttle docker locations
 /obj/machinery/computer/camera_advanced/shuttle_docker/custom
@@ -233,12 +241,12 @@
 		/turf/open/floor/plating/ashplanet,
 		/turf/open/floor/plating/asteroid,
 		/turf/open/floor/plating/lavaland_baseturf)
-	jumpto_ports = list("whiteship_home" = 1)
+	jump_to_ports = list("whiteship_home" = 1)
 	view_range = 12
 	designate_time = 100
 	circuit = /obj/item/circuitboard/computer/shuttle/docker
 
-/obj/machinery/computer/camera_advanced/shuttle_docker/custom/Initialize()
+/obj/machinery/computer/camera_advanced/shuttle_docker/custom/Initialize(mapload)
 	. = ..()
 	GLOB.jam_on_wardec += src
 

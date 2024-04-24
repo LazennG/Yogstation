@@ -41,7 +41,7 @@
 	build_path = /obj/item/circuitboard/machine/shuttle/capacitor_bank
 	category = list ("Shuttle Machinery")
 	departmental_flags = DEPARTMENTAL_FLAG_ENGINEERING | DEPARTMENTAL_FLAG_SCIENCE
-	
+
 /datum/design/board/spaceship_navigation_beacon
 	name = "Machine Design (Bluespace Navigation Gigabeacon)"
 	desc = "The circuit board for a Bluespace Navigation Gigabeacon."
@@ -113,6 +113,14 @@
 	build_path = /obj/item/circuitboard/machine/emitter
 	category = list ("Engineering Machinery")
 	departmental_flags = DEPARTMENTAL_FLAG_ENGINEERING
+
+/datum/design/board/particle_emitter
+	name = "Machine Design (Particle Emitter Board)"
+	desc = "The circuit board for an particle emitter."
+	id = "particle_emitter"
+	build_path = /obj/item/circuitboard/machine/emitter/particle
+	category = list("Research Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_ENGINEERING | DEPARTMENTAL_FLAG_SCIENCE
 
 /datum/design/board/power_compressor
 	name = "Machine Design (Power Compressor Board)"
@@ -597,7 +605,7 @@
 
 /datum/design/board/oven
 	name = "Machine Design (Oven)"
-	desc = "The circuit board for a Oven."
+	desc = "The circuit board for an Oven."
 	id = "oven"
 	build_path = /obj/item/circuitboard/machine/oven
 	category = list ("Misc. Machinery")
@@ -629,11 +637,19 @@
 
 /datum/design/board/ticket_machine
 	name = "Machine Design (Ticket Machine)"
-	desc = "The circuit board for a dish drive."
+	desc = "The circuit board for a ticket machine."
 	id = "ticket_machine"
 	build_path = /obj/item/circuitboard/machine/ticketmachine
 	category = list ("Misc. Machinery")
 	departmental_flags = DEPARTMENTAL_FLAG_CARGO | DEPARTMENTAL_FLAG_SERVICE | DEPARTMENTAL_FLAG_MEDICAL
+
+/datum/design/board/inspector_booth
+	name = "Machine Design (Inspector Booth)"
+	desc = "The circuit board for an inspector booth."
+	id = "inspector_booth"
+	build_path = /obj/item/circuitboard/machine/inspector_booth
+	category = list ("Misc. Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_ALL
 
 /datum/design/board/stacking_unit_console
 	name = "Machine Design (Stacking Machine Console)"
@@ -699,6 +715,15 @@
 	category = list ("Engineering Machinery")
 	departmental_flags = DEPARTMENTAL_FLAG_ENGINEERING
 
+/datum/design/board/synth_pod
+	name = "Machine Design (Synthetic Storage Unit)"
+	desc = "The circuit board for a synthetic storage unit."
+	id = "synth_pod"
+	build_path = /obj/item/circuitboard/machine/synth_pod
+	category = list ("Engineering Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_SCIENCE
+
+
 /datum/design/board/decontamination_unit
 	name = "Machine Design (Decontamination Unit)"
 	desc = "The circuit board for a decontamination unit."
@@ -723,6 +748,22 @@
 	category = list("Engineering Machinery")
 	departmental_flags = DEPARTMENTAL_FLAG_SCIENCE
 
+/datum/design/board/networking_machine
+	name = "Machine Design (Networking Machine)"
+	desc = "The circuit board for a dual-purpose networking machine."
+	id = "networking_machine"
+	build_path = /obj/item/circuitboard/machine/networking_machine
+	category = list("Engineering Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_SCIENCE
+
+/datum/design/board/subcontroller
+	name = "Machine Design (Subcontroller)"
+	desc = "The circuit board for a subcontroller mainframe."
+	id = "subcontroller"
+	build_path = /obj/item/circuitboard/machine/subcontroller
+	category = list("Engineering Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_SCIENCE
+
 /datum/design/board/ai_data_core
 	name = "Machine Design (AI Data Core Board)"
 	desc = "The circuit board for an AI data core."
@@ -730,7 +771,6 @@
 	build_path = /obj/item/circuitboard/machine/ai_data_core
 	category = list("Engineering Machinery")
 	departmental_flags = DEPARTMENTAL_FLAG_SCIENCE
-
 
 /datum/design/board/ai_core_display
 	name = "Machine Design (AI Core Display Board)"
@@ -755,3 +795,35 @@
 	build_path = /obj/item/circuitboard/machine/plort
 	category = list("Research Machinery")
 	departmental_flags = DEPARTMENTAL_FLAG_SCIENCE
+
+/datum/design/board/reactor_control
+	name = "Computer Design (Reactor Control)"
+	desc = "The circuit board for a reactor control console."
+	id = "reactor_control"
+	build_path = /obj/item/circuitboard/computer/reactor
+	category = list ("Engineering Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_ENGINEERING
+  
+/datum/design/board/mindmachine_hub
+	name = "Machine Design (Mind Machine Hub)"
+	desc = "The circuit board for a mind machine hub."
+	id = "mindmachine_hub"
+	build_path = /obj/item/circuitboard/machine/mindmachine_hub
+	category = list("Medical Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_MEDICAL
+
+/datum/design/board/mindmachine_pod
+	name = "Machine Design (Mind Machine Pod)"
+	desc = "The circuit board for a mind machine pod."
+	id = "mindmachine_pod"
+	build_path = /obj/item/circuitboard/machine/mindmachine_pod
+	category = list("Medical Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_MEDICAL
+
+/datum/design/board/mass_driver
+	name = "Machine Design (Mass Driver)"
+	desc = "The circuit board for a mass driver."
+	id = "mass_driver"
+	build_path = /obj/item/circuitboard/machine/mass_driver
+	category = list("Misc. Machinery")
+	departmental_flags = DEPARTMENTAL_FLAG_ENGINEERING | DEPARTMENTAL_FLAG_SCIENCE

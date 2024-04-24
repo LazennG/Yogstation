@@ -1,11 +1,11 @@
 /*
  * Holds procs designed to help with filtering text
  * Contains groups:
- *			SQL sanitization/formating
- *			Text sanitization
- *			Text searches
- *			Text modification
- *			Misc
+ * SQL sanitization/formating
+ * Text sanitization
+ * Text searches
+ * Text modification
+ * Misc
  */
 
 
@@ -42,8 +42,16 @@
 			index = findtext(t, char, index+length(char))
 	return t
 
-/proc/sanitize_filename(t)
-	return sanitize_simple(t, list("\n"="", "\t"="", "/"="", "\\"="", "?"="", "%"="", "*"="", ":"="", "|"="", "\""="", "<"="", ">"=""))
+/proc/sanitize_filename(text)
+	return hashtag_newlines_and_tabs(text, list("\n"="", "\t"="", "/"="", "\\"="", "?"="", "%"="", "*"="", ":"="", "|"="", "\""="", "<"="", ">"=""))
+
+/proc/hashtag_newlines_and_tabs(text, list/repl_chars = list("\n"="#","\t"="#"))
+	for(var/char in repl_chars)
+		var/index = findtext(text, char)
+		while(index)
+			text = copytext(text, 1, index) + repl_chars[char] + copytext(text, index + length(char))
+			index = findtext(text, char, index + length(char))
+	return text
 
 /proc/sanitize_name(t,list/repl_chars = null)
 	if(t == "space" || t == "floor" || t == "wall" || t == "r-wall" || t == "monkey" || t == "unknown" || t == "inactive ai")
@@ -51,19 +59,25 @@
 		return ""
 	return sanitize(t)
 
-//Runs byond's sanitization proc along-side sanitize_simple
-/proc/sanitize(t,list/repl_chars = null)
-	return html_encode(sanitize_simple(t,repl_chars))
+/// Runs byond's html encoding sanitization proc, after replacing new-lines and tabs for the # character.
+/proc/sanitize(text)
+	var/static/regex/regex = regex(@"[\n\t]", "g")
+	return html_encode(regex.Replace(text, "#"))
 
-//Runs sanitize and strip_html_simple
-//I believe strip_html_simple() is required to run first to prevent '<' from displaying as '&lt;' after sanitize() calls byond's html_encode()
-/proc/strip_html(t,limit=MAX_MESSAGE_LEN)
-	return copytext((sanitize(strip_html_simple(t))),1,limit)
 
-//Runs byond's sanitization proc along-side strip_html_simple
-//I believe strip_html_simple() is required to run first to prevent '<' from displaying as '&lt;' that html_encode() would cause
-/proc/adminscrub(t,limit=MAX_MESSAGE_LEN)
-	return copytext((html_encode(strip_html_simple(t))),1,limit)
+/// Runs STRIP_HTML_SIMPLE and sanitize.
+/proc/strip_html(text, limit = MAX_MESSAGE_LEN)
+	return sanitize(STRIP_HTML_SIMPLE(text, limit))
+
+
+/// Runs STRIP_HTML_FULL and sanitize.
+/proc/strip_html_full(text, limit = MAX_MESSAGE_LEN)
+	return sanitize(STRIP_HTML_FULL(text, limit))
+
+
+/// Runs STRIP_HTML_SIMPLE and byond's sanitization proc.
+/proc/adminscrub(text, limit = MAX_MESSAGE_LEN)
+	return html_encode(STRIP_HTML_SIMPLE(text, limit))
 
 
 //Returns null if there is any bad text in the string
@@ -351,6 +365,9 @@
 GLOBAL_LIST_INIT(zero_character_only, list("0"))
 GLOBAL_LIST_INIT(hex_characters, list("0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"))
 GLOBAL_LIST_INIT(alphabet, list("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"))
+GLOBAL_LIST_INIT(alphabet_upper, list("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"))
+GLOBAL_LIST_INIT(numerals, list("1","2","3","4","5","6","7","8","9","0"))
+GLOBAL_LIST_INIT(space, list(" "))
 GLOBAL_LIST_INIT(binary, list("0","1"))
 /proc/random_string(length, list/characters)
 	. = ""

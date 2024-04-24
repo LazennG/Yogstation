@@ -138,10 +138,61 @@
 	max_integrity = 30
 	density = FALSE
 	anchored = TRUE
+	buckle_lying = 90
+	/// Overlay we apply when impaling a mob.
+	var/mutable_appearance/stab_overlay
 
 /obj/structure/punji_sticks/Initialize(mapload)
 	. = ..()
-	AddComponent(/datum/component/caltrop, 20, 30, 100, CALTROP_BYPASS_SHOES)
+	AddComponent(/datum/component/caltrop, min_damage = 20, max_damage = 30, flags = CALTROP_BYPASS_SHOES)
+	build_stab_overlay()
+
+/obj/structure/punji_sticks/proc/build_stab_overlay()
+	stab_overlay = mutable_appearance(icon, "[icon_state]_stab", layer = ABOVE_MOB_LAYER)
+
+/obj/structure/punji_sticks/on_changed_z_level(turf/old_turf, turf/new_turf, same_z_layer, notify_contents)
+	. = ..()
+	if(same_z_layer)
+		return
+	build_stab_overlay()
+	update_appearance()
+
+/obj/structure/punji_sticks/post_buckle_mob(mob/living/M)
+	update_appearance()
+	return ..()
+
+/obj/structure/punji_sticks/post_unbuckle_mob(mob/living/M)
+	update_appearance()
+	return ..()
+
+/obj/structure/punji_sticks/update_overlays()
+	. = ..()
+	if(length(buckled_mobs))
+		. += stab_overlay
+
+/obj/structure/punji_sticks/intercept_zImpact(list/falling_movables, levels)
+	. = ..()
+	for(var/mob/living/fallen_mob in falling_movables)
+		if(LAZYLEN(buckled_mobs))
+			return
+		if(buckle_mob(fallen_mob, TRUE))
+			to_chat(fallen_mob, span_userdanger("You are impaled by [src]!"))
+			fallen_mob.apply_damage(25 * levels, BRUTE, sharpness = SHARP_POINTY)
+			if(iscarbon(fallen_mob))
+				var/mob/living/carbon/fallen_carbon = fallen_mob
+				fallen_carbon.emote("scream")
+				fallen_carbon.bleed(30)
+	. |= FALL_INTERCEPTED | FALL_NO_MESSAGE
+
+/obj/structure/punji_sticks/unbuckle_mob(mob/living/buckled_mob, force, can_fall)
+	if(force)
+		return ..()
+	to_chat(buckled_mob, span_warning("You begin climbing out of [src]."))
+	buckled_mob.apply_damage(5, BRUTE, sharpness = SHARP_POINTY)
+	if(!do_after(buckled_mob, 5 SECONDS, target = src))
+		to_chat(buckled_mob, span_userdanger("You fail to detach yourself from [src]."))
+		return
+	return ..()
 
 /////////BONFIRES//////////
 
@@ -159,12 +210,27 @@
 	var/grill = FALSE
 	var/fire_stack_strength = 5
 
+/obj/structure/bonfire/Initialize(mapload)
+	. = ..()
+	RegisterSignal(src, COMSIG_LIGHT_EATER_ACT, PROC_REF(on_light_eater))
+
+//fire isn't one light source, it's several constantly appearing and disappearing... or something
+/obj/structure/bonfire/proc/on_light_eater(atom/source, datum/light_eater)
+	SIGNAL_HANDLER 
+	if(burning)
+		visible_message("The roaring fire of \the [src] refuses to fade.")
+	return COMPONENT_BLOCK_LIGHT_EATER
+
 /obj/structure/bonfire/dense
 	density = TRUE
 
-/obj/structure/bonfire/prelit/Initialize()
+/obj/structure/bonfire/prelit/Initialize(mapload)
 	. = ..()
 	StartBurning()
+	var/static/list/loc_connections = list(
+		COMSIG_ATOM_ENTERED = PROC_REF(on_entered),
+	)
+	AddElement(/datum/element/connect_loc, loc_connections)
 
 /obj/structure/bonfire/CanAllowThrough(atom/movable/mover, turf/target)
 	. = ..()
@@ -219,7 +285,7 @@
 		return
 	if(!has_buckled_mobs() && do_after(user, 5 SECONDS, src))
 		for(var/I in 1 to 5)
-			var/obj/item/grown/log/L = new /obj/item/grown/log(src.loc)
+			var/obj/item/grown/log/L = new /obj/item/grown/log(loc)
 			L.pixel_x += rand(1,4)
 			L.pixel_y += rand(1,4)
 		if(can_buckle || grill)
@@ -231,12 +297,15 @@
 	if(isopenturf(loc))
 		var/turf/open/O = loc
 		if(O.air)
-			if(O.air.get_moles(/datum/gas/oxygen) > 13)
+			if(O.air.get_moles(GAS_O2) > 13)
 				return TRUE
 	return FALSE
 
 /obj/structure/bonfire/proc/StartBurning()
 	if(!burning && CheckOxygen())
+		add_emitter(/obj/emitter/fire, "fire")
+		add_emitter(/obj/emitter/sparks/fire, "fire_spark")
+		add_emitter(/obj/emitter/fire_smoke, "smoke", 9)
 		icon_state = burn_icon
 		burning = TRUE
 		set_light(6)
@@ -246,8 +315,7 @@
 /obj/structure/bonfire/fire_act(exposed_temperature, exposed_volume)
 	StartBurning()
 
-/obj/structure/bonfire/Crossed(atom/movable/AM)
-	. = ..()
+/obj/structure/bonfire/proc/on_entered(datum/source, atom/movable/AM, ...)
 	if(burning & !grill)
 		Burn()
 
@@ -263,7 +331,7 @@
 		else if(isliving(A))
 			var/mob/living/L = A
 			L.adjust_fire_stacks(fire_stack_strength * 0.5 * delta_time)
-			L.IgniteMob()
+			L.ignite_mob()
 
 /obj/structure/bonfire/proc/Cook(delta_time = 2)
 	var/turf/current_location = get_turf(src)
@@ -274,7 +342,7 @@
 		else if(isliving(A)) //It's still a fire, idiot.
 			var/mob/living/L = A
 			L.adjust_fire_stacks(fire_stack_strength * 0.5 * delta_time)
-			L.IgniteMob()
+			L.ignite_mob()
 		else if(G.GetComponent(/datum/component/grillable))
 			if(SEND_SIGNAL(G, COMSIG_ITEM_GRILLED, src) & COMPONENT_HANDLED_GRILLING)
 				continue
@@ -296,6 +364,9 @@
 
 /obj/structure/bonfire/extinguish()
 	if(burning)
+		remove_emitter("fire")
+		remove_emitter("fire_spark")
+		remove_emitter("smoke")
 		icon_state = "bonfire"
 		burning = 0
 		set_light(0)
@@ -305,6 +376,6 @@
 	if(..())
 		M.pixel_y += 13
 
-/obj/structure/bonfire/unbuckle_mob(mob/living/buckled_mob, force=FALSE)
+/obj/structure/bonfire/unbuckle_mob(mob/living/buckled_mob, force=FALSE, can_fall = TRUE)
 	if(..())
 		buckled_mob.pixel_y -= 13

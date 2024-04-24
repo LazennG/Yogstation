@@ -6,6 +6,7 @@
 	icon_state_unpowered = "tablet"
 	icon_state_powered = "tablet"
 	icon_state_menu = "menu"
+	icon_state_screensaver = null
 	id_rename = TRUE
 	hardware_flag = PROGRAM_TABLET
 	max_hardware_size = WEIGHT_CLASS_SMALL
@@ -24,7 +25,7 @@
 	var/obj/item/pen_type = /obj/item/pen
 	var/obj/item/inserted_item
 
-/obj/item/modular_computer/tablet/Initialize()
+/obj/item/modular_computer/tablet/Initialize(mapload)
 	. = ..()
 	inserted_item = new pen_type(src)
 
@@ -36,9 +37,9 @@
 		var/obj/item/computer_hardware/card_slot/card_slot2 = all_components[MC_CARD2]
 		var/obj/item/computer_hardware/card_slot/card_slot = all_components[MC_CARD]
 		if(card_slot2?.stored_card || card_slot?.stored_card)
+			update_appearance(UPDATE_ICON)
 			return ..()
-		else
-			remove_pen()
+		remove_pen()
 	else
 		return ..()
 
@@ -56,12 +57,12 @@
 				return
 			to_chat(user, span_notice("You slide \the [C] into \the [src]."))
 			inserted_item = C
-			update_icon()
+			update_appearance(UPDATE_ICON)
 	else
 		return ..()
 
-/obj/item/modular_computer/tablet/update_icon()
-	..()
+/obj/item/modular_computer/tablet/update_icon_state()
+	. = ..()
 	if (!isnull(variants))
 		if(!finish_color)
 			finish_color = pick(variants)
@@ -90,7 +91,7 @@
 	light_color = COLOR_RED
 	
 
-/obj/item/modular_computer/tablet/nukeops/emag_act(mob/user)
+/obj/item/modular_computer/tablet/nukeops/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(!enabled)
 		to_chat(user, "<span class='warning'>You'd need to turn the [src] on first.</span>")
 		return FALSE

@@ -129,7 +129,7 @@ You can read more about how BYOND prioritizes these things [Here](https://www.pa
 
 ## Detecting Hard Deletes
 
-For very simple hard deletes, simple inspection should be enough to find them. Look at what the object does during `Initialize()`, and see if it's doing anything it doesn't undo later.
+For very simple hard deletes, simple inspection should be enough to find them. Look at what the object does during `Initialize(mapload)`, and see if it's doing anything it doesn't undo later.
 If that fails, search the object's typepath, and look and see if anything is holding a reference to it without regard for the object deleting
 
 BYOND currently doesn't have the capability to give us information about where a hard delete is. Fortunately we can search for most all of then ourselves.
@@ -243,7 +243,7 @@ So then, we want to temporarily remember to clear a reference when it's deleted
 
 This is where I might lose you, but we're gonna use signals
 
-`qdel()`, the proc that sets off this whole deletion business, sends a signal called `COMSIG_PARENT_QDELETING`
+`qdel()`, the proc that sets off this whole deletion business, sends a signal called `COMSIG_QDELETING`
 
 We can listen for that signal, and if we hear it clear whatever reference we may have
 
@@ -255,10 +255,10 @@ Here's an example
 
 /somemob/proc/set_target(new_target)
     if(target)
-        UnregisterSignal(target, COMSIG_PARENT_QDELETING) //We need to make sure any old signals are cleared
+        UnregisterSignal(target, COMSIG_QDELETING) //We need to make sure any old signals are cleared
     target = new_target
     if(target)
-        RegisterSignal(target, COMSIG_PARENT_QDELETING, PROC_REF(clear_target)) //Call clear_target if target is ever qdel()'d
+        RegisterSignal(target, COMSIG_QDELETING, PROC_REF(clear_target)) //Call clear_target if target is ever qdel()'d
 
 /somemob/proc/clear_target(datum/source)
     SIGNAL_HANDLER
@@ -273,7 +273,7 @@ But if you can't do anything else for reasons of conversion ease, or hot code, t
 
 First, do a quick check.
 
-Are you doing anything to the object in `Initialize()` that you don't undo in `Destroy()`? I don't mean like, setting its name, but are you adding it to any lists, stuff like that
+Are you doing anything to the object in `Initialize(mapload)` that you don't undo in `Destroy()`? I don't mean like, setting its name, but are you adding it to any lists, stuff like that
 
 If this fails, you're just gonna have to read over this doc. You can skip the theory if you'd like, but it's all pretty important for having an understanding of this problem
 

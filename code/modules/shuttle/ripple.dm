@@ -1,6 +1,6 @@
 /obj/effect/abstract/ripple
-	name = "hyperspace ripple"
-	desc = "Something is coming through hyperspace, you can see the \
+	name = "bluespace ripple"
+	desc = "Something is coming through bluespace, you can see the \
 		visual disturbances. It's probably best not to be on top of these \
 		when whatever is tunneling comes through."
 	icon = 'icons/effects/effects.dmi'
@@ -14,7 +14,7 @@
 /obj/effect/abstract/ripple/Initialize(mapload, time_left)
 	. = ..()
 	animate(src, alpha=255, time=time_left)
-	addtimer(CALLBACK(src, .proc/stop_animation), 0.8 SECONDS, TIMER_CLIENT_TIME)
+	addtimer(CALLBACK(src, PROC_REF(stop_animation)), 0.8 SECONDS, TIMER_CLIENT_TIME)
 
 /obj/effect/abstract/ripple/proc/stop_animation()
 	icon_state = "medi_holo_no_anim"

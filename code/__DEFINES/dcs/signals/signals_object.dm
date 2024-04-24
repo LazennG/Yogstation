@@ -146,6 +146,29 @@
 ///from base of obj/item/hit_reaction(): (list/args)
 #define COMSIG_ITEM_HIT_REACT "item_hit_react"
 	#define COMPONENT_HIT_REACTION_BLOCK (1<<0)
+
+/// from /datum/component/cleave_attack/perform_sweep(): (atom/target, obj/item/item, mob/living/user, params) 
+#define COMSIG_ATOM_CLEAVE_ATTACK "atom_cleave_attack"
+	// allows cleave attack to hit things it normally wouldn't
+	#define ATOM_ALLOW_CLEAVE_ATTACK (1<<0)
+
+/// Called before an item is embedded (mob/living/carbon/target = carbon that it is getting embedded into)
+#define COMSIG_ITEM_EMBEDDED "mob_carbon_embedded" 
+	// Prevents the embed
+	#define COMSIG_ITEM_BLOCK_EMBED (1 << 0)
+
+/// Called before an item is removed from being embedded (mob/living/carbon/embedded = carbon that is currently embedded)
+#define COMSIG_ITEM_EMBED_REMOVAL "mob_carbon_embed_removal" 
+	// Prevents the removal of the embed
+	#define COMSIG_ITEM_BLOCK_EMBED_REMOVAL (1 << 0)
+	// Qdels the object when it is removed instead of droping it
+	#define COMSIG_ITEM_QDEL_EMBED_REMOVAL (1 << 1)
+
+/// Called every life tick for the embedded mob when the item is embedded (mob/living/carbon/embedded = carbon that is currently embedded)
+#define COMSIG_ITEM_EMBED_TICK "mob_carbon_embed_tick" 
+	// Prevents the rest of the tick logic for the item from proccessing
+	#define COMSIG_ITEM_BLOCK_EMBED_TICK (1 << 0)
+
 ///from base of item/sharpener/attackby(): (amount, max)
 #define COMSIG_ITEM_SHARPEN_ACT "sharpen_act"
 	#define COMPONENT_BLOCK_SHARPEN_APPLIED (1<<0)
@@ -167,6 +190,8 @@
 	#define COMPONENT_OFFER_TAKE_INTERRUPT (1<<0)
 /// sent from obj/effect/attackby(): (/obj/effect/hit_effect, /mob/living/attacker, params)
 #define COMSIG_ITEM_ATTACK_EFFECT "item_effect_attacked"
+/// Called by /obj/item/proc/worn_overlays(list/overlays, mutable_appearance/standing, isinhands, icon_file)
+#define COMSIG_ITEM_GET_WORN_OVERLAYS "item_get_worn_overlays"
 /// for tc refunding items: (mob/living/user); returns TRUE if refund is allowed, FALSE if not.
 #define COMSIG_ITEM_REFUND	"item_refund"						
 
@@ -181,6 +206,10 @@
 #define COMSIG_MINE_TRIGGERED "minegoboom"
 ///from [/obj/structure/closet/supplypod/proc/preOpen]:
 #define COMSIG_SUPPLYPOD_LANDED "supplypodgoboom"
+
+/// from [/obj/item/stack/proc/can_merge]: (obj/item/stack/merge_with, in_hand)
+#define COMSIG_STACK_CAN_MERGE "stack_can_merge"
+	#define CANCEL_STACK_MERGE (1<<0)
 
 ///from /obj/item/storage/book/bible/afterattack(): (mob/user, proximity)
 #define COMSIG_BIBLE_SMACKED "bible_smacked"
@@ -202,7 +231,7 @@
 #define COMSIG_CLOSET_DELIVERED "crate_delivered"
 
 ///Eigenstasium
-///From base of [/datum/controller/subsystem/eigenstates/proc/use_eigenlinked_atom]: (var/target)
+///From base of [/datum/controller/subsystem/eigenstates/proc/use_eigenlinked_atom]: (target)
 #define COMSIG_EIGENSTATE_ACTIVATE "eigenstate_activate"
 
 // /obj signals for economy
@@ -371,7 +400,7 @@
 ///from /datum/action/vehicle/sealed/headlights/vim/Trigger(): (headlights_on)
 #define COMSIG_VIM_HEADLIGHTS_TOGGLED "vim_headlights_toggled"
 
-// /obj/vehicle/sealed/mecha signals
+// /obj/mecha signals
 
 /// sent if you attach equipment to mecha
 #define COMSIG_MECHA_EQUIPMENT_ATTACHED "mecha_equipment_attached"
@@ -430,3 +459,19 @@
 
 /// from /obj/item/detective_scanner/scan(): (mob/user, list/extra_data)
 #define COMSIG_DETECTIVE_SCANNED "det_scanned"
+
+// /datum/element/light_eater
+///from base of [/datum/element/light_eater/proc/table_buffet]: (list/light_queue, datum/light_eater)
+#define COMSIG_LIGHT_EATER_QUEUE "light_eater_queue"
+///from base of [/datum/element/light_eater/proc/devour]: (datum/light_eater)
+#define COMSIG_LIGHT_EATER_ACT "light_eater_act"
+	///Prevents the default light eater behavior from running in case of immunity or custom behavior
+	#define COMPONENT_BLOCK_LIGHT_EATER (1<<0)
+///from base of [/datum/element/light_eater/proc/devour]: (atom/eaten_light)
+#define COMSIG_LIGHT_EATER_DEVOUR "light_eater_devour"
+
+
+/// Flag for when /afterattack potentially acts on an item.
+/// Used for the swap hands/drop tutorials to know when you might just be trying to do something normally.
+/// Does not necessarily imply success, or even that it did hit an item, just intent.
+#define COMPONENT_AFTERATTACK_PROCESSED_ITEM (1<<0)

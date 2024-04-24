@@ -59,7 +59,7 @@
 		FROM [format_table_name("bound_credentials")]
 		WHERE
 			ckey = :ckey AND 
-			FIND_IN_SET('bypass_bans', [format_table_name("bound_credentials")].flags) 
+			FIND_IN_SET('[DB_BOUND_CREDENTIALS_FLAG_BYPASS_BANS]', [format_table_name("bound_credentials")].flags) 
 	"}, list("ckey" = player_ckey));
 	if(!query_get_bypass_creds.warn_execute())
 		qdel(query_get_bypass_creds)
@@ -146,7 +146,7 @@
 	<div class='inputbox'></div></label>
 	<input type='text' name='keytext' size='26' value='[player_key]'>
 	<label class='inputlabel checkbox'>IP:
-	<input type='checkbox' id='ipcheck' name='ipcheck' value='1'[isnull(duration) ? " checked" : ""]>
+	<input type='checkbox' id='ipcheck' name='ipcheck' value='1' checked>
 	<div class='inputbox'></div></label>
 	<input type='text' name='iptext' size='18' value='[player_ip]'>
 	<label class='inputlabel checkbox'>CID:
@@ -155,7 +155,7 @@
 	<input type='text' name='cidtext' size='14' value='[player_cid]'>
 	<br>
 	<label class='inputlabel checkbox'>Use IP and CID from last connection of key
-	<input type='checkbox' id='lastconn' name='lastconn' value='1' [(isnull(duration) && !player_ip) || (!player_cid) ? " checked": ""]>
+	<input type='checkbox' id='lastconn' name='lastconn' value='1' [(!player_ip || !player_cid) ? " checked": ""]>
 	<div class='inputbox'></div></label>
 	<label class='inputlabel checkbox'>Applies to Admins
 	<input type='checkbox' id='applyadmins' name='applyadmins' value='1'[applies_to_admins ? " checked": ""]>
@@ -300,7 +300,7 @@
 									ROLE_REV, ROLE_REVENANT, ROLE_SINFULDEMON,
 									ROLE_REV_HEAD, ROLE_SERVANT_OF_RATVAR, ROLE_SYNDICATE,
 									ROLE_TRAITOR, ROLE_WIZARD, ROLE_GANG, ROLE_VAMPIRE,
-									ROLE_SHADOWLING, ROLE_DARKSPAWN, ROLE_ZOMBIE, ROLE_HERETIC)) //ROLE_REV_HEAD is excluded from this because rev jobbans are handled by ROLE_REV
+									ROLE_DARKSPAWN, ROLE_ZOMBIE, ROLE_HERETIC)) //ROLE_REV_HEAD is excluded from this because rev jobbans are handled by ROLE_REV
 		for(var/department in long_job_lists)
 			output += "<div class='column'><label class='rolegroup long [ckey(department)]'><input type='checkbox' name='[department]' class='hidden' [tgui_fancy ? " onClick='toggle_checkboxes(this, \"_com\")'" : ""]>[department]</label><div class='content'>"
 			break_counter = 0

@@ -1,11 +1,11 @@
 //This is the lowest supported version, anything below this is completely obsolete and the entire savefile will be wiped.
-#define SAVEFILE_VERSION_MIN	30
+#define SAVEFILE_VERSION_MIN 30
 
 //This is the current version, anything below this will attempt to update (if it's not obsolete)
 //	You do not need to raise this if you are adding new values that have sane defaults.
 //	Only raise this value when changing the meaning/format/name/layout of an existing value
 //	where you would want the updater procs below to run
-#define SAVEFILE_VERSION_MAX	41
+#define SAVEFILE_VERSION_MAX 43
 
 /*
 SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Carn
@@ -58,6 +58,16 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	if (current_version < 40)
 		migrate_preferences_to_tgui_prefs_menu()
 
+	if (current_version < 41)
+		key_bindings["action_1"] = GLOB.default_hotkeys["action_1"]
+		key_bindings["action_2"] = GLOB.default_hotkeys["action_2"]
+		key_bindings["action_3"] = GLOB.default_hotkeys["action_3"]
+		key_bindings["action_4"] = GLOB.default_hotkeys["action_4"]
+
+	if(current_version > 42)
+		migrate_yog_legacy_toggles(S)
+
+
 
 /datum/preferences/proc/update_character(current_version, savefile/S)
 	if(current_version < 31) //Someone doesn't know how to code and make jukebox and autodeadmin the same thing
@@ -73,10 +83,13 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 		migrate_character_to_tgui_prefs_menu()
 
 	if (current_version < 41)
-		write_preference(GLOB.preference_entries[/datum/preference/color_legacy/pod_hair_color], read_preference(/datum/preference/color_legacy/hair_color))
-		write_preference(GLOB.preference_entries[/datum/preference/color_legacy/ipc_antenna_color], read_preference(/datum/preference/color_legacy/hair_color))
-		write_preference(GLOB.preference_entries[/datum/preference/color_legacy/pod_flower_color], read_preference(/datum/preference/color_legacy/facial_hair_color))
-		write_preference(GLOB.preference_entries[/datum/preference/color_legacy/ipc_screen_color], read_preference(/datum/preference/color_legacy/eye_color))
+		write_preference(GLOB.preference_entries[/datum/preference/color/pod_hair_color], read_preference(/datum/preference/color/hair_color))
+		write_preference(GLOB.preference_entries[/datum/preference/color/ipc_antenna_color], read_preference(/datum/preference/color/hair_color))
+		write_preference(GLOB.preference_entries[/datum/preference/color/pod_flower_color], read_preference(/datum/preference/color/facial_hair_color))
+		write_preference(GLOB.preference_entries[/datum/preference/color/ipc_screen_color], read_preference(/datum/preference/color/eye_color))
+	if(current_version < 42)
+		save_character()
+		to_chat(parent, span_userdanger(span_big("Color code has been reworked. Check all your character preferences, especially colors, before playing.")))
 
 /// checks through keybindings for outdated unbound keys and updates them
 /datum/preferences/proc/check_keybindings()
@@ -94,12 +107,16 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 
 		if(parent.hotkeys)
 			for(var/hotkeytobind in kb.hotkey_keys)
-				if(!length(binds_by_key[hotkeytobind]) && hotkeytobind != "Unbound") //Only bind to the key if nothing else is bound expect for Unbound
+				if(hotkeytobind == "Unbound")
+					addedbind = TRUE
+				else if(!length(binds_by_key[hotkeytobind])) //Only bind to the key if nothing else is bound
 					key_bindings[kb.name] |= hotkeytobind
 					addedbind = TRUE
 		else
 			for(var/classickeytobind in kb.classic_keys)
-				if(!length(binds_by_key[classickeytobind]) && classickeytobind != "Unbound") //Only bind to the key if nothing else is bound expect for Unbound
+				if(classickeytobind == "Unbound")
+					addedbind = TRUE
+				else if(!length(binds_by_key[classickeytobind])) //Only bind to the key if nothing else is bound
 					key_bindings[kb.name] |= classickeytobind
 					addedbind = TRUE
 
@@ -107,7 +124,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 			notadded += kb
 	save_preferences() //Save the players pref so that new keys that were set to Unbound as default are permanently stored
 	if(length(notadded))
-		addtimer(CALLBACK(src, .proc/announce_conflict, notadded), 5 SECONDS)
+		addtimer(CALLBACK(src, PROC_REF(announce_conflict), notadded), 5 SECONDS)
 
 /datum/preferences/proc/announce_conflict(list/notadded)
 	to_chat(parent, "<span class='warningplain'><b><u>Keybinding Conflict</u></b></span>\n\
@@ -151,7 +168,6 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	READ_FILE(S["toggles"], toggles)
 	READ_FILE(S["chat_toggles"], chat_toggles)
 	READ_FILE(S["extra_toggles"], extra_toggles)
-	READ_FILE(S["yogtoggles"], yogtoggles)
 	
 	READ_FILE(S["ignoring"], ignoring)
 
@@ -171,7 +187,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	default_slot = sanitize_integer(default_slot, 1, max_save_slots, initial(default_slot))
 	player_alt_titles = SANITIZE_LIST(player_alt_titles)
 
-	toggles = sanitize_integer(toggles, 0, ~0, initial(toggles)) // Yogs -- Fixes toggles not having >16 bits of flagspace
+	toggles = sanitize_integer(toggles, 0, SHORT_REAL_LIMIT-1, initial(toggles))
 	
 	key_bindings = sanitize_keybindings(key_bindings)
 
@@ -209,7 +225,6 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	WRITE_FILE(S["toggles"], toggles)
 	WRITE_FILE(S["chat_toggles"], chat_toggles)
 	WRITE_FILE(S["extra_toggles"], extra_toggles)
-	WRITE_FILE(S["yogtoggles"], yogtoggles)
 
 	WRITE_FILE(S["ignoring"], ignoring)
 

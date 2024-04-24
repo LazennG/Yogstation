@@ -14,27 +14,31 @@
 		return //cheeky
 	if (linked_action)
 		linked_action.Trigger()
-		SEND_SOUND(usr, get_sfx("terminal_type"))
+		SEND_SOUND(usr, get_sfx(SFX_TERMINAL_TYPE))
 	else
 		to_chat(user, span_warning("You don't have an action to use in that slot"))
 	return TRUE
 
 /datum/keybinding/mob/action_hotkey/action_1
+	hotkey_keys = list("Unbound")
 	name = "action_1"
 	full_name = "Quick Action 1"
 	action_num = 1
 
 /datum/keybinding/mob/action_hotkey/action_2
+	hotkey_keys = list("Unbound")
 	name = "action_2"
 	full_name = "Quick Action 2"
 	action_num = 2
 
 /datum/keybinding/mob/action_hotkey/action_3
+	hotkey_keys = list("Unbound")
 	name = "action_3"
 	full_name = "Quick Action 3"
 	action_num = 3
 
 /datum/keybinding/mob/action_hotkey/action_4
+	hotkey_keys = list("Unbound")
 	name = "action_4"
 	full_name = "Quick Action 4"
 	action_num = 4

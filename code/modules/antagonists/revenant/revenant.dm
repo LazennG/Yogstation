@@ -3,7 +3,6 @@
 //Don't hear deadchat and are NOT normal ghosts
 //Admin-spawn or random event
 
-#define INVISIBILITY_REVENANT 50
 #define REVENANT_NAME_FILE "revenant_names.json"
 
 /mob/living/simple_animal/revenant
@@ -16,19 +15,21 @@
 	var/icon_stun = "revenant_stun"
 	var/icon_drain = "revenant_draining"
 	var/stasis = FALSE
-	mob_biotypes = list(MOB_SPIRIT)
+	mob_biotypes = MOB_SPIRIT
 	incorporeal_move = INCORPOREAL_MOVE_JAUNT
 	invisibility = INVISIBILITY_REVENANT
 	health = INFINITY //Revenants don't use health, they use essence instead
 	maxHealth = INFINITY
-	layer = GHOST_LAYER
+	plane = GHOST_PLANE
 	healable = FALSE
 	spacewalk = TRUE
 	sight = SEE_MOBS | SEE_OBJS | SEE_TURFS | SEE_SELF
 	throwforce = 0
 
-	see_in_dark = 8
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE
+	// Going for faint purple spoopy ghost
+	lighting_cutoff_red = 20
+	lighting_cutoff_green = 15
+	lighting_cutoff_blue = 35
 	response_help   = "passes through"
 	response_disarm = "swings through"
 	response_harm   = "punches through"
@@ -71,12 +72,23 @@
 	. = ..()
 	flags_1 |= RAD_NO_CONTAMINATE_1
 	ADD_TRAIT(src, TRAIT_SIXTHSENSE, INNATE_TRAIT)
-	AddSpell(new /obj/effect/proc_holder/spell/targeted/night_vision/revenant(null))
-	AddSpell(new /obj/effect/proc_holder/spell/targeted/telepathy/revenant(null))
-	AddSpell(new /obj/effect/proc_holder/spell/aoe_turf/revenant/defile(null))
-	AddSpell(new /obj/effect/proc_holder/spell/aoe_turf/revenant/overload(null))
-	AddSpell(new /obj/effect/proc_holder/spell/aoe_turf/revenant/blight(null))
-	AddSpell(new /obj/effect/proc_holder/spell/aoe_turf/revenant/malfunction(null))
+
+	var/datum/action/cooldown/spell/list_target/telepathy/revenant/telepathy = new(src)
+	telepathy.Grant(src)
+
+	// Starting spells that start locked
+	var/datum/action/cooldown/spell/aoe/revenant/overload/lights_go_zap = new(src)
+	lights_go_zap.Grant(src)
+
+	var/datum/action/cooldown/spell/aoe/revenant/defile/windows_go_smash = new(src)
+	windows_go_smash.Grant(src)
+
+	var/datum/action/cooldown/spell/aoe/revenant/blight/botany_go_mad = new(src)
+	botany_go_mad.Grant(src)
+
+	var/datum/action/cooldown/spell/aoe/revenant/malfunction/shuttle_go_emag = new(src)
+	shuttle_go_emag.Grant(src)
+
 	random_revenant_name()
 	LoadComponent(/datum/component/walk/jaunt) //yogs
 
@@ -108,7 +120,7 @@
 		mind.add_antag_datum(/datum/antagonist/revenant)
 
 //Life, Stat, Hud Updates, and Say
-/mob/living/simple_animal/revenant/Life()
+/mob/living/simple_animal/revenant/Life(seconds_per_tick = SSMOBS_DT, times_fired)
 	if(stasis)
 		return
 	if(revealed && essence <= 0)
@@ -126,7 +138,7 @@
 		to_chat(src, span_revenboldnotice("You can move again!"))
 	if(essence_regenerating && !inhibited && essence < essence_regen_cap) //While inhibited, essence will not regenerate
 		essence = min(essence_regen_cap, essence+essence_regen_amount)
-		update_action_buttons_icon() //because we update something required by our spells in life, we need to update our buttons
+		update_mob_action_buttons() //because we update something required by our spells in life, we need to update our buttons
 	update_spooky_icon()
 	update_health_hud()
 	..()
@@ -153,7 +165,7 @@
 /mob/living/simple_animal/revenant/med_hud_set_status()
 	return //we use no hud
 
-/mob/living/simple_animal/revenant/say(message, bubble_type, var/list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null)
+/mob/living/simple_animal/revenant/say(message, bubble_type, list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null)
 	if(!message)
 		return
 	src.log_talk(message, LOG_SAY)
@@ -197,12 +209,12 @@
 						span_revendanger("As \the [W] passes through you, you feel your essence draining away!"))
 		adjustBruteLoss(25) //hella effective
 		inhibited = TRUE
-		update_action_buttons_icon()
-		addtimer(CALLBACK(src, .proc/reset_inhibit), 30)
+		update_mob_action_buttons()
+		addtimer(CALLBACK(src, PROC_REF(reset_inhibit)), 30)
 
 /mob/living/simple_animal/revenant/proc/reset_inhibit()
 	inhibited = FALSE
-	update_action_buttons_icon()
+	update_mob_action_buttons()
 
 /mob/living/simple_animal/revenant/adjustHealth(amount, updating_health = TRUE, forced = FALSE)
 	if(!forced && !revealed)
@@ -312,7 +324,7 @@
 	if(essence_excess < essence_cost)
 		return FALSE
 	essence_excess -= essence_cost
-	update_action_buttons_icon()
+	update_mob_action_buttons()
 	return TRUE
 
 /mob/living/simple_animal/revenant/proc/change_essence_amount(essence_amt, silent = FALSE, source = null)
@@ -325,7 +337,7 @@
 	if(essence_amt > 0)
 		essence_accumulated = max(0, essence_accumulated+essence_amt)
 		essence_excess = max(0, essence_excess+essence_amt)
-	update_action_buttons_icon()
+	update_mob_action_buttons()
 	if(!silent)
 		if(essence_amt > 0)
 			to_chat(src, span_revennotice("Gained [essence_amt]E[source ? " from [source]":""]."))
@@ -361,9 +373,9 @@
 	var/old_key //key of the previous revenant, will have first pick on reform.
 	var/mob/living/simple_animal/revenant/revenant
 
-/obj/item/ectoplasm/revenant/Initialize()
+/obj/item/ectoplasm/revenant/Initialize(mapload)
 	. = ..()
-	addtimer(CALLBACK(src, .proc/try_reform), 600)
+	addtimer(CALLBACK(src, PROC_REF(try_reform)), 600)
 
 /obj/item/ectoplasm/revenant/proc/scatter()
 	qdel(src)

@@ -7,8 +7,7 @@
 	icon_state = "navbeacon0-f"
 	name = "navigation beacon"
 	desc = "A radio beacon used for bot navigation."
-	level = 1		// underfloor
-	layer = UNDER_CATWALK
+	layer = LOW_OBJ_LAYER
 	max_integrity = 500
 	armor = list(MELEE = 70, BULLET = 70, LASER = 70, ENERGY = 70, BOMB = 0, BIO = 0, RAD = 0, FIRE = 80, ACID = 80)
 
@@ -21,20 +20,20 @@
 
 	req_one_access = list(ACCESS_ENGINE, ACCESS_ROBO_CONTROL)
 
-/obj/machinery/navbeacon/Initialize()
+/obj/machinery/navbeacon/Initialize(mapload)
 	. = ..()
 
 	set_codes()
 
-	var/turf/T = loc
-	hide(T.intact)
-	if(codes["patrol"])
+	if(codes[NAVBEACON_PATROL_MODE])
 		if(!GLOB.navbeacons["[z]"])
 			GLOB.navbeacons["[z]"] = list()
 		GLOB.navbeacons["[z]"] += src //Register with the patrol list!
-	if(codes["delivery"])
+	if(codes[NAVBEACON_DELIVERY_MODE])
 		GLOB.deliverybeacons += src
 		GLOB.deliverybeacontags += location
+	
+	AddElement(/datum/element/undertile, TRAIT_T_RAY_VISIBLE)
 
 /obj/machinery/navbeacon/Destroy()
 	if (GLOB.navbeacons["[z]"])
@@ -42,12 +41,12 @@
 	GLOB.deliverybeacons -= src
 	return ..()
 
-/obj/machinery/navbeacon/onTransitZ(old_z, new_z)
-	if (GLOB.navbeacons["[old_z]"])
-		GLOB.navbeacons["[old_z]"] -= src
-	if (GLOB.navbeacons["[new_z]"])
-		GLOB.navbeacons["[new_z]"] += src
-	..()
+/obj/machinery/navbeacon/on_changed_z_level(turf/old_turf, turf/new_turf, same_z_layer, notify_contents)
+	if (GLOB.navbeacons["[old_turf?.z]"])
+		GLOB.navbeacons["[old_turf?.z]"] -= src
+	if (GLOB.navbeacons["[new_turf?.z]"])
+		GLOB.navbeacons["[new_turf?.z]"] += src
+	return ..()
 
 // set the transponder codes assoc list from codes_txt
 /obj/machinery/navbeacon/proc/set_codes()
@@ -67,26 +66,21 @@
 		else
 			codes[e] = "1"
 
-
-// called when turf state changes
-// hide the object if turf is intact
-/obj/machinery/navbeacon/hide(intact)
-	invisibility = intact ? INVISIBILITY_MAXIMUM : 0
-	update_icon()
-
 // update the icon_state
-/obj/machinery/navbeacon/update_icon()
-	var/state="navbeacon[open]"
+/obj/machinery/navbeacon/update_icon_state()
+	. = ..()
+	var/state = "navbeacon[open]"
 
 	if(invisibility)
-		icon_state = "[state]-f"	// if invisible, set icon to faded version
-									// in case revealed by T-scanner
+		// if invisible, set icon to faded version
+		// in case revealed by T-scanner
+		icon_state = "[state]-f"
 	else
 		icon_state = "[state]"
 
 /obj/machinery/navbeacon/attackby(obj/item/I, mob/user, params)
 	var/turf/T = loc
-	if(T.intact)
+	if(T.underfloor_accessibility >= UNDERFLOOR_INTERACTABLE)
 		return		// prevent intraction when T-scanner revealed
 
 	if(I.tool_behaviour == TOOL_SCREWDRIVER)
@@ -94,7 +88,7 @@
 
 		user.visible_message("[user] [open ? "opens" : "closes"] the beacon's cover.", span_notice("You [open ? "open" : "close"] the beacon's cover."))
 
-		update_icon()
+		update_appearance(UPDATE_ICON)
 
 	else if(I.GetID())
 		if(open)
@@ -119,7 +113,7 @@
 	. = ..()
 	var/ai = isAI(user)
 	var/turf/T = loc
-	if(T.intact)
+	if(T.underfloor_accessibility < UNDERFLOOR_INTERACTABLE)
 		return		// prevent intraction when T-scanner revealed
 
 	if(!open && !ai)	// can't alter controls if not open, unless you're an AI

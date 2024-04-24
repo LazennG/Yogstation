@@ -12,8 +12,8 @@
 	if(!..())
 		return
 	to_chat(host_mob, span_warning("You start to feel very sleepy..."))
-	host_mob.drowsyness += 20
-	addtimer(CALLBACK(host_mob, /mob/living.proc/Sleeping, 200), rand(60,200))
+	host_mob.adjust_drowsiness(20 SECONDS)
+	addtimer(CALLBACK(host_mob, TYPE_PROC_REF(/mob/living, Sleeping), 200), rand(60, 200))
 
 /datum/nanite_program/triggered/shocking
 	name = "Electric Shock"
@@ -27,7 +27,7 @@
 /datum/nanite_program/triggered/shocking/trigger()
 	if(!..())
 		return
-	host_mob.electrocute_act(rand(5,10), "shock nanites", TRUE, TRUE)
+	host_mob.electrocute_act(rand(5,10), "shock nanites", TRUE, zone=null, override=TRUE) // external protection can't save you from being shocked on the inside
 
 /datum/nanite_program/triggered/stun
 	name = "Neural Shock"
@@ -216,7 +216,7 @@
 		return
 	var/mob/living/carbon/C = host_mob
 	if(!hal_type)
-		C.hallucination += 15
+		C.adjust_hallucinations(15 SECONDS)
 	else
 		switch(hal_type)
 			if("Message")

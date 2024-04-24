@@ -9,7 +9,6 @@
 	icon_state = "floor_magnet-f"
 	name = "electromagnetic generator"
 	desc = "A device that uses station power to create points of magnetic energy."
-	level = 1		// underfloor
 	layer = LOW_OBJ_LAYER
 	use_power = IDLE_POWER_USE
 	idle_power_usage = 50
@@ -27,11 +26,10 @@
 	var/center_y = 0
 	var/max_dist = 20 // absolute value of center_x,y cannot exceed this integer
 
-/obj/machinery/magnetic_module/Initialize()
+/obj/machinery/magnetic_module/Initialize(mapload)
 	..()
-	var/turf/T = loc
-	hide(T.intact)
-	center = T
+	AddElement(/datum/element/undertile, TRAIT_T_RAY_VISIBLE)
+	center = loc
 	SSradio.add_object(src, freq, RADIO_MAGNETS)
 	return INITIALIZE_HINT_LATELOAD
 
@@ -43,21 +41,18 @@
 	center = null
 	return ..()
 
-// update the invisibility and icon
-/obj/machinery/magnetic_module/hide(intact)
-	invisibility = intact ? INVISIBILITY_MAXIMUM : 0
-	update_icon()
-
 // update the icon_state
-/obj/machinery/magnetic_module/update_icon()
+/obj/machinery/magnetic_module/update_icon_state()
+	. = ..()
 	var/state="floor_magnet"
 	var/onstate=""
 	if(!on)
 		onstate="0"
 
 	if(invisibility)
-		icon_state = "[state][onstate]-f"	// if invisible, set icon to faded version
-											// in case of being revealed by T-scanner
+		// if invisible, set icon to faded version
+		// in case of being revealed by T-scanner
+		icon_state = "[state][onstate]-f"
 	else
 		icon_state = "[state][onstate]"
 
@@ -129,7 +124,7 @@
 				on = !on
 
 				if(on)
-					INVOKE_ASYNC(src, .proc/magnetic_process)
+					INVOKE_ASYNC(src, PROC_REF(magnetic_process))
 
 
 
@@ -161,7 +156,7 @@
 	else
 		use_power = NO_POWER_USE
 
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
 
 /obj/machinery/magnetic_module/proc/magnetic_process() // proc that actually does the magneting
@@ -218,7 +213,7 @@
 	var/datum/radio_frequency/radio_connection
 
 
-/obj/machinery/magnetic_controller/Initialize()
+/obj/machinery/magnetic_controller/Initialize(mapload)
 	. = ..()
 	if(autolink)
 		for(var/obj/machinery/magnetic_module/M in GLOB.machines)

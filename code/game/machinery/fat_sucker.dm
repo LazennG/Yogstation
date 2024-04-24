@@ -7,7 +7,6 @@
 	state_open = FALSE
 	density = TRUE
 	req_access = list(ACCESS_KITCHEN)
-	var/processing = FALSE
 	var/start_at = NUTRITION_LEVEL_WELL_FED
 	var/stop_at = NUTRITION_LEVEL_STARVING
 	var/free_exit = TRUE //set to false to prevent people from exiting before being completely stripped of fat
@@ -27,10 +26,11 @@
 	"Unsaturated fat, that is monounsaturated fats, polyunsaturated fats and omega-3 fatty acids, is found in plant foods and fish." \
 	)
 
-/obj/machinery/fat_sucker/Initialize()
+/obj/machinery/fat_sucker/Initialize(mapload)
 	. = ..()
 	soundloop = new(list(src),  FALSE)
-	update_icon()
+	update_appearance(UPDATE_ICON)
+	STOP_PROCESSING(SSmachines, src) //We'll handle this one ourselves.
 
 /obj/machinery/fat_sucker/RefreshParts()
 	..()
@@ -58,14 +58,13 @@
 			occupant = null
 			return
 		to_chat(occupant, span_notice("You enter [src]"))
-		addtimer(CALLBACK(src, .proc/start_extracting), 20, TIMER_OVERRIDE|TIMER_UNIQUE)
-		update_icon()
+		addtimer(CALLBACK(src, PROC_REF(start_extracting)), 20, TIMER_OVERRIDE|TIMER_UNIQUE)
+		update_appearance(UPDATE_ICON)
 
 /obj/machinery/fat_sucker/open_machine(mob/user)
 	make_meat()
 	playsound(src, 'sound/machines/click.ogg', 50)
-	if(processing)
-		stop()
+	stop()
 	..()
 
 /obj/machinery/fat_sucker/container_resist(mob/living/user)
@@ -89,7 +88,7 @@
 /obj/machinery/fat_sucker/interact(mob/user)
 	if(state_open)
 		close_machine()
-	else if(!processing || free_exit)
+	else if(free_exit)
 		open_machine()
 	else
 		to_chat(user, span_warning("The safety hatch has been disabled!"))
@@ -106,41 +105,41 @@
 	free_exit = !free_exit
 	to_chat(user, span_notice("Safety hatch [free_exit ? "unlocked" : "locked"]."))
 
-/obj/machinery/fat_sucker/update_icon()
-	overlays.Cut()
+/obj/machinery/fat_sucker/update_overlays()
+	. = ..()
 	if(!state_open)
-		if(processing)
-			overlays += "[icon_state]_door_on"
-			overlays += "[icon_state]_stack"
-			overlays += "[icon_state]_smoke"
-			overlays += "[icon_state]_green"
+		if(occupant)
+			. += "[icon_state]_door_on"
+			. += "[icon_state]_stack"
+			. += "[icon_state]_smoke"
+			. += "[icon_state]_green"
 		else
-			overlays += "[icon_state]_door_off"
+			. += "[icon_state]_door_off"
 			if(occupant)
 				if(powered(AREA_USAGE_EQUIP))
-					overlays += "[icon_state]_stack"
-					overlays += "[icon_state]_yellow"
+					. += "[icon_state]_stack"
+					. += "[icon_state]_yellow"
 			else
-				overlays += "[icon_state]_red"
+				. += "[icon_state]_red"
 	else if(powered(AREA_USAGE_EQUIP))
-		overlays += "[icon_state]_red"
+		. += "[icon_state]_red"
 	if(panel_open)
-		overlays += "[icon_state]_panel"
+		. += "[icon_state]_panel"
 
 /obj/machinery/fat_sucker/process(delta_time)
-	if(!processing)
-		return
 	if(!powered(AREA_USAGE_EQUIP) || !occupant || !iscarbon(occupant))
 		open_machine()
-		return
+		return PROCESS_KILL
 
 	var/mob/living/carbon/C = occupant
+
+	C.adjust_nutrition(-bite_size * delta_time)
+	nutrients += bite_size * delta_time
+
 	if(C.nutrition <= stop_at)
 		open_machine()
 		playsound(src, 'sound/machines/microwave/microwave-end.ogg', 100, FALSE)
-		return
-	C.adjust_nutrition(-bite_size * delta_time)
-	nutrients += bite_size * delta_time
+		return PROCESS_KILL
 
 	if(next_fact <= 0)
 		next_fact = initial(next_fact)
@@ -151,22 +150,28 @@
 	use_power(500)
 
 /obj/machinery/fat_sucker/proc/start_extracting()
-	if(state_open || !occupant || processing || !powered(AREA_USAGE_EQUIP))
+	if(state_open || !occupant || !powered(AREA_USAGE_EQUIP))
 		return
 	if(iscarbon(occupant))
 		var/mob/living/carbon/C = occupant
-		if(C.nutrition > start_at)
-			processing = TRUE
-			soundloop.start()
-			update_icon()
-			set_light(2, 1, "#ff0000")
-		else
+		if(!(C.mob_biotypes & MOB_ORGANIC))
+			say("Subject does not contain fat.")
+			playsound(src, 'sound/machines/buzz-sigh.ogg', 40, FALSE)
+			overlays += "[icon_state]_red" //throw a red light icon over it, to show that it wont work
+			return
+
+		if(C.nutrition < start_at)
 			say("Subject not fat enough.")
 			playsound(src, 'sound/machines/buzz-sigh.ogg', 40, FALSE)
 			overlays += "[icon_state]_red" //throw a red light icon over it, to show that it wont work
+			return
+
+		START_PROCESSING(SSmachines, src)
+		soundloop.start()
+		update_appearance(UPDATE_ICON)
+		set_light(2, 1, "#ff0000")
 
 /obj/machinery/fat_sucker/proc/stop()
-	processing = FALSE
 	soundloop.stop()
 	set_light(0, 0)
 
@@ -195,7 +200,7 @@
 		to_chat(user, span_warning("[src] must be closed to [panel_open ? "close" : "open"] its maintenance hatch!"))
 		return
 	if(default_deconstruction_screwdriver(user, icon_state, icon_state, I))
-		update_icon()
+		update_appearance(UPDATE_ICON)
 		return
 	return FALSE
 
@@ -203,10 +208,11 @@
 	if(default_deconstruction_crowbar(I))
 		return TRUE
 
-/obj/machinery/fat_sucker/emag_act(mob/living/user)
+/obj/machinery/fat_sucker/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED)
-		return
+		return FALSE
+	obj_flags |= EMAGGED
 	start_at = 100
 	stop_at = 0
 	to_chat(user, span_notice("You remove the access restrictions and lower the automatic ejection threshold!"))
-	obj_flags |= EMAGGED
+	return TRUE

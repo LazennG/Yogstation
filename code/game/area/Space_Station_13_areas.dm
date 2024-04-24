@@ -22,31 +22,42 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	icon_state = "space"
 	requires_power = TRUE
 	always_unpowered = TRUE
-	dynamic_lighting = DYNAMIC_LIGHTING_DISABLED
+	static_lighting = TRUE
+
+	base_lighting_alpha = 0
+	base_lighting_color = COLOR_STARLIGHT
 	power_light = FALSE
 	power_equip = FALSE
 	power_environ = FALSE
 	valid_territory = FALSE
 	outdoors = TRUE
-	ambientsounds = SPACE
 	blob_allowed = FALSE //Eating up space doesn't count for victory as a blob.
+	ambience_index = null
+	ambient_music_index = AMBIENCE_SPACE
+	flags_1 = CAN_BE_DIRTY_1
+	ambient_buzz = null
+	sound_environment = SOUND_AREA_SPACE
 
 /area/space/nearstation
 	icon_state = "space_near"
-	dynamic_lighting = DYNAMIC_LIGHTING_IFSTARLIGHT
 
 /area/start
 	name = "start area"
 	icon_state = "start"
 	requires_power = FALSE
-	dynamic_lighting = DYNAMIC_LIGHTING_DISABLED
 	has_gravity = STANDARD_GRAVITY
-
+	static_lighting = FALSE
+	base_lighting_alpha = 255
+	ambience_index = null
+	ambient_buzz = null
 
 /area/testroom
 	requires_power = FALSE
+	has_gravity = STANDARD_GRAVITY
+	static_lighting = FALSE
+	base_lighting_alpha = 255
 	name = "Test Room"
-	icon_state = "storage"
+	icon_state = "test_room"
 
 //EXTRA
 
@@ -57,11 +68,13 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	has_gravity = STANDARD_GRAVITY
 	blob_allowed = FALSE //Nope, no winning on the asteroid as a blob. Gotta eat the station.
 	valid_territory = FALSE
-	ambientsounds = MINING
+	mining_speed = TRUE
+	ambience_index = AMBIENCE_MINING
+	sound_environment = SOUND_AREA_ASTEROID
 
 /area/asteroid/nearstation
-	dynamic_lighting = DYNAMIC_LIGHTING_FORCED
-	ambientsounds = RUINS
+	static_lighting = TRUE
+	ambience_index = AMBIENCE_RUINS
 	always_unpowered = FALSE
 	requires_power = TRUE
 	blob_allowed = TRUE
@@ -74,12 +87,18 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 //Maintenance
 
 /area/maintenance
-	ambientsounds = MAINTENANCE
+	ambience_index = AMBIENCE_MAINT
+	sound_environment = SOUND_AREA_TUNNEL_ENCLOSED
 	valid_territory = FALSE
 	minimap_color = "#4f4e3a"
-
 	airlock_wires = /datum/wires/airlock/maint
-
+	ambient_buzz = 'sound/ambience/source_corridor2.ogg'
+	ambient_buzz_vol = 20
+	min_ambience_cooldown = 20 SECONDS
+	max_ambience_cooldown = 35 SECONDS
+	lights_always_start_on = TRUE
+	lighting_colour_tube = "#ffe5cb"
+	lighting_colour_bulb = "#ffdbb4"
 
 //Departments
 
@@ -94,6 +113,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/maintenance/department/crew_quarters/bar
 	name = "Bar Maintenance"
 	icon_state = "maint_bar"
+	sound_environment = SOUND_AREA_WOODFLOOR
 
 /area/maintenance/department/crew_quarters/dorms
 	name = "Dormitory Maintenance"
@@ -106,10 +126,6 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/maintenance/department/electrical
 	name = "Electrical Maintenance"
 	icon_state = "maint_electrical"
-
-/area/maintenance/department/tcoms
-	name = "Telecommunications Maintenance"
-	icon_state = "tcomsatmaint"
 
 /area/maintenance/department/engine/atmos
 	name = "Atmospherics Maintenance"
@@ -234,13 +250,17 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 
 /area/maintenance/disposal/incinerator
 	name = "Incinerator"
-	icon_state = "disposal"
+	icon_state = "incinerator"
 
 
 //Hallway
 
 /area/hallway
 	minimap_color = "#8d8c68"
+	sound_environment = SOUND_AREA_STANDARD_STATION
+	lights_always_start_on = TRUE
+	lighting_colour_tube = "#fdf3ea"
+	lighting_colour_bulb = "#ffebd6"
 
 /area/hallway/primary/aft
 	name = "Aft (S) Primary Hallway"
@@ -298,14 +318,17 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	ambientsounds = list('sound/ambience/signal.ogg')
 	minimap_color = "#0400a2"
 	airlock_wires = /datum/wires/airlock/command
+	sound_environment = SOUND_AREA_STANDARD_STATION
 
 /area/bridge/meeting_room
 	name = "Heads of Staff Meeting Room"
 	icon_state = "meeting"
+	sound_environment = SOUND_AREA_MEDIUM_SOFTFLOOR
 
 /area/bridge/meeting_room/council
 	name = "Council Chamber"
 	icon_state = "meeting"
+	sound_environment = SOUND_AREA_MEDIUM_SOFTFLOOR
 
 /area/bridge/showroom/corporate
 	name = "Corporate Showroom"
@@ -314,15 +337,18 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/crew_quarters/heads
 	airlock_wires = /datum/wires/airlock/command
 	clockwork_warp_allowed = FALSE
+	lights_always_start_on = FALSE
 
 /area/crew_quarters/heads/captain
 	name = "Captain's Office"
 	icon_state = "captain"
 	minimap_color = "#2900d8"
+	sound_environment = SOUND_AREA_WOODFLOOR
 
 /area/crew_quarters/heads/captain/private
 	name = "Captain's Quarters"
 	icon_state = "captain"
+	sound_environment = SOUND_ENVIRONMENT_ROOM
 
 /area/crew_quarters/heads/chief
 	name = "Chief Engineer's Office"
@@ -352,15 +378,25 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/comms
 	name = "Communications Relay"
 	icon_state = "tcomsatcham"
+	sound_environment = SOUND_AREA_STANDARD_STATION
+	lights_always_start_on = TRUE
+	lighting_colour_tube = "#e2feff"
+	lighting_colour_bulb = "#d5fcff"
 
 /area/server
 	name = "Messaging Server Room"
 	icon_state = "server"
+	sound_environment = SOUND_AREA_STANDARD_STATION
+	lights_always_start_on = TRUE
+	lighting_colour_tube = "#fff4d6"
+	lighting_colour_bulb = "#ffebc1"
 
 //Crew
 
 /area/crew_quarters
 	minimap_color = "#b0e1ff"
+	sound_environment = SOUND_AREA_STANDARD_STATION
+	lights_always_start_on = TRUE
 
 /area/crew_quarters/dorms
 	name = "Dormitories"
@@ -372,11 +408,16 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	name = "Cryopod Room"
 	safe = TRUE
 	icon_state = "cryopod"
+	lighting_colour_tube = "#e3ffff"
+	lighting_colour_bulb = "#d5ffff"
 
 /area/crew_quarters/toilet
 	name = "Dormitory Toilets"
 	icon_state = "toilet"
 	minimap_color = "#b0e1ff"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
+	lighting_colour_tube = "#e3ffff"
+	lighting_colour_bulb = "#d5ffff"
 
 /area/crew_quarters/toilet/auxiliary
 	name = "Auxiliary Restrooms"
@@ -399,6 +440,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/crew_quarters/lounge
 	name = "Lounge"
 	icon_state = "yellow"
+	sound_environment = SOUND_AREA_SMALL_SOFTFLOOR
 
 /area/crew_quarters/fitness
 	name = "Fitness Room"
@@ -422,10 +464,16 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	icon_state = "kitchen"
 	minimap_color = "#5ac866"
 	airlock_wires = /datum/wires/airlock/service
+	lights_always_start_on = FALSE
+	lighting_colour_tube = "#e3ffff"
+	lighting_colour_bulb = "#d5ffff"
 
 /area/crew_quarters/kitchen/coldroom
 	name = "Kitchen Cold Room"
 	icon_state = "kitchen_cold"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
+	lighting_colour_tube = "#fff4d6"
+	lighting_colour_bulb = "#ffebc1"
 
 /area/crew_quarters/bar
 	name = "Bar"
@@ -433,6 +481,15 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	minimap_color = "#5ac866"
 	mood_bonus = 5
 	mood_message = span_nicegreen("I love being in the bar!\n")
+	airlock_wires = /datum/wires/airlock/service
+	sound_environment = SOUND_AREA_WOODFLOOR
+
+/area/crew_quarters/public_lounge
+	name = "Lounge"
+	icon_state = "bar"
+	minimap_color = "#5ac866"
+	mood_bonus = 5
+	mood_message = span_nicegreen("I love being in the lounge!\n")
 	airlock_wires = /datum/wires/airlock/service
 
 /area/crew_quarters/bar/Initialize(mapload)
@@ -442,6 +499,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/crew_quarters/bar/atrium
 	name = "Atrium"
 	icon_state = "bar"
+	sound_environment = SOUND_AREA_WOODFLOOR
 
 /area/crew_quarters/electronic_marketing_den
 	name = "Electronic Marketing Den"
@@ -458,6 +516,8 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	name = "Theatre"
 	icon_state = "Theatre"
 	minimap_color = "#5ac866"
+	sound_environment = SOUND_AREA_WOODFLOOR
+	lights_always_start_on = FALSE
 
 /area/crew_quarters/theatre/abandoned
 	name = "Abandoned Theatre"
@@ -468,10 +528,13 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	icon_state = "library"
 	flags_1 = NONE
 	minimap_color = "#5ac866"
+	lighting_colour_tube = "#fff1cc"
+	lighting_colour_bulb = "#ffe9b9"
 
 /area/library/lounge
 	name = "Library Lounge"
 	icon_state = "library"
+	sound_environment = SOUND_AREA_LARGE_SOFTFLOOR
 
 /area/library/abandoned
 	name = "Abandoned Library"
@@ -480,7 +543,8 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 
 /area/chapel
 	icon_state = "chapel"
-	ambientsounds = HOLY
+	ambience_index = AMBIENCE_HOLY
+	sound_environment = SOUND_AREA_LARGE_ENCLOSED
 	flags_1 = NONE
 	clockwork_warp_allowed = FALSE
 	clockwork_warp_fail = "The consecration here prevents you from warping in."
@@ -499,6 +563,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/chapel/asteroid
 	name = "Chapel Asteroid"
 	icon_state = "explored"
+	sound_environment = SOUND_AREA_ASTEROID
 
 /area/chapel/asteroid/monastery
 	name = "Monastery Asteroid"
@@ -511,14 +576,18 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	name = "Law Office"
 	icon_state = "law"
 	minimap_color = "#b12527"
+	sound_environment = SOUND_AREA_SMALL_SOFTFLOOR
 
 
 //Engineering
 
 /area/engine
-	ambientsounds = ENGINEERING
+	ambience_index = AMBIENCE_ENGI
+	sound_environment = SOUND_AREA_LARGE_ENCLOSED
 	minimap_color = "#edea00"
 	airlock_wires = /datum/wires/airlock/engineering
+	lighting_colour_tube = "#ffce93"
+	lighting_colour_bulb = "#ffbc6f"
 
 /area/engine/engine_smes
 	name = "Engineering SMES"
@@ -534,36 +603,54 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	flags_1 = NONE
 	minimap_color = "#85ff02"
 
-/area/engine/atmos_distro //yogstation specific
+/area/engine/atmos/distro
 	name = "Atmospherics Distribution"
-	icon_state = "atmos"
-	flags_1 = NONE
-	minimap_color = "#85ff02"
+	icon_state = "atmos_distro"
 
-/area/engine/atmospherics_engine
-	name = "Atmospherics Engine"
+/area/engine/atmos/project
+	name = "\improper Atmospherics Project Room"
+	icon_state = "atmos_project"
+
+/area/engine/atmos/engine
+	name = "\improper Atmospherics Engine"
 	icon_state = "atmos_engine"
-	minimap_color = "#85ff02"
+	sound_environment = SOUND_AREA_LARGE_ENCLOSED
 
-/area/engine/engine_room //donut station specific
-	name = "Engine Room"
-	icon_state = "atmos_engine"
+/area/engine/atmos/pumproom
+	name = "\improper Atmospherics Pumping Room"
+	icon_state = "atmos_pump_room"
 
-/area/engine/engine_room/external
-	name = "Supermatter External Access"
-	icon_state = "engine_foyer"
+/area/engine/atmos/mix
+	name = "\improper Atmospherics Mixing Room"
+	icon_state = "atmos_mix"
+
+/area/engine/atmos/storage
+	name = "\improper Atmospherics Storage Room"
+	icon_state = "atmos_storage"
+
+/area/engine/atmos/foyer
+	name = "\improper Atmospherics Foyer"
+	icon_state = "atmos_foyer"
+
+/area/engine/atmos/hfr
+	name = "\improper Atmospherics HFR Room"
+	icon_state = "atmos_hfr"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/engine/supermatter
 	name = "Supermatter Engine"
 	icon_state = "engine_sm"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/engine/foyer
 	name = "Engineering Foyer"
 	icon_state = "engine_foyer"
+	sound_environment = SOUND_AREA_STANDARD_STATION
 
 /area/engine/break_room
 	name = "Engineering Break Room"
 	icon_state = "engine_foyer"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/engine/gravity_generator
 	name = "Gravity Generator Room"
@@ -574,6 +661,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/engine/storage
 	name = "Engineering Storage"
 	icon_state = "engi_storage"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/engine/storage_shared
 	name = "Shared Engineering Storage"
@@ -587,18 +675,19 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 //Solars
 
 /area/solar
-	requires_power = FALSE
-	dynamic_lighting = DYNAMIC_LIGHTING_IFSTARLIGHT
 	valid_territory = FALSE
 	blob_allowed = FALSE
+	mining_speed = TRUE
 	flags_1 = NONE
-	ambientsounds = ENGINEERING
+	ambience_index = AMBIENCE_ENGI
+	sound_environment = SOUND_AREA_SPACE
 	minimap_color = "#6b6b6b"
 	airlock_wires = /datum/wires/airlock/engineering
 
 /area/solar/fore
 	name = "Fore (N) Solar Array"
 	icon_state = "yellow"
+	sound_environment = SOUND_AREA_STANDARD_STATION
 
 /area/solar/aft
 	name = "Aft (S) Solar Array"
@@ -672,14 +761,16 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/teleporter
 	name = "Teleporter Room"
 	icon_state = "teleporter"
-	ambientsounds = ENGINEERING
+	ambience_index = AMBIENCE_ENGI
+	sound_environment = SOUND_AREA_STANDARD_STATION
 	minimap_color = "#6b6b6b"
 	airlock_wires = /datum/wires/airlock/command
 
 /area/gateway
 	name = "Gateway"
 	icon_state = "gateway"
-	ambientsounds = ENGINEERING
+	ambience_index = AMBIENCE_ENGI
+	sound_environment = SOUND_AREA_STANDARD_STATION
 	minimap_color = "#5d57a5"
 	airlock_wires = /datum/wires/airlock/command
 
@@ -688,14 +779,18 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/medical
 	name = "Medical"
 	icon_state = "medbay3"
-	ambientsounds = MEDICAL
+	ambience_index = AMBIENCE_MEDICAL
+	sound_environment = SOUND_AREA_STANDARD_STATION
 	minimap_color = "#5d57a5"
 	airlock_wires = /datum/wires/airlock/medbay
+	lighting_colour_tube = "#e7f8ff"
+	lighting_colour_bulb = "#d5f2ff"
 
 /area/medical/abandoned
 	name = "Abandoned Medbay"
 	icon_state = "medbay3"
 	ambientsounds = list('sound/ambience/signal.ogg')
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/medical/medbay/central
 	name = "Medbay Central"
@@ -730,6 +825,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/medical/patients_rooms
 	name = "Patients' Rooms"
 	icon_state = "patients"
+	sound_environment = SOUND_AREA_SMALL_SOFTFLOOR
 
 /area/medical/patients_rooms/room_a
 	name = "Patient Room A"
@@ -748,11 +844,14 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	icon_state = "virology"
 	flags_1 = NONE
 	minimap_color = "#01f5b3"
+	ambience_index = AMBIENCE_MEDICAL
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/medical/morgue
 	name = "Morgue"
 	icon_state = "morgue"
-	ambientsounds = SPOOKY
+	ambience_index = AMBIENCE_SPOOKY
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/medical/chemistry
 	name = "Chemistry"
@@ -789,9 +888,12 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/security
 	name = "Security"
 	icon_state = "security"
-	ambientsounds = HIGHSEC
+	ambience_index = AMBIENCE_DANGER
+	sound_environment = SOUND_AREA_STANDARD_STATION
 	minimap_color = "#b12527"
 	airlock_wires = /datum/wires/airlock/security
+	lighting_colour_tube = "#ffeee2"
+	lighting_colour_bulb = "#ffdfca"
 
 /area/security/interrogation
 	name = "Interrogation"
@@ -808,11 +910,13 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/security/courtroom
 	name = "Courtroom"
 	icon_state = "courtroom"
+	sound_environment = SOUND_AREA_LARGE_ENCLOSED
 
 /area/security/prison
 	name = "Prison Wing"
 	icon_state = "sec_prison"
 	minimap_color = "#530505"
+	lights_always_start_on = TRUE
 
 /area/security/prison/hallway
 	name = "Prison Wing Hallway"
@@ -824,10 +928,12 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/security/processing/cremation
 	name = "Security Crematorium"
 	icon_state = "sec_prison"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/security/warden
 	name = "Brig Control"
 	icon_state = "Warden"
+	sound_environment = SOUND_AREA_SMALL_SOFTFLOOR
 
 /area/security/detectives_office
 	name = "Detective's Office"
@@ -837,6 +943,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/security/detectives_office/private_investigators_office
 	name = "Private Investigator's Office"
 	icon_state = "detective"
+	sound_environment = SOUND_AREA_SMALL_SOFTFLOOR
 
 /area/security/range
 	name = "Firing Range"
@@ -914,14 +1021,19 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	icon_state = "quart"
 	minimap_color = "#936f3c"
 	airlock_wires = /datum/wires/airlock/service
+	sound_environment = SOUND_AREA_STANDARD_STATION
+	lighting_colour_tube = "#ffe3cc"
+	lighting_colour_bulb = "#ffdbb8"
 
 /area/quartermaster/sorting
 	name = "Delivery Office"
 	icon_state = "cargo_delivery"
+	sound_environment = SOUND_AREA_STANDARD_STATION
 
 /area/quartermaster/warehouse
 	name = "Warehouse"
 	icon_state = "cargo_warehouse"
+	sound_environment = SOUND_AREA_LARGE_ENCLOSED
 
 /area/quartermaster/office
 	name = "Cargo Office"
@@ -931,6 +1043,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/quartermaster/storage
 	name = "Cargo Bay"
 	icon_state = "cargo_bay"
+	sound_environment = SOUND_AREA_LARGE_ENCLOSED
 
 /area/quartermaster/qm
 	name = "Quartermaster's Office"
@@ -950,6 +1063,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	flags_1 = NONE
 	minimap_color = "#cc00ff"
 	airlock_wires = /datum/wires/airlock/service
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/janitor/a //yogs start added two new areas
 	name = "Custodial Closet A"
@@ -966,6 +1080,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	icon_state = "hydro"
 	minimap_color = "#5ac866"
 	airlock_wires = /datum/wires/airlock/service
+	sound_environment = SOUND_AREA_STANDARD_STATION
 
 /area/hydroponics/upper
 	name = "Upper Hydroponics"
@@ -979,6 +1094,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/hydroponics/garden/abandoned
 	name = "Abandoned Garden"
 	icon_state = "abandoned_garden"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/hydroponics/garden/monastery
 	name = "Monastery Garden"
@@ -992,6 +1108,9 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	icon_state = "toxlab"
 	minimap_color = "#75009b"
 	airlock_wires = /datum/wires/airlock/science
+	sound_environment = SOUND_AREA_STANDARD_STATION
+	lighting_colour_tube = "#f0fbff"
+	lighting_colour_bulb = "#e4f7ff"
 
 /area/science/lab
 	name = "Research and Development"
@@ -1009,6 +1128,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	valid_territory = FALSE
 	name = "Toxins Test Area"
 	icon_state = "toxtest"
+	lights_always_start_on = TRUE
 
 /area/science/mixing
 	name = "Toxins Mixing Lab"
@@ -1054,6 +1174,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/science/research/abandoned
 	name = "Abandoned Research Lab"
 	icon_state = "medresearch"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/science/nanite
 	name = "Nanite Lab"
@@ -1063,6 +1184,8 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 
 /area/storage
 	minimap_color = "#f8ff83"
+	sound_environment = SOUND_AREA_STANDARD_STATION
+	lights_always_start_on = TRUE
 
 /area/storage/tools
 	name = "Auxiliary Tool Storage"
@@ -1105,12 +1228,14 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/construction
 	name = "Construction Area"
 	icon_state = "yellow"
-	ambientsounds = ENGINEERING
+	ambience_index = AMBIENCE_ENGI
+	sound_environment = SOUND_AREA_STANDARD_STATION
 	minimap_color = "#4f4e3a"
 
 /area/construction/mining/aux_base
 	name = "Auxiliary Base Construction"
 	icon_state = "aux_base_construction"
+	sound_environment = SOUND_AREA_LARGE_ENCLOSED
 
 /area/construction/storage_wing
 	name = "Storage Wing"
@@ -1120,7 +1245,8 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/vacant_room
 	name = "Vacant Room"
 	icon_state = "yellow"
-	ambientsounds = MAINTENANCE
+	ambience_index = AMBIENCE_MAINT
+	sound_environment = SOUND_AREA_MEDIUM_SOFTFLOOR
 	icon_state = "vacant_room"
 	minimap_color = "#4f4e3a"
 
@@ -1137,7 +1263,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/ai_monitored/security/armory
 	name = "Armory"
 	icon_state = "armory"
-	ambientsounds = HIGHSEC
+	ambience_index = AMBIENCE_DANGER
 	minimap_color = "#b12527"
 	airlock_wires = /datum/wires/airlock/security
 
@@ -1147,20 +1273,20 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/ai_monitored/storage/eva
 	name = "EVA Storage"
 	icon_state = "eva"
-	ambientsounds = HIGHSEC
+	ambience_index = AMBIENCE_DANGER
 	minimap_color = "#c8c0ff"
 
 /area/ai_monitored/storage/satellite
 	name = "AI Satellite Maint"
 	icon_state = "storage"
-	ambientsounds = HIGHSEC
+	ambience_index = AMBIENCE_DANGER
 	minimap_color = "#4f4e3a"
 	airlock_wires = /datum/wires/airlock/ai
 
 /area/ai_monitored/storage/satellite/teleporter
 	name = "AI Satellite Access Teleporter"
 	icon_state = "storage"
-	ambientsounds = HIGHSEC
+	ambience_index = AMBIENCE_DANGER
 	minimap_color = "#4f4e3a"
 	airlock_wires = /datum/wires/airlock/ai
  
@@ -1168,16 +1294,18 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	name = "AI Secondary Datacore Monitoring"
 	icon_state =  "ai"
 	minimap_color = "#00fff6"
+	ambience_index = AMBIENCE_DANGER
 
 /area/ai_monitored/secondarydatacoreserver
 	name = "AI Secondary Datacore Servers"
 	icon_state = "ai"
 	minimap_color = "#00fff6"
+	ambience_index = AMBIENCE_DANGER
 
 	//Turret_protected
 
 /area/ai_monitored/turret_protected
-	ambientsounds = list('sound/ambience/ambimalf.ogg', 'sound/ambience/ambitech.ogg', 'sound/ambience/ambitech2.ogg', 'sound/ambience/ambiatmos.ogg', 'sound/ambience/ambiatmos2.ogg', 'sound/ambience/ambimalf2.ogg')
+	ambience_index = AMBIENCE_AI
 	minimap_color = "#00fff6"
 	airlock_wires = /datum/wires/airlock/ai
 
@@ -1185,10 +1313,12 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	name = "AI Upload Chamber"
 	icon_state = "ai_upload"
 	minimap_color = "#4f4e3a"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/ai_monitored/turret_protected/ai_upload_foyer
 	name = "AI Upload Access"
 	icon_state = "ai_foyer"
+	sound_environment = SOUND_AREA_SMALL_ENCLOSED
 
 /area/ai_monitored/turret_protected/ai
 	name = "AI Chamber"
@@ -1197,7 +1327,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/ai_monitored/turret_protected/aisat
 	name = "AI Satellite"
 	icon_state = "ai"
-
+	sound_environment = SOUND_ENVIRONMENT_ROOM
 /area/ai_monitored/turret_protected/aisat/atmos
 	name = "AI Satellite Atmos"
 	icon_state = "ai"
@@ -1219,10 +1349,12 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	icon_state = "yellow"
 	minimap_color = "#00fff6"
 	airlock_wires = /datum/wires/airlock/ai
+	lights_always_start_on = TRUE
 
 /area/ai_monitored/turret_protected/aisat_interior
 	name = "AI Satellite Antechamber"
 	icon_state = "ai"
+	sound_environment = SOUND_AREA_LARGE_ENCLOSED
 
 /area/ai_monitored/turret_protected/AIsatextAS
 	name = "AI Sat Ext"
@@ -1246,7 +1378,12 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/tcommsat/computer
 	name = "Telecomms Control Room"
 	icon_state = "tcomsatcomp"
+	sound_environment = SOUND_AREA_MEDIUM_SOFTFLOOR
 
 /area/tcommsat/server
 	name = "Telecomms Server Room"
 	icon_state = "tcomsatcham"
+
+/area/tcommsat/storage
+	name = "Telecomms Storage Room"
+	icon_state = "tcomsatstorage"

@@ -11,11 +11,12 @@
 	can_suppress = TRUE
 	clumsy_check = 0
 	item_flags = NONE
+	obj_flags = UNIQUE_RENAME
 	casing_ejector = FALSE
 
-/obj/item/gun/ballistic/automatic/toy/update_icon()
+/obj/item/gun/ballistic/automatic/toy/update_overlays()
 	. = ..()
-	add_overlay("[icon_state]_toy")
+	. += "[icon_state]_toy"
 
 /obj/item/gun/ballistic/automatic/toy/unrestricted
 	pin = /obj/item/firing_pin
@@ -35,7 +36,7 @@
 /obj/item/gun/ballistic/automatic/toy/pistol/riot
 	mag_type = /obj/item/ammo_box/magazine/toy/pistol/riot
 
-/obj/item/gun/ballistic/automatic/toy/pistol/riot/Initialize()
+/obj/item/gun/ballistic/automatic/toy/pistol/riot/Initialize(mapload)
 	magazine = new /obj/item/ammo_box/magazine/toy/pistol/riot(src)
 	return ..()
 
@@ -53,17 +54,13 @@
 	mag_type = /obj/item/ammo_box/magazine/internal/shot/toy
 	clumsy_check = FALSE
 	item_flags = NONE
+	obj_flags = UNIQUE_RENAME
 	casing_ejector = FALSE
 	can_suppress = FALSE
 
-/obj/item/gun/ballistic/shotgun/toy/update_icon()
+/obj/item/gun/ballistic/shotgun/toy/update_overlays()
 	. = ..()
-	add_overlay("[icon_state]_toy")
-
-/obj/item/gun/ballistic/shotgun/toy/process_chamber(empty_chamber = 0)
-	..()
-	if(chambered && !chambered.BB)
-		qdel(chambered)
+	. += "[icon_state]_toy"
 
 /obj/item/gun/ballistic/shotgun/toy/unrestricted
 	pin = /obj/item/firing_pin
@@ -73,7 +70,7 @@
 	desc = "A weapon favored by many overactive children. Ages 8 and up."
 	icon = 'icons/obj/toy.dmi'
 	icon_state = "foamcrossbow"
-	item_state = "crossbow"
+	item_state = "ecrossbow"
 	mag_type = /obj/item/ammo_box/magazine/internal/shot/toy/crossbow
 	fire_sound = 'sound/items/syringeproj.ogg'
 	slot_flags = ITEM_SLOT_BELT
@@ -95,9 +92,9 @@
 /obj/item/gun/ballistic/automatic/c20r/toy/unrestricted/riot
 	mag_type = /obj/item/ammo_box/magazine/toy/smgm45/riot
 
-/obj/item/gun/ballistic/automatic/c20r/toy/update_icon()
+/obj/item/gun/ballistic/automatic/c20r/toy/update_overlays()
 	. = ..()
-	add_overlay("[icon_state]_toy")
+	. += "[icon_state]_toy"
 
 /obj/item/gun/ballistic/automatic/l6_saw/toy //This is the syndicate variant with syndicate firing pin and riot darts.
 	name = "donksoft LMG"
@@ -115,6 +112,31 @@
 /obj/item/gun/ballistic/automatic/l6_saw/toy/unrestricted/riot
 	mag_type = /obj/item/ammo_box/magazine/toy/m762/riot
 
-/obj/item/gun/ballistic/automatic/l6_saw/toy/update_icon()
+/obj/item/gun/ballistic/automatic/l6_saw/toy/update_overlays()
 	. = ..()
-	add_overlay("[icon_state]_toy")
+	. += "[icon_state]_toy"
+
+// Hugbox'ed guns
+/obj/item/gun/ballistic/automatic/toy/unrestricted/hugbox
+	desc = "A prototype three-round burst toy submachine gun. Ages 8 and up. This one feels noticably less fun..."
+	mag_type = /obj/item/ammo_box/magazine/toy/smg/hugbox
+
+/obj/item/gun/ballistic/automatic/toy/pistol/unrestricted/hugbox
+	desc = "A small, easily concealable toy handgun. Ages 8 and up. This one feels noticably less fun..."
+	mag_type = /obj/item/ammo_box/magazine/toy/pistol/hugbox
+
+/obj/item/gun/ballistic/shotgun/toy/unrestricted/hugbox
+	desc = "A toy shotgun with wood furniture and a four-shell capacity underneath. Ages 8 and up. This one feels noticably less fun..."
+	mag_type = /obj/item/ammo_box/magazine/internal/shot/toy/hugbox
+
+/obj/item/gun/ballistic/shotgun/toy/crossbow/hugbox
+	desc = "A weapon favored by many overactive children. Ages 8 and up. This one feels noticably less fun..."
+	mag_type = /obj/item/ammo_box/magazine/internal/shot/toy/crossbow/hugbox
+
+/obj/item/gun/ballistic/automatic/l6_saw/toy/unrestricted/hugbox
+	desc = "A heavily modified toy light machine gun, designated 'L6 SAW'. Ages 8 and up. This one feels noticably less fun..."
+	mag_type = /obj/item/ammo_box/magazine/toy/m762/hugbox
+
+/obj/item/gun/ballistic/automatic/c20r/toy/unrestricted/hugbox
+	desc = "A bullpup two-round burst toy SMG, designated 'C-20r'. Ages 8 and up. This one feels noticably less fun..."
+	mag_type = /obj/item/ammo_box/magazine/toy/smgm45/hugbox

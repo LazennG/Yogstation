@@ -21,7 +21,7 @@
 
 	var/datum/data/record/active_general_record = null
 	var/datum/data/record/active_security_record = null
-	
+
 	//Radio internal
 	var/obj/item/radio/radio
 	var/radio_key = /obj/item/encryptionkey/heads/hos
@@ -72,44 +72,7 @@
 
 	data["logged_in"] = logged_in
 
-	if(issilicon(user))
-		var/mob/living/silicon/borg = user
-		data["username"] = borg.name
-		data["has_access"] = TRUE
-
-	if(IsAdminGhost(user))
-		data["username"] = user.client.holder.admin_signature
-		data["has_access"] = TRUE
-
-	if(ishuman(user))
-		var/username = user.get_authentification_name("Unknown")
-		data["username"] = user.get_authentification_name("Unknown")
-		if(username != "Unknown")
-			var/datum/data/record/record
-			for(var/RP in GLOB.data_core.general)
-				var/datum/data/record/R = RP
-
-				if(!istype(R))
-					continue
-				if(R.fields["name"] == username)
-					record = R
-					break
-			if(record)
-				if(istype(record.fields["photo_front"], /obj/item/photo))
-					var/obj/item/photo/P1 = record.fields["photo_front"]
-					var/icon/picture = icon(P1.picture.picture_image)
-					picture.Crop(10, 32, 22, 22)
-					var/md5 = md5(fcopy_rsc(picture))
-
-					if(!SSassets.cache["photo_[md5]_cropped.png"])
-						SSassets.transport.register_asset("photo_[md5]_cropped.png", picture)
-					SSassets.transport.send_assets(user, list("photo_[md5]_cropped.png" = picture))
-
-					data["user_image"] = SSassets.transport.get_asset_url("photo_[md5]_cropped.png")
-
-		data["has_access"] = check_access(user.get_idcard())
-
-
+	data += tgui_login_data(user, src)
 
 	if(!logged_in)
 		return data
@@ -135,25 +98,25 @@
 					crime_status = E.fields["criminal"]
 
 			switch(crime_status)
-				if("*Arrest*")
+				if(WANTED_ARREST)
 					record["recordColor"] = "#990000"
 					record["recordIcon"] = "fingerprint"
-				if("Search")
+				if(WANTED_SEARCH)
 					record["recordColor"] = "#5C4949"
 					record["recordIcon"] = "search"
-				if("Incarcerated")
+				if(WANTED_PRISONER)
 					record["recordColor"] = "#181818"
 					record["recordIcon"] = "dungeon"
-				if("Suspected")
+				if(WANTED_SUSPECT)
 					record["recordColor"] = "#CD6500"
 					record["recordIcon"] = "exclamation"
-				if("Paroled")
+				if(WANTED_PAROLE)
 					record["recordColor"] = "#046713"
 					record["recordIcon"] = "unlink"
-				if("Discharged")
+				if(WANTED_DISCHARGED)
 					record["recordColor"] = "#006699"
 					record["recordIcon"] = "dove"
-				if("None")
+				if(WANTED_NONE)
 					record["recordColor"] = "#740349"
 				if("")
 					crime_status = "No Record."
@@ -218,19 +181,19 @@
 			record["criminal_status"] = active_security_record.fields["criminal"]
 
 			switch(active_security_record.fields["criminal"])
-				if("*Arrest*")
+				if(WANTED_ARREST)
 					record["recordColor"] = "#990000"
-				if("Search")
+				if(WANTED_SEARCH)
 					record["recordColor"] = "#5C4949"
-				if("Incarcerated")
+				if(WANTED_PRISONER)
 					record["recordColor"] = "#181818"
-				if("Suspected")
+				if(WANTED_SUSPECT)
 					record["recordColor"] = "#CD6500"
-				if("Paroled")
+				if(WANTED_PAROLE)
 					record["recordColor"] = "#046713"
-				if("Discharged")
+				if(WANTED_DISCHARGED)
 					record["recordColor"] = "#006699"
-				if("None")
+				if(WANTED_NONE)
 					record["recordColor"] = "#740349"
 
 			record["citations"] = list()
@@ -277,7 +240,6 @@
 
 		data["active_record"] = record
 
-
 	return data
 
 /obj/machinery/computer/secure_data/ui_static_data(mob/user)
@@ -292,6 +254,8 @@
 	if(..())
 		return
 
+
+
 	switch(action)
 		if("back")
 			if(!logged_in)
@@ -305,6 +269,10 @@
 			active_security_record = null
 			screen = MAIN_SCREEN
 
+			logged_in = tgui_login_act(usr, src)
+			if(!logged_in)
+				return
+
 			if(issilicon(usr))
 				var/mob/living/silicon/borg = usr
 				logged_in = borg.name
@@ -314,17 +282,14 @@
 			if(IsAdminGhost(usr))
 				logged_in = usr.client.holder.admin_signature
 				rank = "Central Command Officer"
-
-
-
-
-			var/mob/living/carbon/human/H = usr
-			if(!istype(H))
 				return
 
-			if(check_access(H.get_idcard()))
+			var/mob/living/carbon/human/H = usr
+			if(istype(H))
 				logged_in = H.get_authentification_name("Unknown")
 				rank = H.get_assignment("Unknown", "Unknown")
+				return
+
 		if("log_out")
 			if(!logged_in)
 				return
@@ -414,7 +379,7 @@
 					P.info += "<B>Security Record Lost!</B><BR>"
 					P.name = text("SR-[] '[]'", GLOB.data_core.securityPrintCount, "Record Lost")
 				P.info += "</TT>"
-				P.update_icon()
+				P.update_appearance(UPDATE_ICON)
 				printing = FALSE
 
 		if("print_poster")
@@ -487,7 +452,7 @@
 				R.fields["name"] = active_general_record.fields["name"]
 				R.fields["id"] = active_general_record.fields["id"]
 				R.name = text("Security Record #[]", R.fields["id"])
-				R.fields["criminal"] = "None"
+				R.fields["criminal"] = WANTED_NONE
 				R.fields["crimes"] = list()
 				R.fields["comments"] = list()
 				R.fields["notes"] = "No notes."
@@ -518,7 +483,7 @@
 			R.fields["name"] = active_general_record.fields["name"]
 			R.fields["id"] = active_general_record.fields["id"]
 			R.name = text("Security Record #[]", R.fields["id"])
-			R.fields["criminal"] = "None"
+			R.fields["criminal"] = WANTED_NONE
 			R.fields["crimes"] = list()
 			R.fields["comments"] = list()
 			R.fields["notes"] = "No notes."
@@ -749,26 +714,27 @@
 
 				if("criminal_status")
 					if(active_security_record)
-						var/crime = input("Select a status", "Criminal Status Selection") as null|anything in list("None", "Arrest", "Search", "Incarcerated", "Suspected", "Paroled", "Discharged")
+						var/crime = tgui_input_list(usr, "Select a status", "Criminal Status Selection", list("None", "Arrest", "Search", "Incarcerated", "Suspected", "Paroled", "Discharged"))
 						if(!crime)
 							crime = "none"
 						var/old_field = active_security_record.fields["criminal"]
 						switch(crime)
 							if("None")
-								active_security_record.fields["criminal"] = "None"
+								active_security_record.fields["criminal"] = WANTED_NONE
 							if("Arrest")
-								active_security_record.fields["criminal"] = "*Arrest*"
+								active_security_record.fields["criminal"] = WANTED_ARREST
 							if("Search")
-								active_security_record.fields["criminal"] = "Search"
+								active_security_record.fields["criminal"] = WANTED_SEARCH
 							if("Incarcerated")
-								active_security_record.fields["criminal"] = "Incarcerated"
+								active_security_record.fields["criminal"] = WANTED_PRISONER
 							if("Suspected")
-								active_security_record.fields["criminal"] = "Suspected"
+								active_security_record.fields["criminal"] = WANTED_SUSPECT
 							if("Paroled")
-								active_security_record.fields["criminal"] = "Paroled"
+								active_security_record.fields["criminal"] = WANTED_PAROLE
 							if("Discharged")
-								active_security_record.fields["criminal"] = "Discharged"
+								active_security_record.fields["criminal"] = WANTED_DISCHARGED
 						investigate_log("[active_general_record.fields["name"]] has been set from [old_field] to [active_security_record.fields["criminal"]] by [key_name(usr)].", INVESTIGATE_RECORDS)
+						active_security_record.fields["comments"] |= GLOB.data_core.createCommentEntry("Criminal status set to [active_security_record.fields["criminal"]].", logged_in)
 						for(var/mob/living/carbon/human/H in GLOB.carbon_list)
 							H.sec_hud_set_security_status()
 
@@ -778,7 +744,7 @@
 					if(!issilicon(usr))
 						if(user.wear_id)
 							var/list/access = user.wear_id.GetAccess()
-							if((ACCESS_KEYCARD_AUTH || ACCESS_CAPTAIN || ACCESS_CHANGE_IDS || ACCESS_HOP || ACCESS_HOS) in access)							
+							if((ACCESS_KEYCARD_AUTH || ACCESS_CAPTAIN || ACCESS_CHANGE_IDS || ACCESS_HOP || ACCESS_HOS) in access)
 								changed_rank = input("Select a rank", "Rank Selection") as null|anything in get_all_jobs()
 							else
 								say("You do not have the required access to do this!")
@@ -843,9 +809,11 @@
 		var/mob/living/silicon/SILICON = i
 		if(SILICON.triggerAlarm("Burglar", alarmed, alarmed.cameras, src))
 			//Cancel silicon alert after 1 minute
-			addtimer(CALLBACK(SILICON, /mob/living/silicon.proc/cancelAlarm,"Burglar",src,alarmed), 600)
+			addtimer(CALLBACK(SILICON, TYPE_PROC_REF(/mob/living/silicon, cancelAlarm),"Burglar",src,alarmed), 600)
 
-/obj/machinery/computer/secure_data/emag_act(mob/user)
+/obj/machinery/computer/secure_data/emag_act(mob/user, obj/item/card/emag/emag_card)
+	if(logged_in) // What was the point then?
+		return FALSE
 	var/name
 	if(ishuman(user))
 		var/mob/living/carbon/human/human_user = user
@@ -854,19 +822,17 @@
 			name = "[ID.registered_name]"
 		else
 			name = "Unknown"
-			
 	if(issilicon(user))
 		name = "[user.name]"
+	logged_in = TRUE
+	to_chat(user, span_warning("You override [src]'s ID lock."))
+	trigger_alarm()
+	playsound(src, 'sound/effects/alert.ogg', 50, TRUE)
+	var/area/A = get_area(loc)
+	radio.talk_into(src, "Alert: security breach alarm triggered in [A.map_name]!! Unauthorized access by [name] of [src]!!", sec_freq)
+	radio.talk_into(src, "Alert: security breach alarm triggered in [A.map_name]!! Unauthorized access by [name] of [src]!!", command_freq)
+	return TRUE
 
-	if(!logged_in)
-		logged_in = TRUE
-		to_chat(user, span_warning("You override [src]'s ID lock."))
-		trigger_alarm()
-		playsound(src, 'sound/effects/alert.ogg', 50, TRUE)
-		var/area/A = get_area(loc)
-		radio.talk_into(src, "Alert: security breach alarm triggered in [A.map_name]!! Unauthorized access by [name] of [src]!!", sec_freq)
-		radio.talk_into(src, "Alert: security breach alarm triggered in [A.map_name]!! Unauthorized access by [name] of [src]!!", command_freq)
-	
 /obj/machinery/computer/secure_data/emp_act(severity)
 	. = ..()
 
@@ -874,7 +840,7 @@
 		return
 
 	for(var/datum/data/record/R in GLOB.data_core.security)
-		if(prob(10/severity))
+		if(prob(severity))
 			switch(rand(1,8))
 				if(1)
 					if(prob(10))
@@ -886,7 +852,7 @@
 				if(3)
 					R.fields["age"] = rand(5, 85)
 				if(4)
-					R.fields["criminal"] = pick("None", "*Arrest*", "Search", "Incarcerated", "Suspected", "Paroled", "Discharged")
+					R.fields["criminal"] = pick(WANTED_NONE, WANTED_ARREST, WANTED_SEARCH, WANTED_PRISONER, WANTED_SUSPECT, WANTED_PAROLE, WANTED_DISCHARGED)
 				if(5)
 					R.fields["p_stat"] = pick("*Unconscious*", "Active", "Physically Unfit")
 				if(6)

@@ -56,7 +56,8 @@ FLOOR SAFES
 			space += I.w_class
 			I.forceMove(src)
 
-/obj/structure/safe/update_icon()
+/obj/structure/safe/update_icon_state()
+	. = ..()
 	if(open)
 		icon_state = "[initial(icon_state)]-open"
 	else
@@ -147,7 +148,7 @@ FLOOR SAFES
 				return
 			to_chat(user, span_notice("You [open ? "close" : "open"] [src].</span>"))
 			open = !open
-			update_icon()
+			update_appearance(UPDATE_ICON)
 			return TRUE
 		if("turnright")
 			if(open)
@@ -240,6 +241,10 @@ FLOOR SAFES
 	icon_state = "floorsafe"
 	density = FALSE
 	layer = LOW_OBJ_LAYER
+
+/obj/structure/safe/floor/Initialize(mapload)
+	. = ..()
+	AddElement(/datum/element/undertile)
 
 #undef SOUND_CHANCE
 #undef BROKEN_THRESHOLD

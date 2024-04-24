@@ -93,8 +93,12 @@
 	var/tame = 0
 
 	var/my_z // I don't want to confuse this with client registered_z
+	///What kind of footstep this mob should have. Null if it shouldn't have any.
+	var/footstep_type
 
 	var/do_footstep = FALSE
+
+	var/magic_tameable = TRUE	//For special cases with the enchanted flowers
 
 	///How much wounding power it has
 	var/wound_bonus = CANT_WOUND
@@ -103,10 +107,13 @@
 	///If the attacks from this are sharp
 	var/sharpness = SHARP_NONE
 
+	//Music
 	var/music_component = null
 	var/music_path = null
 
-/mob/living/simple_animal/Initialize()
+	
+
+/mob/living/simple_animal/Initialize(mapload)
 	. = ..()
 	GLOB.simple_animals[AIStatus] += src
 	if(gender == PLURAL)
@@ -120,6 +127,8 @@
 		AddComponent(/datum/component/personal_crafting)
 	if(music_component && music_path)
 		AddComponent(music_component, music_path)
+	if(footstep_type)
+		AddElement(/datum/element/footstep, footstep_type)
 
 /mob/living/simple_animal/Destroy()
 	GLOB.simple_animals[AIStatus] -= src
@@ -127,7 +136,7 @@
 		SSnpcpool.currentrun -= src
 
 	if(nest)
-		nest.spawned_mobs -= src
+		nest.spawned_things -= src
 		nest = null
 
 	var/turf/T = get_turf(src)
@@ -141,10 +150,6 @@
 	if(stat == DEAD)
 		. += span_deadsay("Upon closer examination, [p_they()] appear[p_s()] to be dead.")
 
-/mob/living/simple_animal/initialize_footstep()
-	if(do_footstep)
-		..()
-
 /mob/living/simple_animal/updatehealth()
 	..()
 	health = clamp(health, 0, maxHealth)
@@ -156,15 +161,8 @@
 		if(health <= 0)
 			death()
 		else
-			stat = CONSCIOUS
+			set_stat(CONSCIOUS)
 	med_hud_set_status()
-
-/mob/living/simple_animal/handle_status_effects()
-	..()
-	if(stuttering)
-		stuttering = 0
-	if(slurring)
-		slurring = max(slurring-1,0)
 
 /mob/living/simple_animal/proc/handle_automated_action()
 	set waitfor = FALSE
@@ -183,7 +181,7 @@
 						turns_since_move = 0
 			return 1
 
-/mob/living/simple_animal/proc/handle_automated_speech(var/override)
+/mob/living/simple_animal/proc/handle_automated_speech(override)
 	set waitfor = FALSE
 	if(speak_chance)
 		if(prob(speak_chance) || override)
@@ -229,10 +227,10 @@
 		var/turf/open/ST = src.loc
 		if(ST.air)
 
-			var/tox = ST.air.get_moles(/datum/gas/plasma)
-			var/oxy = ST.air.get_moles(/datum/gas/oxygen)
-			var/n2  = ST.air.get_moles(/datum/gas/nitrogen)
-			var/co2 = ST.air.get_moles(/datum/gas/carbon_dioxide)
+			var/tox = ST.air.get_moles(GAS_PLASMA)
+			var/oxy = ST.air.get_moles(GAS_O2)
+			var/n2  = ST.air.get_moles(GAS_N2)
+			var/co2 = ST.air.get_moles(GAS_CO2)
 
 			if(atmos_requirements["min_oxy"] && oxy < atmos_requirements["min_oxy"])
 				. = FALSE
@@ -296,9 +294,9 @@
 		new /obj/effect/temp_visual/gib_animation/animal(loc, icon_gib)
 
 /mob/living/simple_animal/say_mod(input, list/message_mods = list())
-	if(speak_emote && speak_emote.len)
+	if(length(speak_emote))
 		verb_say = pick(speak_emote)
-	. = ..()
+	return ..()
 
 /mob/living/simple_animal/emote(act, m_type=1, message = null, intentional = FALSE, is_keybind = FALSE)
 	if(stat)
@@ -327,7 +325,7 @@
 /mob/living/simple_animal/death(gibbed)
 	movement_type &= ~FLYING
 	if(nest)
-		nest.spawned_mobs -= src
+		nest.spawned_things -= src
 		nest = null
 	drop_loot()
 	if(dextrous)
@@ -341,13 +339,15 @@
 		//a manner as to cause a call to death() again
 		del_on_death = FALSE
 		qdel(src)
-	else
-		health = 0
-		icon_state = icon_dead
-		if(flip_on_death)
-			transform = transform.Turn(180)
-		density = FALSE
-		..()
+		return
+	
+	health = 0
+	icon_state = icon_dead
+	if(flip_on_death)
+		transform = transform.Turn(180)
+	density = FALSE
+	update_appearance()
+	return	..()
 
 /mob/living/simple_animal/proc/CanAttack(atom/the_target)
 	if(see_invisible < the_target.invisibility)
@@ -372,13 +372,10 @@
 	// yogs end
 	return TRUE
 
-/mob/living/simple_animal/handle_fire()
-	return TRUE
-
-/mob/living/simple_animal/IgniteMob()
+/mob/living/simple_animal/ignite_mob()
 	return FALSE
 
-/mob/living/simple_animal/ExtinguishMob()
+/mob/living/simple_animal/extinguish_mob()
 	return
 
 /mob/living/simple_animal/revive(full_heal = 0, admin_revive = 0)
@@ -457,7 +454,7 @@
 		walk(src, 0) //stop mid walk
 
 	update_transform()
-	update_action_buttons_icon()
+	update_mob_action_buttons()
 
 /mob/living/simple_animal/update_transform()
 	var/matrix/ntransform = matrix(transform) //aka transform.Copy()
@@ -480,25 +477,25 @@
 		return
 	if(stat == DEAD)
 		if(SSmapping.level_trait(z, ZTRAIT_NOXRAY))
-			sight = null
+			set_sight(null)
 		else if(is_secret_level(z))
-			sight = initial(sight)
+			set_sight(initial(sight))
 		else
-			sight = (SEE_TURFS|SEE_MOBS|SEE_OBJS)
-		see_in_dark = 8
-		see_invisible = SEE_INVISIBLE_OBSERVER
+			set_sight(SEE_TURFS|SEE_MOBS|SEE_OBJS)
+		set_invis_see(SEE_INVISIBLE_OBSERVER)
 		return
 
-	see_invisible = initial(see_invisible)
-	see_in_dark = initial(see_in_dark)
-	sight = initial(sight)
+	lighting_color_cutoffs = list(lighting_cutoff_red, lighting_cutoff_green, lighting_cutoff_blue)
+	set_invis_see(initial(see_invisible))
 	if(SSmapping.level_trait(z, ZTRAIT_NOXRAY))
-		sight = null
+		set_sight(null)
+	else
+		set_sight(initial(sight))
 	if(client.eye != src)
 		var/atom/A = client.eye
 		if(A.update_remote_sight(src)) //returns 1 if we override all other sight updates.
 			return
-	sync_lighting_plane_alpha()
+	return ..()
 
 /mob/living/simple_animal/get_idcard(hand_first)
 	return access_card
@@ -525,47 +522,39 @@
 	else
 		mode()
 
-/mob/living/simple_animal/swap_hand(hand_index)
+/mob/living/simple_animal/perform_hand_swap(hand_index)
+	. = ..()
+	if(!.)
+		return
 	if(!dextrous)
 		return ..()
 	if(!hand_index)
 		hand_index = (active_hand_index % held_items.len)+1
-	var/obj/item/held_item = get_active_held_item()
-	if(held_item)
-		if(istype(held_item, /obj/item/twohanded))
-			var/obj/item/twohanded/T = held_item
-			if(T.wielded == 1)
-				to_chat(usr, span_warning("Your other hand is too busy holding [T]."))
-				return
 	var/oindex = active_hand_index
 	active_hand_index = hand_index
 	if(hud_used)
 		var/atom/movable/screen/inventory/hand/H
 		H = hud_used.hand_slots["[hand_index]"]
 		if(H)
-			H.update_icon()
+			H.update_appearance(UPDATE_ICON)
 		H = hud_used.hand_slots["[oindex]"]
 		if(H)
-			H.update_icon()
+			H.update_appearance(UPDATE_ICON)
 
 /mob/living/simple_animal/put_in_hands(obj/item/I, del_on_fail = FALSE, merge_stacks = TRUE)
 	. = ..(I, del_on_fail, merge_stacks)
 	update_inv_hands()
 
 /mob/living/simple_animal/update_inv_hands()
-	if(client && hud_used && hud_used.hud_version != HUD_STYLE_NOHUD)
-		var/obj/item/l_hand = get_item_for_held_index(1)
-		var/obj/item/r_hand = get_item_for_held_index(2)
-		if(r_hand)
-			r_hand.layer = ABOVE_HUD_LAYER
-			r_hand.plane = ABOVE_HUD_PLANE
-			r_hand.screen_loc = ui_hand_position(get_held_index_of_item(r_hand))
-			client.screen |= r_hand
-		if(l_hand)
-			l_hand.layer = ABOVE_HUD_LAYER
-			l_hand.plane = ABOVE_HUD_PLANE
-			l_hand.screen_loc = ui_hand_position(get_held_index_of_item(l_hand))
-			client.screen |= l_hand
+	. = ..()
+	if(!client || !hud_used || hud_used.hud_version == HUD_STYLE_NOHUD)
+		return
+	var/turf/our_turf = get_turf(src)
+	for(var/obj/item/I in held_items)
+		var/index = get_held_index_of_item(I)
+		SET_PLANE(I, ABOVE_HUD_PLANE, our_turf)
+		I.screen_loc = ui_hand_position(index)
+		client.screen |= I
 
 //ANIMAL RIDING
 
@@ -617,8 +606,14 @@
 			toggle_ai(AI_ON)
 
 
-/mob/living/simple_animal/onTransitZ(old_z, new_z)
+/mob/living/simple_animal/on_changed_z_level(turf/old_turf, turf/new_turf, same_z_layer, notify_contents)
 	..()
-	if (AIStatus == AI_Z_OFF)
-		SSidlenpcpool.idle_mobs_by_zlevel[old_z] -= src
+	if (old_turf && AIStatus == AI_Z_OFF)
+		SSidlenpcpool.idle_mobs_by_zlevel[old_turf.z] -= src
 		toggle_ai(initial(AIStatus))
+
+//YOGS EDIT
+/mob/living/simple_animal/proc/return_standard_turns_per_move()
+	turns_per_move = initial(turns_per_move)
+
+//YOGS END

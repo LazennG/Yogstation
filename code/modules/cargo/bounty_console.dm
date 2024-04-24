@@ -9,7 +9,7 @@
 	var/printer_ready = 0 //cooldown var
 	var/static/datum/bank_account/cargocash
 
-/obj/machinery/computer/bounty/Initialize()
+/obj/machinery/computer/bounty/Initialize(mapload)
 	. = ..()
 	printer_ready = world.time + PRINTER_TIMEOUT
 	cargocash = SSeconomy.get_dep_account(ACCOUNT_CAR)
@@ -20,11 +20,10 @@
 /obj/item/paper/bounty_printout
 	name = "paper - Bounties"
 
-/obj/item/paper/bounty_printout/Initialize()
+/obj/item/paper/bounty_printout/Initialize(mapload)
 	. = ..()
 	info = "<h2>Nanotrasen Cargo Bounties</h2></br>"
-	update_icon()
-
+	update_appearance(UPDATE_ICON)
 	for(var/datum/bounty/B in GLOB.bounties_list)
 		if(B.claimed)
 			continue
@@ -32,8 +31,12 @@
 		<ul><li>Reward: [B.reward_string()]</li>
 		<li>Completed: [B.completion_string()]</li></ul>"}
 
+/obj/machinery/computer/bounty/proc/get_list_to_use()
+	return GLOB.bounties_list
+
 /obj/machinery/computer/bounty/ui_interact(mob/user, datum/tgui/ui)
-	if(!GLOB.bounties_list.len)
+	var/list/list_to_use = get_list_to_use()
+	if(!list_to_use.len)
 		setup_bounties()
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
@@ -43,7 +46,7 @@
 /obj/machinery/computer/bounty/ui_data(mob/user)
 	var/list/data = list()
 	var/list/bountyinfo = list()
-	for(var/datum/bounty/B in GLOB.bounties_list)
+	for(var/datum/bounty/B in get_list_to_use())
 		bountyinfo += list(list("name" = B.name, "description" = B.description, "reward_string" = B.reward_string(), "completion_string" = B.completion_string() , "claimed" = B.claimed, "can_claim" = B.can_claim(), "priority" = B.high_priority, "bounty_ref" = REF(B)))
 	data["stored_cash"] = cargocash.account_balance
 	data["bountydata"] = bountyinfo
@@ -54,9 +57,9 @@
 		return
 	switch(action)
 		if("ClaimBounty")
-			var/datum/bounty/cashmoney = locate(params["bounty"]) in GLOB.bounties_list
+			var/datum/bounty/cashmoney = locate(params["bounty"]) in get_list_to_use()
 			if(cashmoney)
-				cashmoney.claim()
+				cashmoney.claim(usr)
 			return TRUE
 		if("Print")
 			if(printer_ready < world.time)

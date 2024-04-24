@@ -98,7 +98,7 @@
 
 /datum/status_effect/bounty/on_apply()
 	to_chat(owner, "[span_boldnotice("You hear something behind you talking...")] [span_notice("You have been marked for death by [rewarded]. If you die, they will be rewarded.")]")
-	playsound(owner, 'sound/weapons/shotgunpump.ogg', 75, 0)
+	playsound(owner, 'sound/weapons/shotgunpump.ogg', 75, FALSE)
 	return ..()
 
 /datum/status_effect/bounty/tick()
@@ -109,12 +109,10 @@
 /datum/status_effect/bounty/proc/rewards()
 	if(rewarded && rewarded.mind && rewarded.stat != DEAD)
 		to_chat(owner, "[span_boldnotice("You hear something behind you talking...")] [span_notice("Bounty claimed.")]")
-		playsound(owner, 'sound/weapons/shotgunshot.ogg', 75, 0)
+		playsound(owner, 'sound/weapons/shotgunshot.ogg', 75, FALSE)
 		to_chat(rewarded, span_greentext("You feel a surge of mana flow into you!"))
-		for(var/obj/effect/proc_holder/spell/spell in rewarded.mind.spell_list)
-			spell.charge_counter = spell.charge_max
-			spell.recharging = FALSE
-			spell.update_icon()
+		for(var/datum/action/cooldown/spell/spell in rewarded.actions)
+			spell.reset_spell_cooldown()
 		rewarded.adjustBruteLoss(-25)
 		rewarded.adjustFireLoss(-25)
 		rewarded.adjustToxLoss(-25)
@@ -131,7 +129,7 @@
 /datum/status_effect/bugged/on_apply(mob/living/new_owner, mob/living/tracker)
 	. = ..()
 	if (.)
-		RegisterSignal(new_owner, COMSIG_MOVABLE_HEAR, .proc/handle_hearing)
+		RegisterSignal(new_owner, COMSIG_MOVABLE_HEAR, PROC_REF(handle_hearing))
 
 /datum/status_effect/bugged/on_remove()
 	. = ..()
@@ -147,7 +145,6 @@
 
 /datum/status_effect/tagalong //applied to darkspawns while they accompany someone //yogs start: darkspawn
 	id = "tagalong"
-	duration = 3000
 	tick_interval = 1 //as fast as possible
 	alert_type = /atom/movable/screen/alert/status_effect/tagalong
 	var/mob/living/shadowing
@@ -168,24 +165,20 @@
 	playsound(owner, 'yogstation/sound/magic/devour_will_form.ogg', 50, TRUE)
 	owner.setDir(SOUTH)
 
-/datum/status_effect/tagalong/process()
+/datum/status_effect/tagalong/tick()
 	if(!shadowing)
 		owner.forceMove(cached_location)
 		qdel(src)
 		return
 	cached_location = get_turf(shadowing)
-	if(cached_location.get_lumcount() < DARKSPAWN_DIM_LIGHT)
+	if(cached_location.get_lumcount() < SHADOW_SPECIES_DIM_LIGHT)
 		owner.forceMove(cached_location)
 		shadowing.visible_message(span_warning("[owner] suddenly appears from the dark!"))
 		to_chat(owner, span_warning("You are forced out of [shadowing]'s shadow!"))
-		owner.Knockdown(30)
 		qdel(src)
 	var/obj/item/I = owner.get_active_held_item()
 	if(I)
 		to_chat(owner, span_userdanger("Equipping an item forces you out!"))
-		if(istype(I, /obj/item/dark_bead))
-			to_chat(owner, span_userdanger("[I] crackles with feedback, briefly disorienting you!"))
-			owner.Stun(5) //short delay so they can't click as soon as they're out
 		qdel(src)
 
 /atom/movable/screen/alert/status_effect/tagalong

@@ -2,7 +2,7 @@
 /obj/vehicle/ridden/space
 	name = "Generic Space Vehicle!"
 
-/obj/vehicle/ridden/space/Initialize()
+/obj/vehicle/ridden/space/Initialize(mapload)
 	. = ..()
 	var/datum/component/riding/D = LoadComponent(/datum/component/riding)
 	D.override_allow_spacemove = TRUE
@@ -15,7 +15,7 @@
 	var/overlay_state = "cover_blue"
 	var/mutable_appearance/overlay
 
-/obj/vehicle/ridden/space/speedbike/Initialize()
+/obj/vehicle/ridden/space/speedbike/Initialize(mapload)
 	. = ..()
 	overlay = mutable_appearance(icon, overlay_state, ABOVE_MOB_LAYER)
 	add_overlay(overlay)
@@ -51,7 +51,7 @@
 	pixel_y = -48
 	pixel_x = -48
 
-/obj/vehicle/ridden/space/speedwagon/Initialize()
+/obj/vehicle/ridden/space/speedwagon/Initialize(mapload)
 	. = ..()
 	if(isnull(overlay)) // yogs
 		overlay = mutable_appearance(icon, "speedwagon_cover", ABOVE_MOB_LAYER) // yogs
@@ -93,7 +93,7 @@
 				visible_message(span_danger("[src] crashes into [H]!"))
 				playsound(src, 'sound/effects/bang.ogg', 50, 1)
 
-/obj/vehicle/ridden/space/speedwagon/Moved()
+/obj/vehicle/ridden/space/speedwagon/Moved(atom/old_loc, movement_dir, forced, list/old_locs, momentum_change)
 	. = ..()
 	if(has_buckled_mobs())
 		for(var/atom/A in range(2, src))

@@ -6,15 +6,15 @@
 
 /obj/item/clothing/glasses/hud/equipped(mob/living/carbon/human/user, slot)
 	..()
-	if(hud_type && slot == SLOT_GLASSES)
+	if(hud_type && slot == ITEM_SLOT_EYES)
 		var/datum/atom_hud/H = GLOB.huds[hud_type]
-		H.add_hud_to(user)
+		H.show_to(user)
 
 /obj/item/clothing/glasses/hud/dropped(mob/living/carbon/human/user)
 	..()
 	if(hud_type && istype(user) && user.glasses == src)
 		var/datum/atom_hud/H = GLOB.huds[hud_type]
-		H.remove_hud_from(user)
+		H.hide_from(user)
 
 /obj/item/clothing/glasses/hud/emp_act(severity)
 	. = ..()
@@ -23,13 +23,14 @@
 	obj_flags |= EMAGGED
 	desc = "[desc] The display is flickering slightly."
 
-/obj/item/clothing/glasses/hud/emag_act(mob/user)
+/obj/item/clothing/glasses/hud/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED)
-		return
+		return FALSE
 	obj_flags |= EMAGGED
 	to_chat(user, span_warning("PZZTTPFFFT"))
 	desc = "[desc] The display is flickering slightly."
-
+	return TRUE
+	
 /obj/item/clothing/glasses/hud/health
 	name = "health scanner HUD"
 	desc = "A heads-up display that scans the humans in view and provides accurate data about their health status."
@@ -42,9 +43,10 @@
 	desc = "An advanced medical heads-up display that allows doctors to find patients in complete darkness."
 	icon_state = "healthhudnight"
 	item_state = "glasses"
-	darkness_view = 8
 	flash_protect = -1
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE
+	// Blue green, dark
+	color_cutoffs = list(10, 10, 30)
+	lighting_cutoff = LIGHTING_CUTOFF_HIGH
 	glass_colour_type = /datum/client_colour/glass_colour/green
 
 /obj/item/clothing/glasses/hud/health/meson
@@ -53,14 +55,15 @@
 	icon_state = "mesonhealth"
 	item_state = "mesonhealth"
 	vision_flags = SEE_TURFS
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE
+	// Mesons get to be lightly green
+	color_cutoffs = list(5, 5, 15)
+	clothing_traits = list(TRAIT_MESONS)
 	glass_colour_type = /datum/client_colour/glass_colour/lightblue
 
 /obj/item/clothing/glasses/hud/health/sunglasses
 	name = "medical HUDSunglasses"
 	desc = "Sunglasses with a medical HUD."
 	icon_state = "sunhudmed"
-	darkness_view = 1
 	flash_protect = 1
 	tint = 1
 	glass_colour_type = /datum/client_colour/glass_colour/blue
@@ -82,9 +85,10 @@
 	desc = "A robotics diagnostic HUD fitted with a light amplifier."
 	icon_state = "diagnostichudnight"
 	item_state = "glasses"
-	darkness_view = 8
 	flash_protect = -1
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE
+	// Pale yellow
+	color_cutoffs = list(30, 20, 10)
+	lighting_cutoff = LIGHTING_CUTOFF_HIGH
 	glass_colour_type = /datum/client_colour/glass_colour/green
 
 /obj/item/clothing/glasses/hud/diagnostic/sunglasses
@@ -116,13 +120,14 @@
 	// have multiple inheritance, okay?
 	var/datum/action/item_action/chameleon/change/chameleon_action
 
-/obj/item/clothing/glasses/hud/security/chameleon/Initialize()
+/obj/item/clothing/glasses/hud/security/chameleon/Initialize(mapload)
 	. = ..()
 	chameleon_action = new(src)
 	chameleon_action.chameleon_type = /obj/item/clothing/glasses
 	chameleon_action.chameleon_name = "Glasses"
 	chameleon_action.chameleon_blacklist = typecacheof(/obj/item/clothing/glasses/changeling, only_root_path = TRUE)
 	chameleon_action.initialize_disguises()
+	add_item_action(chameleon_action)
 
 /obj/item/clothing/glasses/hud/security/chameleon/emp_act(severity)
 	. = ..()
@@ -140,7 +145,6 @@
 	name = "security HUDSunglasses"
 	desc = "Sunglasses with a security HUD."
 	icon_state = "sunhudsec"
-	darkness_view = 1
 	flash_protect = 1
 	tint = 1
 	glass_colour_type = /datum/client_colour/glass_colour/darkred
@@ -154,9 +158,8 @@
 	name = "night vision security HUD"
 	desc = "An advanced heads-up display which provides ID data and vision in complete darkness."
 	icon_state = "securityhudnight"
-	darkness_view = 8
 	flash_protect = -1
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE
+	color_cutoffs = list(35, 10, 10)
 	glass_colour_type = /datum/client_colour/glass_colour/green
 
 /obj/item/clothing/glasses/hud/security/sunglasses/gars
@@ -203,7 +206,7 @@
 
 	if (hud_type)
 		var/datum/atom_hud/H = GLOB.huds[hud_type]
-		H.remove_hud_from(user)
+		H.hide_from(user)
 
 	if (hud_type == DATA_HUD_MEDICAL_ADVANCED)
 		hud_type = null
@@ -214,7 +217,10 @@
 
 	if (hud_type)
 		var/datum/atom_hud/H = GLOB.huds[hud_type]
-		H.add_hud_to(user)
+		H.show_to(user)
+
+/datum/action/item_action/switch_hud
+	name = "Switch HUD"
 
 /obj/item/clothing/glasses/hud/toggle/thermal
 	name = "thermal HUD scanner"
@@ -222,7 +228,7 @@
 	icon_state = "thermal"
 	hud_type = DATA_HUD_SECURITY_ADVANCED
 	vision_flags = SEE_MOBS
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE
+	color_cutoffs = list(25, 8, 5)
 	glass_colour_type = /datum/client_colour/glass_colour/red
 
 /obj/item/clothing/glasses/hud/toggle/thermal/attack_self(mob/user)
@@ -230,13 +236,17 @@
 	switch (hud_type)
 		if (DATA_HUD_MEDICAL_ADVANCED)
 			icon_state = "meson"
+			color_cutoffs = list(5, 15, 5)
 			change_glass_color(user, /datum/client_colour/glass_colour/green)
 		if (DATA_HUD_SECURITY_ADVANCED)
 			icon_state = "thermal"
+			color_cutoffs = list(25, 8, 5)
 			change_glass_color(user, /datum/client_colour/glass_colour/red)
 		else
 			icon_state = "purple"
+			color_cutoffs = list(15, 0, 25)
 			change_glass_color(user, /datum/client_colour/glass_colour/purple)
+	user.update_sight()
 	user.update_inv_glasses()
 
 /obj/item/clothing/glasses/hud/toggle/thermal/emp_act(severity)

@@ -110,7 +110,7 @@
 		return mob.remote_control.relaymove(mob, direct)
 
 	if(isAI(mob))
-		return AIMove(n,direct,mob)
+		return AIMove(direct,mob)
 
 	if(Process_Grab()) //are we restrained by someone's grip?
 		return
@@ -121,14 +121,14 @@
 	if(!(L.mobility_flags & MOBILITY_MOVE))
 		return FALSE
 
-	if(isobj(mob.loc) || ismob(mob.loc))	//Inside an object, tell it we moved
-		var/atom/O = mob.loc
-		return O.relaymove(mob, direct)
+	if(ismovable(mob.loc))	//Inside an object, tell it we moved
+		var/atom/loc_atom = mob.loc
+		return loc_atom.relaymove(mob, direct)
 
 	if(!mob.Process_Spacemove(direct))
 		return FALSE
 
-	var/handled = SEND_SIGNAL(L, COMSIG_PROCESS_MOVE, direct) //yogs start - movement components
+	var/handled = SEND_SIGNAL(L, COMSIG_MOB_CLIENT_PRE_MOVE, direct)
 	if(handled)
 		return FALSE//yogs end
 
@@ -140,21 +140,21 @@
 	else
 		move_delay = world.time
 
-	if(L.confused)
+	//this is in two areas, i have no clue why, all i know is that i hate it and don't have the time to fix it
+	if(L.has_status_effect(/datum/status_effect/confusion))
 		var/newdir = 0
-		if(L.confused > 40)
-			newdir = pick(GLOB.alldirs)
-		else if(prob(L.confused * 1.5))
-			newdir = angle2dir(dir2angle(direct) + pick(90, -90))
-		else if(prob(L.confused * 3))
+		if(prob(50))
 			newdir = angle2dir(dir2angle(direct) + pick(45, -45))
+		else if(prob(50) && L.get_timed_status_effect_duration(/datum/status_effect/confusion) > 10 SECONDS)
+			newdir = angle2dir(dir2angle(direct) + pick(90, -90))
 		if(newdir)
 			direct = newdir
 			n = get_step(L, direct)
 
 	. = ..()
 
-	if((direct & (direct - 1)) && mob.loc == n) //moved diagonally successfully
+	var/diagonal = (direct & (direct - 1)) && mob.loc == n
+	if(diagonal) //moved diagonally successfully
 		add_delay *= 1.414214 // sqrt(2)
 	mob.set_glide_size(DELAY_TO_GLIDE_SIZE(add_delay))
 	move_delay += add_delay
@@ -166,24 +166,25 @@
 	if(P && !ismob(P) && P.density)
 		mob.setDir(turn(mob.dir, 180))
 
+	SEND_SIGNAL(L, COMSIG_MOB_CLIENT_MOVED)
 /**
   * Checks to see if you're being grabbed and if so attempts to break it
   *
   * Called by client/Move()
   */
 /client/proc/Process_Grab()
-	if(mob.pulledby)
-		if((mob.pulledby == mob.pulling) && (mob.pulledby.grab_state == GRAB_PASSIVE))			//Don't autoresist passive grabs if we're grabbing them too.
-			return
-		if(mob.incapacitated(ignore_restraints = 1))
-			move_delay = world.time + 10
-			return TRUE
-		else if(mob.restrained(ignore_grab = 1))
-			move_delay = world.time + 10
-			to_chat(src, span_warning("You're restrained! You can't move!"))
-			return TRUE
-		else
-			return mob.resist_grab(1)
+	if(!mob.pulledby)
+		return FALSE
+	if(mob.pulledby == mob.pulling && mob.pulledby.grab_state == GRAB_PASSIVE) //Don't autoresist passive grabs if we're grabbing them too.
+		return FALSE
+	if(HAS_TRAIT(mob, TRAIT_INCAPACITATED))
+		COOLDOWN_START(src, move_delay, 1 SECONDS)
+		return TRUE
+	else if(mob.restrained(ignore_grab = TRUE))
+		COOLDOWN_START(src, move_delay, 1 SECONDS)
+		to_chat(src, span_warning("You're restrained! You can't move!"))
+		return TRUE
+	return mob.resist_grab(TRUE)
 
 /**
   * Allows mobs to ignore density and phase through objects
@@ -261,7 +262,7 @@
 						R.reveal(20)
 						R.stun(20)
 					return
-				if(stepTurf.flags_1 & NOJAUNT_1)
+				if(stepTurf.turf_flags & NOJAUNT)
 					to_chat(L, span_warning("Some strange aura is blocking the way."))
 					return
 				if (locate(/obj/effect/blessing, stepTurf))
@@ -495,14 +496,37 @@
 		m_intent = MOVE_INTENT_RUN
 	if(hud_used && hud_used.static_inventory)
 		for(var/atom/movable/screen/mov_intent/selector in hud_used.static_inventory)
-			selector.update_icon(src)
+			selector.update_appearance(UPDATE_ICON)
 
 ///Moves a mob upwards in z level
 /mob/verb/up()
 	set name = "Move Upwards"
 	set category = "IC"
 
-	if(zMove(UP, TRUE))
+	if(remote_control)
+		return remote_control.relaymove(src, UP)
+
+	var/turf/current_turf = get_turf(src)
+	var/turf/above_turf = GET_TURF_ABOVE(current_turf)
+
+	if(!above_turf)
+		to_chat(src, span_warning("There's nowhere to go in that direction!"))
+		return
+
+	if(ismovable(loc)) //Inside an object, tell it we moved
+		var/atom/loc_atom = loc
+		return loc_atom.relaymove(src, UP)
+
+	var/ventcrawling_flag = HAS_TRAIT(src, TRAIT_MOVE_VENTCRAWLING) ? ZMOVE_VENTCRAWLING : 0
+
+	if(can_z_move(DOWN, above_turf, current_turf, ZMOVE_FALL_FLAGS|ventcrawling_flag)) //Will we fall down if we go up?
+		if(buckled)
+			to_chat(src, span_warning("[buckled] is is not capable of flight."))
+		else
+			to_chat(src, span_warning("You are not Superman."))
+		return
+
+	if(zMove(UP, z_move_flags = ZMOVE_FLIGHT_FLAGS|ZMOVE_FEEDBACK|ventcrawling_flag))
 		to_chat(src, span_notice("You move upwards."))
 
 ///Moves a mob down a z level
@@ -510,25 +534,28 @@
 	set name = "Move Down"
 	set category = "IC"
 
-	if(zMove(DOWN, TRUE))
+	if(remote_control)
+		return remote_control.relaymove(src, DOWN)
+
+	var/turf/current_turf = get_turf(src)
+	var/turf/below_turf = GET_TURF_BELOW(current_turf)
+	
+	if(!below_turf)
+		to_chat(src, span_warning("There's nowhere to go in that direction!"))
+		return
+
+	if(ismovable(loc)) //Inside an object, tell it we moved
+		var/atom/loc_atom = loc
+		return loc_atom.relaymove(src, DOWN)
+
+	var/ventcrawling_flag = HAS_TRAIT(src, TRAIT_MOVE_VENTCRAWLING) ? ZMOVE_VENTCRAWLING : 0
+
+	if(zMove(DOWN, z_move_flags = ZMOVE_FLIGHT_FLAGS|ZMOVE_FEEDBACK|ventcrawling_flag))
 		to_chat(src, span_notice("You move down."))
-
-///Move a mob between z levels, if it's valid to move z's on this turf
-/mob/proc/zMove(dir, feedback = FALSE)
-	if(dir != UP && dir != DOWN)
-		return FALSE
-	var/turf/target = get_step_multiz(src, dir)
-	if(!target)
-		if(feedback)
-			to_chat(src, span_warning("There's nothing [dir == DOWN ? "below" : "above"] you!"))
-		return FALSE
-	if(!canZMove(dir, target))
-		if(feedback)
-			to_chat(src, span_warning("You couldn't move there!"))
-		return FALSE
-	forceMove(target)
-	return TRUE
-
-/// Can this mob move between z levels
-/mob/proc/canZMove(direction, turf/target)
 	return FALSE
+
+/mob/abstract_move(atom/destination)
+	var/turf/new_turf = get_turf(destination)
+	if(new_turf && (istype(new_turf, /turf/cordon/secret) || is_secret_level(new_turf.z)) && !client?.holder)
+		return
+	return ..()

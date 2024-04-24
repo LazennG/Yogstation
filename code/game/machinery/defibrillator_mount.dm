@@ -14,7 +14,7 @@
 	var/obj/item/defibrillator/defib //this mount's defibrillator
 	var/clamps_locked = FALSE //if true, and a defib is loaded, it can't be removed without unlocking the clamps
 
-/obj/machinery/defibrillator_mount/loaded/Initialize() //loaded subtype for mapping use
+/obj/machinery/defibrillator_mount/loaded/Initialize(mapload) //loaded subtype for mapping use
 	. = ..()
 	defib = new/obj/item/defibrillator/loaded(src)
 
@@ -27,7 +27,7 @@
 	. = ..()
 	if(defib)
 		. += "<span class='notice'>There is a defib unit hooked up. Alt-click to remove it.<span>"
-		if(GLOB.security_level >= SEC_LEVEL_RED)
+		if(SSsecurity_level.get_current_level_as_number() >= SEC_LEVEL_RED)
 			. += span_notice("Due to a security situation, its locking clamps can be toggled by swiping any ID.")
 		else
 			. += span_notice("Its locking clamps can be [clamps_locked ? "dis" : ""]engaged by swiping an ID with access.")
@@ -36,19 +36,19 @@
 	if(defib && defib.cell && defib.cell.charge < defib.cell.maxcharge && is_operational())
 		use_power(200)
 		defib.cell.give(180) //90% efficiency, slightly better than the cell charger's 87.5%
-		update_icon()
+		update_appearance(UPDATE_ICON)
 
-/obj/machinery/defibrillator_mount/update_icon()
-	cut_overlays()
+/obj/machinery/defibrillator_mount/update_overlays()
+	. = ..()
 	if(defib)
-		add_overlay("defib")
+		. += "defib"
 		if(defib.powered)
-			add_overlay(defib.safety ? "online" : "emagged")
+			. += defib.safety ? "online" : "emagged"
 			var/ratio = defib.cell.charge / defib.cell.maxcharge
 			ratio = CEILING(ratio * 4, 1) * 25
-			add_overlay("charge[ratio]")
+			. += "charge[ratio]"
 		if(clamps_locked)
-			add_overlay("clamps")
+			. += "clamps"
 
 /obj/machinery/defibrillator_mount/get_cell()
 	if(defib)
@@ -76,20 +76,20 @@
 		span_notice("You press [I] into the mount, and it clicks into place."))
 		playsound(src, 'sound/machines/click.ogg', 50, TRUE)
 		defib = I
-		update_icon()
+		update_appearance(UPDATE_ICON)
 		return
 	else if(defib && I == defib.paddles)
 		defib.paddles.snap_back()
 		return
 	var/obj/item/card/id = I.GetID()
 	if(id)
-		if(check_access(id) || GLOB.security_level >= SEC_LEVEL_RED) //anyone can toggle the clamps in red alert!
+		if(check_access(id) || SSsecurity_level.get_current_level_as_number() >= SEC_LEVEL_RED) //anyone can toggle the clamps in red alert!
 			if(!defib)
 				to_chat(user, span_warning("You can't engage the clamps on a defibrillator that isn't there."))
 				return
 			clamps_locked = !clamps_locked
 			to_chat(user, span_notice("Clamps [clamps_locked ? "" : "dis"]engaged."))
-			update_icon()
+			update_appearance(UPDATE_ICON)
 		else
 			to_chat(user, span_warning("Insufficient access."))
 		return
@@ -111,7 +111,7 @@
 	span_notice("You override the locking clamps on [src]!"))
 	playsound(src, 'sound/machines/locktoggle.ogg', 50, TRUE)
 	clamps_locked = FALSE
-	update_icon()
+	update_appearance(UPDATE_ICON)
 	return TRUE
 
 /obj/machinery/defibrillator_mount/AltClick(mob/living/carbon/user)
@@ -130,7 +130,7 @@
 	span_notice("You slide out [defib] from [src] and unhook the charging cables."))
 	playsound(src, 'sound/items/deconstruct.ogg', 50, TRUE)
 	defib = null
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
 //wallframe, for attaching the mounts easily
 /obj/item/wallframe/defib_mount

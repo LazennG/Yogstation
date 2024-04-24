@@ -11,10 +11,10 @@
 	to check that the mob is not inside of something
 */
 /atom/proc/Adjacent(atom/neighbor) // basic inheritance, unused
-	return 0
+	return
 
 // Not a sane use of the function and (for now) indicative of an error elsewhere
-/area/Adjacent(var/atom/neighbor)
+/area/Adjacent(atom/neighbor)
 	CRASH("Call to /area/Adjacent(), unimplemented proc")
 
 
@@ -65,7 +65,7 @@
 	Adjacency (to anything else):
 	* Must be on a turf
 */
-/atom/movable/Adjacent(var/atom/neighbor)
+/atom/movable/Adjacent(atom/neighbor)
 	if(neighbor == loc)
 		return TRUE
 	var/turf/T = loc
@@ -73,10 +73,17 @@
 		return FALSE
 	if(T.Adjacent(neighbor,target = neighbor, mover = src))
 		return TRUE
+	
+	///Yog code for spacepods I guess???
+	if((islist(locs) && locs.len > 1) && (bound_width != world.icon_size || bound_height != world.icon_size))
+		for(var/turf/place in locs) //this is to handle multi tile objects
+			if(place.Adjacent(neighbor, src, src))
+				return TRUE
+
 	return FALSE
 
 // This is necessary for storage items not on your person.
-/obj/item/Adjacent(var/atom/neighbor, var/recurse = 1)
+/obj/item/Adjacent(atom/neighbor, recurse = 1)
 	if(neighbor == loc)
 		return 1
 	if(isitem(loc))

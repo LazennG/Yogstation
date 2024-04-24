@@ -13,7 +13,7 @@
 	response_disarm = "gently pushes aside"
 	response_harm = "splats"
 	density = FALSE
-	mob_biotypes = list(MOB_ORGANIC, MOB_BEAST)
+	mob_biotypes = MOB_ORGANIC|MOB_BEAST
 	ventcrawler = VENTCRAWLER_ALWAYS
 	gold_core_spawnable = FRIENDLY_SPAWN
 	pass_flags = PASSTABLE | PASSGRILLE | PASSMOB
@@ -23,6 +23,15 @@
 	wuv_happy = "looks happy"
 	wuv_angy = "makes a noise"
 	var/stepped_sound = 'sound/effects/axolotl.ogg'
+
+
+/mob/living/simple_animal/pet/axolotl/Initialize(mapload)
+	. = ..()
+	var/static/list/loc_connections = list(
+		COMSIG_ATOM_ENTERED = PROC_REF(on_entered),
+	)
+	AddElement(/datum/element/connect_loc, loc_connections)
+
 
 /mob/living/simple_animal/pet/axolotl/attack_hand(mob/living/carbon/human/user, list/modifiers)
 	. = ..()
@@ -38,14 +47,13 @@
 	else
 		playsound(loc, 'sound/effects/axolotl.ogg', 100, TRUE)
 
-/mob/living/simple_animal/pet/axolotl/Crossed(AM as mob|obj)
-	. = ..()
+/mob/living/simple_animal/pet/axolotl/proc/on_entered(datum/source, atom/movable/AM, ...)
 	if(!stat && isliving(AM))
 		var/mob/living/L = AM
 		if(L.mob_size > MOB_SIZE_TINY)
 			playsound(src, stepped_sound, 100, 1)
 
-/mob/living/simple_animal/pet/axolotl/Life()
+/mob/living/simple_animal/pet/axolotl/Life(seconds_per_tick = SSMOBS_DT, times_fired)
 	. = ..()
 	if(!stat && !buckled && !client)
 		if(prob(1))

@@ -10,6 +10,7 @@ GLOBAL_LIST_INIT(rod_recipes, list ( \
 	new/datum/stack_recipe("fore port spacepod frame", /obj/item/pod_parts/pod_frame/fore_port, 15, time = 30, one_per_turf = 0), \
 	new/datum/stack_recipe("fore starboard spacepod frame", /obj/item/pod_parts/pod_frame/fore_starboard, 15, time = 30, one_per_turf = 0), \
 	new/datum/stack_recipe("aft port spacepod frame", /obj/item/pod_parts/pod_frame/aft_port, 15, time = 30, one_per_turf = 0), \
+	new/datum/stack_recipe("catwalk floor tile", /obj/item/stack/tile/catwalk_tile, 1, 4, 20), \
 	new/datum/stack_recipe("aft starboard spacepod frame", /obj/item/pod_parts/pod_frame/aft_starboard, 15, time = 30, one_per_turf = 0), \
 	// yogs end
 	))
@@ -42,9 +43,10 @@ GLOBAL_LIST_INIT(rod_recipes, list ( \
 	. = ..()
 
 	recipes = GLOB.rod_recipes
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
-/obj/item/stack/rods/update_icon()
+/obj/item/stack/rods/update_icon_state()
+	. = ..()
 	var/amount = get_amount()
 	if((amount <= 5) && (amount > 0))
 		icon_state = "rods-[amount]"
@@ -80,7 +82,7 @@ GLOBAL_LIST_INIT(rod_recipes, list ( \
 				A.initialize_custom_food(src, S, user)
 			else
 				A.initialize_custom_food(src, S, user, TRUE)
-				update_icon()
+				update_appearance(UPDATE_ICON)
 	else
 		return ..()
 
@@ -89,8 +91,9 @@ GLOBAL_LIST_INIT(rod_recipes, list ( \
 	is_cyborg = 1
 	cost = 250
 
-/obj/item/stack/rods/cyborg/update_icon()
-	return
+/obj/item/stack/rods/cyborg/Initialize(mapload, new_amount, merge)
+	AddElement(/datum/element/update_icon_blocker)
+	return ..()
 
 /obj/item/stack/rods/ten
 	amount = 10

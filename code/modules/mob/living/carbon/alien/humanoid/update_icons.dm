@@ -4,7 +4,8 @@
 	for(var/I in overlays_standing)
 		add_overlay(I)
 
-	var/asleep = IsSleeping()
+	var/are_we_drooling = istype(click_intercept, /datum/action/cooldown/alien/acid)
+
 	if(stat == DEAD)
 		//If we mostly took damage from fire
 		if(fireloss > 125)
@@ -12,7 +13,7 @@
 		else
 			icon_state = "alien[caste]_dead"
 
-	else if((stat == UNCONSCIOUS && !asleep) || stat == SOFT_CRIT || IsParalyzed())
+	else if((stat == UNCONSCIOUS && !IsSleeping()) || stat == SOFT_CRIT || IsParalyzed())
 		icon_state = "alien[caste]_unconscious"
 	else if(leap_on_click)
 		icon_state = "alien[caste]_pounce"
@@ -21,11 +22,11 @@
 		icon_state = "alien[caste]_sleep"
 	else if(mob_size == MOB_SIZE_LARGE)
 		icon_state = "alien[caste]"
-		if(drooling)
+		if(are_we_drooling)
 			add_overlay("alienspit_[caste]")
 	else
 		icon_state = "alien[caste]"
-		if(drooling)
+		if(are_we_drooling)
 			add_overlay("alienspit")
 
 	if(leaping)
@@ -84,14 +85,20 @@
 		var/itm_state = l_hand.item_state
 		if(!itm_state)
 			itm_state = l_hand.icon_state
-		hands += mutable_appearance(alt_inhands_file, "[itm_state][caste]_l", -HANDS_LAYER)
+		var/mutable_appearance/l_hand_item = mutable_appearance(alt_inhands_file, "[itm_state][caste]_l", -HANDS_LAYER)
+		if(l_hand.blocks_emissive != EMISSIVE_BLOCK_NONE)
+			l_hand_item.overlays += emissive_blocker(l_hand_item.icon, l_hand_item.icon_state, src, alpha = l_hand_item.alpha)
+		hands += l_hand_item
 
 	var/obj/item/r_hand = get_item_for_held_index(2)
 	if(r_hand)
 		var/itm_state = r_hand.item_state
 		if(!itm_state)
 			itm_state = r_hand.icon_state
-		hands += mutable_appearance(alt_inhands_file, "[itm_state][caste]_r", -HANDS_LAYER)
+		var/mutable_appearance/r_hand_item = mutable_appearance(alt_inhands_file, "[itm_state][caste]_r", -HANDS_LAYER)
+		if(r_hand.blocks_emissive != EMISSIVE_BLOCK_NONE)
+			r_hand_item.overlays += emissive_blocker(r_hand_item.icon, r_hand_item.icon_state, src, alpha = r_hand_item.alpha)
+		hands += r_hand_item
 
 	overlays_standing[HANDS_LAYER] = hands
 	apply_overlay(HANDS_LAYER)

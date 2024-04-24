@@ -1,15 +1,12 @@
 /datum/job/bartender
 	title = "Bartender"
 	description = "Serve booze, mix drinks, keep the crew drunk."
-	flag = BARTENDER
 	orbit_icon = "cocktail"
 	department_head = list("Head of Personnel")
-	department_flag = CIVILIAN
 	faction = "Station"
 	total_positions = 1
 	spawn_positions = 1
 	supervisors = "the head of personnel"
-	selection_color = "#bbe291"
 	exp_type_department = EXP_TYPE_SERVICE // This is so the jobs menu can work properly
 
 	alt_titles = list("Barkeep", "Tapster", "Barista", "Mixologist")
@@ -17,7 +14,7 @@
 	outfit = /datum/outfit/job/bartender
 
 	added_access = list(ACCESS_HYDROPONICS, ACCESS_KITCHEN, ACCESS_MORGUE)
-	base_access = list(ACCESS_BAR, ACCESS_MINERAL_STOREROOM, ACCESS_WEAPONS)
+	base_access = list(ACCESS_BAR, ACCESS_MINERAL_STOREROOM, ACCESS_WEAPONS, ACCESS_SERVHALL)
 	paycheck = PAYCHECK_EASY
 	paycheck_department = ACCOUNT_SRV
 	display_order = JOB_DISPLAY_ORDER_BARTENDER
@@ -28,20 +25,26 @@
 	)
 
 	mail_goodies = list(
-		/obj/item/storage/box/rubbershot = 30,
+		/obj/item/storage/box/beanbag = 30,
 		/obj/item/reagent_containers/glass/bottle/clownstears = 10,
 		/obj/item/stack/sheet/mineral/plasma = 10,
 		/obj/item/stack/sheet/mineral/uranium = 10,
 		/obj/item/reagent_containers/food/drinks/shaker = 5,
 	)
 
+	lightup_areas = list(
+		/area/hydroponics,
+		/area/medical/morgue,
+		/area/crew_quarters/kitchen
+	)
+	
 	smells_like = "alcohol"
 
 /datum/outfit/job/bartender
 	name = "Bartender"
 	jobtype = /datum/job/bartender
 
-	pda_type = /obj/item/modular_computer/tablet/pda/preset/basic/fountainpen
+	pda_type = /obj/item/modular_computer/tablet/pda/preset/fountainpen/bartender
 
 	glasses = /obj/item/clothing/glasses/sunglasses/reagent
 	ears = /obj/item/radio/headset/headset_srv

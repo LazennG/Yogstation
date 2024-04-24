@@ -72,34 +72,6 @@
 	},
 /turf/open/floor/engine,
 /area/engine/engineering)
-"al" = (
-/obj/structure/cable/yellow{
-	icon_state = "4-8"
-	},
-/obj/structure/table/reinforced,
-/obj/item/storage/toolbox/mechanical,
-/obj/item/flashlight,
-/obj/effect/turf_decal/stripes/line{
-	dir = 1
-	},
-/obj/item/pipe_dispenser,
-/turf/open/floor/engine,
-/area/engine/engineering)
-"am" = (
-/obj/structure/cable/yellow{
-	icon_state = "4-8"
-	},
-/obj/structure/table/reinforced,
-/obj/item/tank/internals/emergency_oxygen/engi{
-	pixel_x = 5
-	},
-/obj/item/clothing/gloves/color/black,
-/obj/item/clothing/glasses/meson/engine,
-/obj/effect/turf_decal/stripes/line{
-	dir = 1
-	},
-/turf/open/floor/engine,
-/area/engine/engineering)
 "ap" = (
 /obj/structure/cable/yellow{
 	icon_state = "4-8"
@@ -111,6 +83,9 @@
 /obj/item/book/manual/wiki/supermatter,
 /obj/item/geiger_counter,
 /obj/item/geiger_counter,
+/obj/structure/sign/delamination_counter{
+	pixel_y = 32
+	},
 /turf/open/floor/engine,
 /area/engine/engineering)
 "aq" = (
@@ -1162,7 +1137,7 @@
 "do" = (
 /obj/machinery/atmospherics/components/trinary/filter/flipped/critical{
 	dir = 8;
-	filter_type = list(/datum/gas/nitrogen)
+	filter_type = list("n2")
 	},
 /turf/open/floor/engine,
 /area/engine/engineering)
@@ -1271,8 +1246,7 @@
 "dI" = (
 /obj/effect/turf_decal/stripes/line,
 /obj/machinery/atmospherics/pipe/layer_manifold{
-	dir = 4;
-	level = 2
+	dir = 4
 	},
 /turf/open/floor/engine,
 /area/engine/engineering)
@@ -1718,6 +1692,33 @@
 	},
 /turf/open/floor/engine,
 /area/engine/engineering)
+"BK" = (
+/obj/structure/cable/yellow{
+	icon_state = "4-8"
+	},
+/obj/structure/table/reinforced,
+/obj/item/tank/internals/emergency_oxygen/engi{
+	pixel_x = 5
+	},
+/obj/item/clothing/gloves/color/black,
+/obj/item/clothing/glasses/meson/engine,
+/obj/effect/turf_decal/stripes/line{
+	dir = 1
+	},
+/obj/item/pipe_dispenser,
+/obj/item/pipe_dispenser,
+/obj/machinery/light_switch{
+	pixel_y = 25
+	},
+/turf/open/floor/engine,
+/area/engine/engineering)
+"CH" = (
+/mob/living/simple_animal/opossum/poppy,
+/obj/machinery/light_switch{
+	pixel_x = -23
+	},
+/turf/open/floor/plasteel/dark,
+/area/engine/engineering)
 "CI" = (
 /obj/effect/turf_decal/stripes/line{
 	dir = 9
@@ -1771,7 +1772,7 @@
 	},
 /obj/machinery/door/airlock/engineering{
 	name = "AI Satellite Access";
-	req_one_access_txt = "10;17;32"
+	req_access_txt = "10"
 	},
 /turf/open/floor/plasteel,
 /area/engine/engineering)
@@ -1825,10 +1826,6 @@
 	icon_state = "0-8"
 	},
 /turf/open/floor/plating,
-/area/engine/engineering)
-"Jj" = (
-/mob/living/simple_animal/opossum/poppy,
-/turf/open/floor/plasteel/dark,
 /area/engine/engineering)
 "JA" = (
 /obj/machinery/atmospherics/pipe/simple/scrubbers/hidden/layer4{
@@ -2029,6 +2026,20 @@
 /obj/machinery/atmospherics/pipe/simple/supply/hidden/layer2,
 /obj/machinery/atmospherics/pipe/simple/scrubbers/hidden/layer4,
 /turf/open/floor/plasteel,
+/area/engine/engineering)
+"Tr" = (
+/obj/structure/cable/yellow{
+	icon_state = "4-8"
+	},
+/obj/structure/table/reinforced,
+/obj/item/storage/toolbox/mechanical,
+/obj/item/flashlight,
+/obj/effect/turf_decal/stripes/line{
+	dir = 1
+	},
+/obj/item/pipe_dispenser,
+/obj/item/holosign_creator/atmos,
+/turf/open/floor/engine,
 /area/engine/engineering)
 "Um" = (
 /obj/machinery/power/emitter/anchored{
@@ -2423,7 +2434,7 @@ EH
 dB
 ad
 dT
-Jj
+CH
 eg
 bN
 ev
@@ -2492,7 +2503,7 @@ cl
 "}
 (15,1,1) = {"
 ad
-al
+Tr
 MS
 aN
 bf
@@ -2520,7 +2531,7 @@ aa
 "}
 (16,1,1) = {"
 ad
-am
+BK
 cA
 aO
 bg

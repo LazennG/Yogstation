@@ -28,11 +28,13 @@
 	desc = ""
 	cutting_tool = null
 	can_weld_shut = FALSE
+	anchorable = FALSE
 	anchored = TRUE
+	flags_1 = NODECONSTRUCT_1
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
 	var/list/mirage_whitelist = list()
 
-/obj/structure/closet/bluespace/internal/Initialize()
+/obj/structure/closet/bluespace/internal/Initialize(mapload)
 	if(SSbluespace_locker.internal_locker && SSbluespace_locker.internal_locker != src)
 		return INITIALIZE_HINT_QDEL
 	SSbluespace_locker.internal_locker = src
@@ -54,9 +56,6 @@
 		return TRUE
 	return other.can_open(user)
 
-/obj/structure/closet/bluespace/internal/tool_interact(obj/item/W, mob/user)
-	return
-
 /obj/structure/closet/bluespace/internal/attack_hand(mob/living/user)
 	var/obj/structure/closet/other = get_other_locker()
 	if(!other)
@@ -74,7 +73,7 @@
 		user.last_special = world.time + CLICK_CD_BREAKOUT
 		other.visible_message(span_warning("[other] begins to shake violently!"))
 		to_chat(user, span_notice("You start pushing the door open... (this will take about [DisplayTimeText(other.breakout_time)].)"))
-		if(do_after(user, (other.breakout_time), src))
+		if(do_after(user, other.breakout_time, src))
 			if(!user || user.stat != CONSCIOUS || other.opened || (!other.locked && !other.welded))
 				return
 			//we check after a while whether there is a point of resisting anymore and whether the user is capable of resisting
@@ -87,8 +86,8 @@
 	else
 		return ..()
 
-/obj/structure/closet/bluespace/internal/update_icon()
-	cut_overlays()
+/obj/structure/closet/bluespace/internal/update_overlays()
+	. = ..()
 	var/obj/structure/closet/other = get_other_locker()
 	if(!other)
 		other = src
@@ -97,28 +96,28 @@
 	var/mutable_appearance/masking_icon = mutable_appearance(other.icon, other.icon_state)
 	masking_icon.blend_mode = BLEND_MULTIPLY
 	masked_icon.add_overlay(masking_icon)
-	//add_overlay(image('yogstation/icons/obj/closet.dmi', "bluespace_locker_frame"))
-	add_overlay(masked_icon)
+	//. += image('yogstation/icons/obj/closet.dmi', "bluespace_locker_frame")
+	. += masked_icon
 	if(!opened)
 		layer = OBJ_LAYER
 		if(other.icon_door)
-			add_overlay(image(other.icon, "[other.icon_door]_door"))
+			. += image(other.icon, "[other.icon_door]_door")
 		else
-			add_overlay(image(other.icon, "[other.icon_state]_door"))
+			. += image(other.icon, "[other.icon_state]_door")
 	else
 		layer = BELOW_OBJ_LAYER
 		if(other.icon_door_override)
-			add_overlay(image(other.icon, "[other.icon_door]_open"))
+			. += image(other.icon, "[other.icon_door]_open")
 		else
-			add_overlay(image(other.icon, "[other.icon_state]_open"))
+			. += image(other.icon, "[other.icon_state]_open")
 
-/obj/structure/closet/bluespace/external/onTransitZ(old_z,new_z)
+/obj/structure/closet/bluespace/external/on_changed_z_level(turf/old_turf, turf/new_turf, same_z_layer, notify_contents)
 	var/obj/structure/closet/O = get_other_locker()
 	if(O)
 		var/area/A = get_area(O)
 		if(A)
 			for(var/atom/movable/M in A)
-				M.onTransitZ(old_z,new_z)
+				M.on_changed_z_level(old_turf, new_turf)
 	return ..()
 
 /obj/structure/closet/bluespace/internal/proc/update_mirage()
@@ -141,7 +140,7 @@
 		T.turf_whitelist = mirage_whitelist
 		T.update_mirage()
 
-/obj/structure/closet/bluespace/external/Initialize()
+/obj/structure/closet/bluespace/external/Initialize(mapload)
 	if(SSbluespace_locker.external_locker && SSbluespace_locker.external_locker != src)
 		return INITIALIZE_HINT_QDEL
 	SSbluespace_locker.external_locker = src
@@ -163,7 +162,7 @@
 	return TRUE
 
 
-/obj/structure/closet/bluespace/external/Moved()
+/obj/structure/closet/bluespace/external/Moved(atom/old_loc, movement_dir, forced, list/old_locs, momentum_change)
 	var/obj/structure/closet/bluespace/internal/C = get_other_locker()
 	if(C)
 		C.update_mirage()
@@ -184,7 +183,7 @@
 	blocks_air = 1
 	name = "holographic projection"
 	desc = "A holographic projection of the area surrounding the bluespace locker"
-	flags_1 = NOJAUNT_1
+	turf_flags = NOJAUNT
 	var/turf/internal_origin
 	var/turf/external_origin
 	var/turf/external_origin_prev
@@ -233,7 +232,7 @@
 				dx--
 			var/list/fullbrights = list()
 			var/area/A = target_turf.loc
-			if(!IS_DYNAMIC_LIGHTING(A))
+			if(!A.static_lighting)
 				fullbrights += new /obj/effect/fullbright()
 			for(var/cdir in GLOB.cardinals)
 				if(!(glide_dir & cdir))
@@ -248,7 +247,7 @@
 					if(odir == 2)
 						py = -32
 					A = target_turf.loc
-					if(!IS_DYNAMIC_LIGHTING(A))
+					if(!A.static_lighting)
 						var/obj/effect/fullbright/F = new()
 						switch(odir)
 							if(1)
@@ -266,7 +265,7 @@
 				F.pixel_y -= py
 			add_overlay(fullbrights)
 			if(add_reset_timer)
-				reset_timer_id = addtimer(CALLBACK(src, /turf/open/space/bluespace_locker_mirage.proc/reset_to_self), world.tick_lag * 4, TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE | TIMER_STOPPABLE)
+				reset_timer_id = addtimer(CALLBACK(src, TYPE_PROC_REF(/turf/open/space/bluespace_locker_mirage, reset_to_self)), world.tick_lag * 4, TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE | TIMER_STOPPABLE)
 			else if(reset_timer_id)
 				deltimer(reset_timer_id)
 			pixel_x = px + dx*32

@@ -7,13 +7,13 @@
 	icon_state = "mflash1"
 	max_integrity = 250
 	integrity_failure = 100
-	light_color = LIGHT_COLOR_WHITE
-	light_power = FLASH_LIGHT_POWER
 	var/obj/item/assembly/flash/handheld/bulb
 	var/id = null
-	var/range = 2 //this is roughly the size of brig cell
+	/// How far this flash reaches. Affects both proximity distance and the actual stun effect.
+	var/flash_range = 2 //this is roughly the size of a brig cell.
 	var/last_flash = 0 //Don't want it getting spammed like regular flashes
-	var/strength = 100 //How knocked down targets are when flashed.
+	/// How strong Paralyze()'d targets are when flashed.
+	var/strength = 10 SECONDS
 	var/base_state = "mflash"
 
 /obj/machinery/flasher/portable //Portable version of the flasher. Only flashes when anchored
@@ -24,9 +24,6 @@
 	anchored = FALSE
 	base_state = "pflash"
 	density = TRUE
-	light_system = MOVABLE_LIGHT //Used as a flash here.
-	light_range = FLASH_LIGHT_RANGE
-	light_on = FALSE
 
 /obj/machinery/flasher/Initialize(mapload, ndir = 0, built = 0)
 	. = ..() // ..() is EXTREMELY IMPORTANT, never forget to add it
@@ -37,6 +34,9 @@
 	else
 		bulb = new(src)
 
+/obj/machinery/flasher/connect_to_shuttle(mapload, obj/docking_port/mobile/port, obj/docking_port/stationary/dock)
+	id = "[port.shuttle_id]_[id]"
+
 /obj/machinery/flasher/Destroy()
 	QDEL_NULL(bulb)
 	return ..()
@@ -46,14 +46,15 @@
 		return FALSE
 	return ..()
 
-/obj/machinery/flasher/update_icon()
-	if (powered())
-		if(bulb.burnt_out)
-			icon_state = "[base_state]1-p"
-		else
-			icon_state = "[base_state]1"
-	else
+/obj/machinery/flasher/update_icon_state()
+	. = ..()
+	if(!powered())
 		icon_state = "[base_state]1-p"
+		return
+	if(bulb.burnt_out)
+		icon_state = "[base_state]1-p"
+	else
+		icon_state = "[base_state]1"
 
 //Don't want to render prison breaks impossible
 /obj/machinery/flasher/attackby(obj/item/W, mob/user, params)
@@ -93,7 +94,7 @@
 	if (anchored)
 		return flash()
 
-/obj/machinery/flasher/run_obj_armor(damage_amount, damage_type, damage_flag = 0, attack_dir)
+/obj/machinery/flasher/run_atom_armor(damage_amount, damage_type, damage_flag = 0, attack_dir)
 	if(damage_flag == MELEE && damage_amount < 10) //any melee attack below 10 dmg does nothing
 		return 0
 	. = ..()
@@ -112,18 +113,21 @@
 	playsound(src.loc, 'sound/weapons/flash.ogg', 100, 1)
 	flick("[base_state]_flash", src)
 	set_light_on(TRUE)
-	addtimer(CALLBACK(src, .proc/flash_end), FLASH_LIGHT_DURATION, TIMER_OVERRIDE|TIMER_UNIQUE)
+	addtimer(CALLBACK(src, PROC_REF(flash_end)), FLASH_LIGHT_DURATION, TIMER_OVERRIDE|TIMER_UNIQUE)
 
 	last_flash = world.time
 	use_power(1000)
 
 	var/flashed = FALSE
 	for (var/mob/living/L in viewers(src, null))
-		if (get_dist(src, L) > range)
+		if (get_dist(src, L) > flash_range)
 			continue
 
 		if(L.flash_act(affect_silicon = 1))
-			L.Paralyze(strength)
+			if(iscarbon(L))
+				bulb.flash_carbon(L, src, strength / 10, TRUE)
+			else if(iscyborg(L) && bulb.borgstun)
+				bulb.flash_borg(L, src)
 			flashed = TRUE
 
 	if(flashed)
@@ -137,12 +141,12 @@
 /obj/machinery/flasher/emp_act(severity)
 	. = ..()
 	if(!(stat & (BROKEN|NOPOWER)) && !(. & EMP_PROTECT_SELF))
-		if(bulb && prob(75/severity))
+		if(bulb && prob(8 * severity))
 			flash()
 			bulb.burn_out()
 			power_change()
 
-/obj/machinery/flasher/obj_break(damage_flag)
+/obj/machinery/flasher/atom_break(damage_flag)
 	. = ..()
 	if(. && bulb)
 		bulb.burn_out()
@@ -162,7 +166,7 @@
 			new /obj/item/stack/sheet/metal (loc, 2)
 	qdel(src)
 
-/obj/machinery/flasher/portable/Initialize()
+/obj/machinery/flasher/portable/Initialize(mapload)
 	. = ..()
 	proximity_monitor = new(src, 0)
 
@@ -184,7 +188,7 @@
 			add_overlay("[base_state]-s")
 			setAnchored(TRUE)
 			power_change()
-			proximity_monitor.SetRange(range)
+			proximity_monitor.SetRange(flash_range)
 		else
 			to_chat(user, span_notice("[src] can now be moved."))
 			cut_overlays()
@@ -207,7 +211,7 @@
 	. = ..()
 	. += span_notice("Its channel ID is '[id]'.")
 
-/obj/item/wallframe/flasher/after_attach(var/obj/O)
+/obj/item/wallframe/flasher/after_attach(obj/O)
 	..()
 	var/obj/machinery/flasher/F = O
 	F.id = id

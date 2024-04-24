@@ -17,7 +17,7 @@
 
 /obj/item/cartridge
 	name = "generic cartridge"
-	desc = "A data cartridge for portable microcomputers."
+	desc = "A data cartridge for those old portable microcomputers."
 	icon = 'icons/obj/pda.dmi'
 	icon_state = "cart"
 	item_state = "electronic"
@@ -119,7 +119,7 @@
 	icon_state = "cart-tox"
 	access = CART_REAGENT_SCANNER | CART_ATMOS
 
-/obj/item/cartridge/signal/Initialize()
+/obj/item/cartridge/signal/Initialize(mapload)
 	. = ..()
 	radio = new(src)
 
@@ -168,7 +168,7 @@
 	access = CART_MANIFEST | CART_STATUS_DISPLAY | CART_REAGENT_SCANNER | CART_ATMOS | CART_DRONEPHONE
 	bot_access_flags = FLOOR_BOT | CLEAN_BOT | MED_BOT | FIRE_BOT
 
-/obj/item/cartridge/rd/Initialize()
+/obj/item/cartridge/rd/Initialize(mapload)
 	. = ..()
 	radio = new(src)
 
@@ -180,7 +180,7 @@
 	bot_access_flags = SEC_BOT | MULE_BOT | FLOOR_BOT | CLEAN_BOT | MED_BOT | FIRE_BOT
 	spam_enabled = 1
 
-/obj/item/cartridge/captain/Initialize()
+/obj/item/cartridge/captain/Initialize(mapload)
 	. = ..()
 	radio = new(src)
 
@@ -435,13 +435,13 @@ Code:
 					else
 						menu += "station"
 			menu += "<BR>Current approved orders: <BR><ol>"
-			for(var/S in SSshuttle.shoppinglist)
+			for(var/S in SSshuttle.shopping_list)
 				var/datum/supply_order/SO = S
 				menu += "<li>#[SO.id] - [SO.pack.name] approved by [SO.orderer] [SO.reason ? "([SO.reason])":""]</li>"
 			menu += "</ol>"
 
 			menu += "Current requests: <BR><ol>"
-			for(var/S in SSshuttle.requestlist)
+			for(var/S in SSshuttle.request_list)
 				var/datum/supply_order/SO = S
 				menu += "<li>#[SO.id] - [SO.pack.name] requested by [SO.orderer]</li>"
 			menu += "</ol><font size=\"-3\">Upgrade NOW to Space Parts & Space Vendors PLUS for full remote order control and inventory management."
@@ -582,7 +582,7 @@ Code:
 				active1 = null
 
 		if("Send Signal")
-			INVOKE_ASYNC(radio, /obj/item/integrated_signaler.proc/send_activation)
+			INVOKE_ASYNC(radio, TYPE_PROC_REF(/obj/item/integrated_signaler, send_activation))
 
 		if("Signal Frequency")
 			var/new_frequency = sanitize_frequency(radio.frequency + text2num(href_list["sfreq"]))

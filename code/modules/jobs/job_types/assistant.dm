@@ -4,14 +4,11 @@ Assistant
 /datum/job/assistant
 	title = "Assistant"
 	description = "Get your space legs, assist people, ask the HoP to give you a job."
-	flag = ASSISTANT
 	orbit_icon = "toolbox"
-	department_flag = CIVILIAN
 	faction = "Station"
 	total_positions = 5
 	spawn_positions = 5
 	supervisors = "absolutely everyone"
-	selection_color = "#dddddd"
 	added_access = list()			//See /datum/job/assistant/get_access()
 	base_access = list()	//See /datum/job/assistant/get_access()
 	outfit = /datum/outfit/job/assistant
@@ -24,7 +21,7 @@ Assistant
 	department_for_prefs = /datum/job_department/assistant
 
 	mail_goodies = list(
-		/obj/item/reagent_containers/food/snacks/donkpocket = 10,
+		/obj/effect/spawner/lootdrop/donkpockets = 10, //more donkpockets
 		/obj/item/clothing/mask/gas = 10,
 		/obj/item/clothing/gloves/color/fyellow = 7,
 		/obj/item/choice_beacon/music = 5,
@@ -65,5 +62,5 @@ Assistant
 
 	// This outfit is used by the assets SS, which is ran before the atoms SS
 	if (SSatoms.initialized == INITIALIZATION_INSSATOMS)
-	//	H.w_uniform?.update_greyscale()
+		H.w_uniform?.update_greyscale()
 		H.update_inv_w_uniform()

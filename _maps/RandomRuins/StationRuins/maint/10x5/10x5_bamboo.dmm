@@ -1,14 +1,14 @@
 //MAP CONVERTED BY dmm2tgm.py THIS HEADER COMMENT PREVENTS RECONVERSION, DO NOT REMOVE
 "b" = (
-/obj/item/ammo_casing/caseless/arrow/bamboo{
+/obj/item/ammo_casing/reusable/arrow/bamboo{
 	pixel_x = 2;
 	pixel_y = -1
 	},
-/obj/item/ammo_casing/caseless/arrow/bamboo{
+/obj/item/ammo_casing/reusable/arrow/bamboo{
 	pixel_x = -3;
 	pixel_y = 2
 	},
-/obj/item/ammo_casing/caseless/arrow/bamboo{
+/obj/item/ammo_casing/reusable/arrow/bamboo{
 	pixel_x = -7;
 	pixel_y = 5
 	},
@@ -170,7 +170,7 @@
 /area/template_noop)
 "T" = (
 /obj/structure/window/paperframe{
-	CanAtmosPass = 0
+	can_atmos_pass = 0
 	},
 /turf/open/floor/bamboo,
 /area/template_noop)

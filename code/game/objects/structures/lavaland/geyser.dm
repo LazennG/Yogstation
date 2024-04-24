@@ -28,13 +28,6 @@
 	var/true_name
 	///the message given when you discover this geyser.
 	var/discovery_message = null
-	///The internal GPS once this is discovered
-	var/obj/item/gps/internal
-
-/obj/structure/geyser/Destroy()
-	QDEL_NULL(internal)
-	. = ..()
-	
 
 /obj/structure/geyser/proc/start_chemming()
 	activated = TRUE
@@ -80,8 +73,7 @@
 	if(true_name)
 		name = true_name
 
-	internal = new /obj/item/gps/internal/geyser(src) //put it on the gps so miners can mark it and chemists can profit off of it //Yogs - LOL NO!
-	internal.gpstag = true_name
+	AddComponent(/datum/component/gps, "Geyser")
 
 	if(isliving(user))
 		var/mob/living/living = user
@@ -121,15 +113,9 @@
 	true_name = "strange geyser"
 	discovery_message = "It's a strange geyser! How does any of this even work?" //it doesnt
 
-/obj/structure/geyser/random/Initialize()
+/obj/structure/geyser/random/Initialize(mapload)
 	. = ..()
 	reagent_id = get_random_reagent_id()
-
-/obj/item/gps/internal/geyser
-	icon_state = null
-	gpstag = "Geyser"
-	desc = "Chemicals come from deep below."
-	invisibility = 100
 
 /obj/item/plunger
 	name = "plunger"
@@ -140,7 +126,7 @@
 	var/plunge_mod = 1 //time*plunge_mod = total time we take to plunge an object
 	var/reinforced = TRUE //whether we do heavy duty stuff like geysers / TG made all plungers reinforced
 
-/obj/item/plunger/attack_obj(obj/O, mob/living/user)
+/obj/item/plunger/attack_atom(obj/O, mob/living/user)
 	if(!O.plunger_act(src, user, reinforced))
 		return ..()
 

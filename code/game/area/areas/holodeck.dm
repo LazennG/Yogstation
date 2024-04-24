@@ -1,12 +1,14 @@
 /area/holodeck
 	name = "Holodeck"
 	icon_state = "Holodeck"
-	dynamic_lighting = DYNAMIC_LIGHTING_DISABLED
-	flags_1 = 0
+	static_lighting = FALSE
+	
+	base_lighting_alpha = 255
+	flags_1 = NONE
 	hidden = TRUE
 
 	var/obj/machinery/computer/holodeck/linked
-	var/restricted = 0 // if true, program goes on emag list
+	var/restricted = FALSE // if true, program goes on emag list
 	var/minimum_sec_level = SEC_LEVEL_GREEN //override this var if you want the program to be locked to a different alert-level (eg. SEC_LEVEL_BLUE, SEC_LEVEL_RED, SEC_LEVEL_DELTA)
 
 /*
@@ -14,20 +16,20 @@
 	Asserts are to avoid the inevitable infinite loops
 */
 
-/area/holodeck/powered(var/chan)
+/area/holodeck/powered(chan)
 	if(!requires_power)
-		return 1
+		return TRUE
 	if(always_unpowered)
-		return 0
+		return FALSE
 	if(!linked)
-		return 0
+		return FALSE
 	var/area/A = get_area(linked)
 	ASSERT(!istype(A, /area/holodeck))
 	return A.powered(chan)
 
-/area/holodeck/usage(var/chan)
+/area/holodeck/usage(chan)
 	if(!linked)
-		return 0
+		return FALSE
 	var/area/A = get_area(linked)
 	ASSERT(!istype(A, /area/holodeck))
 	return A.usage(chan)
@@ -39,9 +41,9 @@
 	ASSERT(!istype(A, /area/holodeck))
 	return A.addStaticPower(value,powerchannel)
 
-/area/holodeck/use_power(var/amount, var/chan)
+/area/holodeck/use_power(amount, chan)
 	if(!linked)
-		return 0
+		return FALSE
 	var/area/A = get_area(linked)
 	ASSERT(!istype(A, /area/holodeck))
 	return A.use_power(amount,chan)
@@ -106,6 +108,9 @@
 
 /area/holodeck/rec_center/gym
 	name = "Holodeck - Gym"
+
+/area/holodeck/rec_center/soccer
+	name = "Holodeck - Soccer Field"
 
 // Bad programs
 

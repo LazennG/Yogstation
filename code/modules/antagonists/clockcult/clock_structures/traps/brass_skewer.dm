@@ -13,7 +13,7 @@
 	var/wiggle_wiggle
 	var/mutable_appearance/impale_overlay //This is applied to any mob impaled so that they visibly have the skewer coming through their chest
 
-/obj/structure/destructible/clockwork/trap/brass_skewer/Initialize()
+/obj/structure/destructible/clockwork/trap/brass_skewer/Initialize(mapload)
 	. = ..()
 	START_PROCESSING(SSfastprocess, src)
 
@@ -40,7 +40,7 @@
 		return
 	..()
 
-/obj/structure/destructible/clockwork/trap/brass_skewer/bullet_act(obj/item/projectile/P)
+/obj/structure/destructible/clockwork/trap/brass_skewer/bullet_act(obj/projectile/P)
 	if(buckled_mobs && LAZYLEN(buckled_mobs))
 		var/mob/living/L = buckled_mobs[1]
 		return L.bullet_act(P)
@@ -50,14 +50,18 @@
 	if(density)
 		return
 	var/mob/living/squirrel = locate() in get_turf(src)
+	playsound(src, 'sound/machines/clockcult/brass_skewer.ogg', 75, FALSE)
+	density = TRUE //Skewers are one-use only
+	update_appearance(UPDATE_DESC|UPDATE_ICON_STATE)
 	if(squirrel)
 		if(iscyborg(squirrel))
 			if(!squirrel.stat)
 				squirrel.visible_message(span_boldwarning("A massive brass spike erupts from the ground, rending [squirrel]'s chassis but shattering into pieces!"), \
 				span_userdanger("A massive brass spike rips through your chassis and bursts into shrapnel in your casing!"))
 				squirrel.adjustBruteLoss(50)
-				squirrel.Stun(20)
-				addtimer(CALLBACK(src, .proc/take_damage, max_integrity), 1)
+				squirrel.Stun(4 SECONDS)
+				atom_destruction()
+				return
 		else
 			squirrel.visible_message(span_boldwarning("A massive brass spike erupts from the ground, impaling [squirrel]!"), \
 			span_userdanger("A massive brass spike rams through your chest, hoisting you into the air!"))
@@ -65,14 +69,20 @@
 			playsound(squirrel, 'sound/effects/splat.ogg', 50, TRUE)
 			playsound(squirrel, 'sound/misc/desceration-03.ogg', 50, TRUE)
 			squirrel.apply_damage(20, BRUTE, BODY_ZONE_CHEST)
-			squirrel.Stun(20)
+			squirrel.Stun(4 SECONDS)
 		buckle_mob(squirrel, TRUE)
 	else
 		visible_message(span_danger("A massive brass spike erupts from the ground!"))
-	playsound(src, 'sound/machines/clockcult/brass_skewer.ogg', 75, FALSE)
-	icon_state = "[initial(icon_state)]_extended"
-	density = TRUE //Skewers are one-use only
-	desc = "A vicious brass spike protruding from the ground like a stala[pick("gm", "ct")]ite. It makes you sick to look at." //is stalagmite the ground one? or the ceiling one? who can ever remember?
+
+/obj/structure/destructible/clockwork/trap/brass_skewer/update_icon_state()
+	. = ..()
+	if(density)
+		icon_state = "[initial(icon_state)]_extended"
+
+/obj/structure/destructible/clockwork/trap/brass_skewer/update_desc(updates)
+	. = ..()
+	if(density)
+		desc = "A vicious brass spike protruding from the ground like a stala[pick("gm", "ct")]ite. It makes you sick to look at." //is stalagmite the ground one? or the ceiling one? who can ever remember?
 
 /obj/structure/destructible/clockwork/trap/brass_skewer/user_buckle_mob()
 	return
@@ -93,7 +103,7 @@
 		user.visible_message(span_warning("[user] starts wriggling off of [src]!"), \
 		span_danger("You start agonizingly working your way off of [src]..."))
 		wiggle_wiggle = TRUE
-		if(!do_after(user, 30 SECONDS, user))
+		if(!do_after(user, 6 SECONDS, user))
 			user.visible_message(span_warning("[user] slides back down [src]!"))
 			user.emote("scream")
 			user.apply_damage(10, BRUTE, BODY_ZONE_CHEST)
@@ -104,12 +114,11 @@
 	else
 		user.visible_message(span_danger("[user] starts tenderly lifting [skewee] off of [src]..."), \
 		span_danger("You start tenderly lifting [skewee] off of [src]..."))
-		if(!do_after(user, 6 SECONDS, skewee))
+		if(!do_after(user, 2 SECONDS, skewee))//make it really fast to help someone else to incentivise actually helping others
 			skewee.visible_message(span_warning("[skewee] painfully slides back down [src]."))
 			skewee.emote("moan")
 			return
 	skewee.visible_message(span_danger("[skewee] comes free of [src] with a squelching pop!"), \
 	span_boldannounce("You come free of [src]!"))
-	skewee.Paralyze(30)
 	playsound(skewee, 'sound/misc/desceration-03.ogg', 50, TRUE)
 	unbuckle_mob(skewee)

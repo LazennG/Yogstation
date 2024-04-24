@@ -95,7 +95,7 @@
 		/obj/item/clothing/neck/stripedbluescarf,
 	)
 
-	RegisterSignal(SSdcs, COMSIG_GLOB_JOB_AFTER_SPAWN, .proc/on_job_after_spawn)
+	RegisterSignal(SSdcs, COMSIG_GLOB_JOB_AFTER_SPAWN, PROC_REF(on_job_after_spawn))
 
 /datum/station_trait/scarves/proc/on_job_after_spawn(datum/source, datum/job/job, mob/living/living_mob, mob/M, joined_late)
 	var/scarf_type = pick(scarves)
@@ -122,3 +122,11 @@
 /datum/station_trait/quick_shuttle/on_round_start()
 	. = ..()
 	SSshuttle.supply.callTime *= 0.5
+
+/datum/station_trait/shuttle_sale
+	name = "Shuttle Firesale"
+	report_message = "The Nanotrasen Emergency Dispatch team is celebrating a record number of shuttle calls in the recent quarter. Some of your emergency shuttle options have been discounted!"
+	trait_type = STATION_TRAIT_POSITIVE
+	weight = 4
+	trait_to_give = STATION_TRAIT_SHUTTLE_SALE
+	show_in_report = TRUE

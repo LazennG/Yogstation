@@ -20,7 +20,6 @@
 		param = copytext(act, custom_param + length(act[custom_param]))
 		act = copytext(act, 1, custom_param)
 
-
 	var/list/key_emotes = GLOB.emote_list[act]
 
 	if(!length(key_emotes))
@@ -33,16 +32,17 @@
 			silenced = TRUE
 			continue
 		if(P.run_emote(src, param, m_type, intentional))
+			SEND_SIGNAL(src, COMSIG_MOB_EMOTE, P, act, m_type, message, intentional)
+			SEND_SIGNAL(src, COMSIG_MOB_EMOTED(P.key))
 			return TRUE
 	if(intentional && !silenced)
 		to_chat(src, span_notice("Unusable emote '[act]'. Say *help for a list."))
 	return FALSE
 
-
 /datum/emote/flip
 	key = "flip"
 	key_third_person = "flips"
-	restraint_check = TRUE
+	hands_use_check = TRUE
 	mob_type_allowed_typecache = list(/mob/living, /mob/dead/observer)
 	mob_type_ignore_stat_typecache = list(/mob/dead/observer)
 	cooldown = 0 SECONDS
@@ -79,7 +79,7 @@
 /datum/emote/spin
 	key = "spin"
 	key_third_person = "spins"
-	restraint_check = TRUE
+	hands_use_check = TRUE
 	mob_type_allowed_typecache = list(/mob/living, /mob/dead/observer)
 	mob_type_ignore_stat_typecache = list(/mob/dead/observer)
 	cooldown = 0 SECONDS
@@ -109,15 +109,14 @@
 		return
 	if(!iscarbon(user))
 		return
-	var/current_confusion = user.confused
-	if(current_confusion > BEYBLADE_PUKE_THRESHOLD)
+	if(user.get_timed_status_effect_duration(/datum/status_effect/confusion) > BEYBLADE_PUKE_THRESHOLD)
 		user.vomit(BEYBLADE_PUKE_NUTRIENT_LOSS, distance = 0)
 		return
+
 	if(prob(BEYBLADE_DIZZINESS_PROBABILITY))
-		to_chat(user, "<span class='warning'>You feel woozy from spinning.</span>")
-		user.Dizzy(BEYBLADE_DIZZINESS_DURATION)
-		if(current_confusion < BEYBLADE_CONFUSION_LIMIT)
-			user.confused += BEYBLADE_CONFUSION_INCREMENT
+		to_chat(user, span_warning("You feel woozy from spinning."))
+		user.set_dizzy_if_lower(BEYBLADE_DIZZINESS_DURATION)
+		user.adjust_confusion_up_to(BEYBLADE_CONFUSION_INCREMENT, BEYBLADE_CONFUSION_LIMIT)
 
 #undef BEYBLADE_PUKE_THRESHOLD
 #undef BEYBLADE_PUKE_NUTRIENT_LOSS

@@ -13,7 +13,7 @@
 	icon = 'icons/mob/mob.dmi'
 	icon_state = "imp"
 	icon_living = "imp"
-	mob_biotypes = list(MOB_ORGANIC, MOB_HUMANOID)
+	mob_biotypes = MOB_ORGANIC|MOB_HUMANOID
 	speed = 1
 	a_intent = INTENT_HARM
 	stop_automated_movement = 1
@@ -31,8 +31,10 @@
 	obj_damage = 40
 	melee_damage_lower = 10
 	melee_damage_upper = 15
-	see_in_dark = 8
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE
+	// You KNOW we're doing a lightly purple red
+	lighting_cutoff_red = 30
+	lighting_cutoff_green = 10
+	lighting_cutoff_blue = 20
 	var/boost = 0
 	bloodcrawl = BLOODCRAWL_EAT
 	var/list/consumed_mobs = list()
@@ -40,11 +42,11 @@
 							Though you are not obligated to help, perhaps by aiding a higher ranking devil, you might just get a promotion.  However, you are incapable	\
 							of intentionally harming a fellow devil.</B>"
 
-/mob/living/simple_animal/imp/Initialize()
+/mob/living/simple_animal/imp/Initialize(mapload)
 	..()
 	boost = world.time + 30
 
-/mob/living/simple_animal/imp/Life()
+/mob/living/simple_animal/imp/Life(seconds_per_tick = SSMOBS_DT, times_fired)
 	..()
 	if(boost<world.time)
 		speed = 1
@@ -62,6 +64,7 @@
 /datum/antagonist/imp
 	name = "Imp"
 	antagpanel_category = "Devil"
+	ui_name = "AntagInfoDemon"
 	show_in_roundend = FALSE
 
 /datum/antagonist/imp/on_gain()

@@ -3,7 +3,7 @@
 #define POWER_RESTORATION_SEARCH_APC 2
 #define POWER_RESTORATION_APC_FOUND 3
 
-/mob/living/silicon/ai/Life()
+/mob/living/silicon/ai/Life(seconds_per_tick = SSMOBS_DT, times_fired)
 	if (stat == DEAD)
 		return
 	else //I'm not removing that shitton of tabs, unneeded as they are. -- Urist
@@ -105,23 +105,19 @@
 			death()
 			return
 		else if(stat == UNCONSCIOUS)
-			stat = CONSCIOUS
+			set_stat(CONSCIOUS)
 			adjust_blindness(-1)
 	diag_hud_set_status()
 
 /mob/living/silicon/ai/update_sight()
-	see_invisible = initial(see_invisible)
-	see_in_dark = initial(see_in_dark)
-	sight = initial(sight)
+	set_invis_see(initial(see_invisible))
+	set_sight(initial(sight))
 	if(aiRestorePowerRoutine && !available_ai_cores())
-		sight = sight&~SEE_TURFS
-		sight = sight&~SEE_MOBS
-		sight = sight&~SEE_OBJS
-		see_in_dark = 0
+		clear_sight(SEE_TURFS|SEE_MOBS|SEE_OBJS)
 
 	if(see_override)
-		see_invisible = see_override
-	sync_lighting_plane_alpha()
+		set_invis_see(see_override)
+	return ..()
 
 
 /mob/living/silicon/ai/proc/start_RestorePowerRoutine()
@@ -208,7 +204,7 @@
 	
 	update_sight()
 	to_chat(src, "You've lost power!")
-	addtimer(CALLBACK(src, .proc/start_RestorePowerRoutine), 20)
+	addtimer(CALLBACK(src, PROC_REF(start_RestorePowerRoutine)), 20)
 
 #undef POWER_RESTORATION_OFF
 #undef POWER_RESTORATION_START

@@ -18,13 +18,17 @@
 	if(!category || QDELETED(src))
 		return
 
+	var/datum/weakref/master_ref
+	if(isdatum(new_master))
+		master_ref = WEAKREF(new_master)
 	var/atom/movable/screen/alert/thealert
 	if(alerts[category])
 		thealert = alerts[category]
 		if(thealert.override_alerts)
 			return 0
-		if(new_master && new_master != thealert.master)
-			WARNING("[src] threw alert [category] with new_master [new_master] while already having that alert with master [thealert.master]")
+		if(master_ref && thealert.master_ref && master_ref != thealert.master_ref)
+			var/datum/current_master = thealert.master_ref.resolve()
+			WARNING("[src] threw alert [category] with new_master [new_master] while already having that alert with master [current_master]")
 
 			clear_alert(category)
 			return .()
@@ -53,7 +57,7 @@
 		new_master.layer = old_layer
 		new_master.plane = old_plane
 		thealert.icon_state = "template" // We'll set the icon to the client's ui pref in reorganize_alerts()
-		thealert.master = new_master
+		thealert.master_ref = master_ref
 	else
 		thealert.icon_state = "[initial(thealert.icon_state)][severity]"
 		thealert.severity = severity
@@ -65,7 +69,7 @@
 	animate(thealert, transform = matrix(), time = 0.25 SECONDS, easing = CUBIC_EASING)
 
 	if(thealert.timeout)
-		addtimer(CALLBACK(src, .proc/alert_timeout, thealert, category), thealert.timeout)
+		addtimer(CALLBACK(src, PROC_REF(alert_timeout), thealert, category), thealert.timeout)
 		thealert.timeout = world.time + thealert.timeout - world.tick_lag
 	return thealert
 
@@ -99,6 +103,8 @@
 	var/override_alerts = FALSE //If it is overriding other alerts of the same type
 	var/mob/mob_viewer //the mob viewing this alert
 
+	/// Boolean. If TRUE, the Click() proc will attempt to Click() on the master first if there is a master.
+	var/click_master = TRUE
 
 /atom/movable/screen/alert/MouseEntered(location,control,params)
 	if(!QDELETED(src))
@@ -248,7 +254,10 @@ If you're feeling frisky, examine yourself and click the underlined item to pull
 /atom/movable/screen/alert/embeddedobject/Click()
 	if(iscarbon(usr))
 		var/mob/living/carbon/C = usr
-		return C.try_remove_embedded_object(C)
+		if (C.incapacitated())
+			to_chat(C, span_warning("You can't do that while disabled!"))
+		else
+			return C.try_remove_embedded_object(C)
 
 /atom/movable/screen/alert/weightless
 	name = "Weightless"
@@ -299,7 +308,7 @@ or shoot a gun to move around via Newton's 3rd Law of Motion."
 	add_overlay(receiving)
 	src.receiving = receiving
 	src.giver = giver
-	RegisterSignal(taker, COMSIG_MOVABLE_MOVED, /atom/movable/screen/alert/give/.proc/removeAlert)
+	RegisterSignal(taker, COMSIG_MOVABLE_MOVED, TYPE_PROC_REF(/atom/movable/screen/alert/give, removeAlert))
 
 /atom/movable/screen/alert/give/proc/removeAlert()
 	to_chat(mob_viewer, span_warning("You moved out of range of [giver]!"))
@@ -350,7 +359,7 @@ or shoot a gun to move around via Newton's 3rd Law of Motion."
 	var/angle = 0
 	var/mob/living/simple_animal/hostile/construct/Cviewer = null
 
-/atom/movable/screen/alert/bloodsense/Initialize()
+/atom/movable/screen/alert/bloodsense/Initialize(mapload)
 	. = ..()
 	narnar = new('icons/mob/screen_alert.dmi', "mini_nar")
 	START_PROCESSING(SSprocessing, src)
@@ -387,13 +396,13 @@ or shoot a gun to move around via Newton's 3rd Law of Motion."
 			angle = 0
 			cut_overlays()
 			icon_state = "runed_sense0"
-			desc = "Nar-Sie demands that [sac_objective.target] be sacrificed before the summoning ritual can begin."
+			desc = "Nar'sie demands that [sac_objective.target] be sacrificed before the summoning ritual can begin."
 			add_overlay(sac_objective.sac_image)
 		else
 			var/datum/objective/eldergod/summon_objective = locate() in antag.cult_team.objectives
 			if(!summon_objective)
 				return
-			desc = "The sacrifice is complete, summon Nar-Sie! The summoning can only take place in [english_list(summon_objective.summon_spots)]!"
+			desc = "The sacrifice is complete, summon Nar'sie! The summoning can only take place in [english_list(summon_objective.summon_spots)]!"
 			if(icon_state == "runed_sense1")
 				return
 			animate(src, transform = null, time = 0.1 SECONDS, loop = 0)
@@ -515,6 +524,11 @@ or shoot a gun to move around via Newton's 3rd Law of Motion."
 	name = "Dashes"
 	desc = "This is how many dash charges you have."
 	icon_state = "ipcdash"
+
+/atom/movable/screen/alert/style
+	name = "Style"
+	desc = "This is how stylish you are."
+	icon_state = "style"
 
 //SILICONS
 
@@ -642,10 +656,12 @@ so as to remain in compliance with the most up-to-date laws."
 /atom/movable/screen/alert/restrained/handcuffed
 	name = "Handcuffed"
 	desc = "You're handcuffed and can't act. If anyone drags you, you won't be able to move. Click the alert to free yourself."
+	click_master = FALSE
 
 /atom/movable/screen/alert/restrained/legcuffed
 	name = "Legcuffed"
 	desc = "You're legcuffed, which slows you down considerably. Click the alert to free yourself."
+	click_master = FALSE
 
 /atom/movable/screen/alert/restrained/Click()
 	var/mob/living/L = usr
@@ -662,6 +678,24 @@ so as to remain in compliance with the most up-to-date laws."
 	L.changeNext_move(CLICK_CD_RESIST)
 	if(L.last_special <= world.time)
 		return L.resist_buckle()
+
+/atom/movable/screen/alert/revolution
+	name = "Revolution"
+	desc = "VIVA! VIVA! VIVA! You shouldn't be seeing this!"
+	icon_state = "revolution"
+
+/atom/movable/screen/alert/revolution/MouseEntered(location,control,params)
+	if(!istype(SSticker.mode, /datum/game_mode/revolution))
+		return
+	var/datum/game_mode/revolution/R = SSticker.mode
+	if(!R.loud && R.go_fucking_loud_time)
+		var/time_left = R.go_fucking_loud_time - world.time
+		desc = "Soon the revolution will boil over. If need be, rally yourselves and make preparations for fighting.<br>\
+			We will be discovered in [time_left / (1 MINUTES)] minutes if we sit idly.<br>\
+			If we eliminate all of the Command personnel, we will also be detected."
+	else if(R.loud)
+		desc = "The revolution has boiled over. Fight for your life and the life of your allies."
+	..()
 
 // PRIVATE = only edit, use, or override these if you're editing the system as a whole
 
@@ -693,9 +727,6 @@ so as to remain in compliance with the most up-to-date laws."
 		mymob?.client?.screen |= alert
 	return 1
 
-/mob
-	var/list/alerts = list() // contains /atom/movable/screen/alert only // On /mob so clientless mobs will throw alerts properly
-
 /atom/movable/screen/alert/Click(location, control, params)
 	if(!usr || !usr.client)
 		return
@@ -703,12 +734,18 @@ so as to remain in compliance with the most up-to-date laws."
 	if(paramslist["shift"]) // screen objects don't do the normal Click() stuff so we'll cheat
 		to_chat(usr, "[span_boldnotice("[name]")] - [span_info("[desc]")]")
 		return
-	if(master)
-		return usr.client.Click(master, location, control, params)
+	var/datum/our_master = master_ref?.resolve()
+	if(our_master && click_master)
+		return usr.client.Click(our_master, location, control, params)
 
 /atom/movable/screen/alert/Destroy()
 	. = ..()
 	severity = 0
-	master = null
+	master_ref = null
 	mob_viewer = null
 	screen_loc = ""
+
+/atom/movable/screen/alert/psiblock
+	name = "Psiblock"
+	desc = "You have pushed your psionic powers beyond your capabilities and need time to recover."
+	icon_state = "shadow_mend"

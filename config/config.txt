@@ -422,6 +422,16 @@ DEFAULT_VIEW 19x15
 ## You probably shouldn't ever be changing this, but it's here if you want to.
 DEFAULT_VIEW_SQUARE 15x15
 
+
+## Enable automatic profiling - Byond 513.1506 and newer only.
+#AUTO_PROFILE
+
+## Threshold (in deciseconds) for real time between ticks before we start dumping profiles
+DRIFT_DUMP_THRESHOLD 40
+
+## How long to wait (in deciseconds) after a profile dump before logging another tickdrift sourced one
+DRIFT_PROFILE_DELAY 150
+
 ## Comment this out if you want to use the SQL based mentor system, the legacy system uses mentors.txt.
 ## You need to set up your database to use the SQL based system.
 ## This flag is automatically enabled if SQL_ENABLED isn't
@@ -437,8 +447,6 @@ DEFAULT_VIEW_SQUARE 15x15
 ## More API details can be found here: https://centcom.melonmesa.com
 CENTCOM_BAN_DB https://centcom.melonmesa.com/ban/search
 
-#AUTO_PROFILE
-
 ## Uncomment to disable hard deleting garbage collection failures. (Hard deleting GC failures causes lag in order to bring memory usage down and keep bugged objects from hanging around and causing bugs in other things.) You can safely enable this for performance on production if the lag spikes are too disruptive)
 #DISABLE_GC_FAILURE_HARD_DELETES
 
@@ -452,3 +460,6 @@ MAX_SHUTTLE_SIZE 300
 ## Enable/disable roundstart station traits
 #STATION_TRAITS
 
+## Comment to disable sending a toast notification on the host server when initializations complete.
+## Even if this is enabled, a notification will only be sent if there are no clients connected.
+TOAST_NOTIFICATION_ON_INIT

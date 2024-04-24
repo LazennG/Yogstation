@@ -49,7 +49,7 @@
 			if(istype(O, /obj/structure/closet/secure_closet))
 				var/obj/structure/closet/secure_closet/temp = O
 				temp.locked = FALSE
-				temp.update_icon()
+				temp.update_appearance(UPDATE_ICON)
 			else if(istype(O, /obj/machinery/door/airlock))
 				var/obj/machinery/door/airlock/temp = O
 				//Skip doors in critical positions, such as the SM chamber, and skip doors the AI can't control since it's a virus
@@ -90,8 +90,8 @@
 					continue
 				if(!GLOB.emergency_access)
 					make_maint_all_access()
-				else if(GLOB.security_level < SEC_LEVEL_RED)
-					set_security_level(SEC_LEVEL_RED)
+				else if(SSsecurity_level.get_current_level_as_number() < SEC_LEVEL_RED)
+					SSsecurity_level.set_level(SEC_LEVEL_RED)
 
 
 

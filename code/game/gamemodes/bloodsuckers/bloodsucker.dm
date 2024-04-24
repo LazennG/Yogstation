@@ -4,7 +4,7 @@
 	report_type = "Bloodsucker"
 	antag_flag = ROLE_BLOODSUCKER
 	false_report_weight = 10
-	restricted_jobs = list("AI", "Cyborg")
+	restricted_jobs = list("AI", "Cyborg", "Synthetic")
 	protected_jobs = list(
 		"Captain", "Head of Personnel", "Head of Security",
 		"Research Director", "Chief Engineer", "Chief Medical Officer", "Curator", 
@@ -38,14 +38,8 @@
 		if(!antag_candidates.len)
 			break
 		var/datum/mind/bloodsucker = antag_pick(antag_candidates)
-		//Yogs start -- fixes plasmaman vampires
-		var/species_type = bloodsucker?.current?.client.prefs.read_preference(/datum/preference/choiced/species)
-		var/datum/species/species = new species_type
 
-		var/noblood = (NOBLOOD in species.species_traits)
-		qdel(species)
-
-		if(noblood)
+		if(!bloodsucker.prepare_bloodsucker(bloodsucker))
 			antag_candidates -= bloodsucker // kinda need to do this to prevent some edge-case infinite loop or whatever
 			i-- // to undo the imminent increment
 			continue

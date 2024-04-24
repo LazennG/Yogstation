@@ -21,7 +21,7 @@
 		qdel(src)
 		return
 	if(!friend.client && friend_initialized)
-		addtimer(CALLBACK(src, .proc/reroll_friend), 600)
+		addtimer(CALLBACK(src, PROC_REF(reroll_friend)), 600)
 
 /datum/brain_trauma/special/imaginary_friend/on_death()
 	..()
@@ -58,8 +58,6 @@
 	real_name = "imaginary friend"
 	move_on_shuttle = TRUE
 	desc = "A wonderful yet fake friend."
-	see_in_dark = 0
-	lighting_alpha = LIGHTING_PLANE_ALPHA_VISIBLE
 	sight = NONE
 	mouse_opacity = MOUSE_OPACITY_OPAQUE
 	see_invisible = SEE_INVISIBLE_LIVING
@@ -133,7 +131,7 @@
 		client.images.Remove(human_image)
 	return ..()
 
-/mob/camera/imaginary_friend/say(message, bubble_type, var/list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null)
+/mob/camera/imaginary_friend/say(message, bubble_type, list/spans = list(), sanitize = TRUE, datum/language/language = null, ignore_spam = FALSE, forced = null)
 	if (!message)
 		return
 
@@ -167,15 +165,20 @@
 
 	//speech bubble
 	if(owner.client)
-		var/mutable_appearance/MA = mutable_appearance('icons/mob/talk.dmi', src, "default[say_test(message)]", FLY_LAYER)
-		MA.appearance_flags = APPEARANCE_UI_IGNORE_ALPHA
-		INVOKE_ASYNC(GLOBAL_PROC, /proc/flick_overlay, MA, list(owner.client), 30)
+		var/mutable_appearance/bubble = mutable_appearance('icons/mob/talk.dmi', src, "default[say_test(message)]", FLY_LAYER)
+		bubble.appearance_flags = APPEARANCE_UI_IGNORE_ALPHA
+		SET_PLANE_EXPLICIT(bubble, ABOVE_GAME_PLANE, src)
+		INVOKE_ASYNC(GLOBAL_PROC, /proc/flick_overlay_global, bubble, list(owner.client), 30)
+		LAZYADD(update_on_z, bubble)
 
 	for(var/mob/dead/observer/M in GLOB.dead_mob_list)
 		if(M.client)
 			if(M.client.prefs.chat_toggles & CHAT_GHOSTEARS)
 				var/link = FOLLOW_LINK(M, owner)
 				to_chat(M, "[link] [dead_rendered]")
+
+/mob/camera/imaginary_friend/proc/clear_saypopup(image/say_popup)
+	LAZYREMOVE(update_on_z, say_popup)
 
 /mob/camera/imaginary_friend/Move(NewLoc, Dir = 0)
 	if(world.time < move_delay)
@@ -200,8 +203,9 @@
 /datum/action/innate/imaginary_join
 	name = "Join"
 	desc = "Join your owner, following them from inside their mind."
-	icon_icon = 'icons/mob/actions/actions_minor_antag.dmi'
+	button_icon = 'icons/mob/actions/actions_minor_antag.dmi'
 	background_icon_state = "bg_revenant"
+	overlay_icon_state = "bg_revenant_border"
 	button_icon_state = "join"
 
 /datum/action/innate/imaginary_join/Activate()
@@ -211,8 +215,9 @@
 /datum/action/innate/imaginary_hide
 	name = "Hide"
 	desc = "Hide yourself from your owner's sight."
-	icon_icon = 'icons/mob/actions/actions_minor_antag.dmi'
+	button_icon = 'icons/mob/actions/actions_minor_antag.dmi'
 	background_icon_state = "bg_revenant"
+	overlay_icon_state = "bg_revenant_border"
 	button_icon_state = "hide"
 
 /datum/action/innate/imaginary_hide/proc/update_status()
@@ -225,13 +230,32 @@
 		name = "Hide"
 		desc = "Hide yourself from your owner's sight."
 		button_icon_state = "hide"
-	UpdateButtonIcon()
+	build_all_button_icons()
 
 /datum/action/innate/imaginary_hide/Activate()
-	var/mob/camera/imaginary_friend/I = owner
-	I.hidden = !I.hidden
-	I.Show()
-	update_status()
+	var/mob/camera/imaginary_friend/fake_friend = owner
+	fake_friend.hidden = !fake_friend.hidden
+	fake_friend.Show()
+	build_all_button_icons(UPDATE_BUTTON_NAME|UPDATE_BUTTON_ICON)
+
+/datum/action/innate/imaginary_hide/update_button_name(atom/movable/screen/movable/action_button/button, force)
+	var/mob/camera/imaginary_friend/fake_friend = owner
+	if(fake_friend.hidden)
+		name = "Show"
+		desc = "Become visible to your owner."
+	else
+		name = "Hide"
+		desc = "Hide yourself from your owner's sight."
+	return ..()
+
+/datum/action/innate/imaginary_hide/apply_button_icon(atom/movable/screen/movable/action_button/current_button, force = FALSE)
+	var/mob/camera/imaginary_friend/fake_friend = owner
+	if(fake_friend.hidden)
+		button_icon_state = "unhide"
+	else
+		button_icon_state = "hide"
+
+	return ..()
 
 //down here is the trapped mind
 //like imaginary friend but a lot less imagination and more like mind prison//

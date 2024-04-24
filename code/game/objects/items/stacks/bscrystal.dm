@@ -57,7 +57,7 @@
 	
 	use(1)
 
-/obj/item/stack/ore/bluespace_crystal/Initialize()
+/obj/item/stack/ore/bluespace_crystal/Initialize(mapload)
 	. = ..()
 	pixel_x = rand(-5, 5)
 	pixel_y = rand(-5, 5)
@@ -73,7 +73,7 @@
 	if(iscarbon(user))
 		var/mob/living/carbon/C = user
 		C.adjust_disgust(30)	//Won't immediately make you vomit, just dont use more than one or two at a time
-		C.confused += 7
+		C.adjust_confusion(7 SECONDS)
 	use(1)
 
 /obj/item/stack/ore/bluespace_crystal/proc/blink_mob(mob/living/L)
@@ -120,7 +120,7 @@
 //ATTACK HAND IGNORING PARENT RETURN VALUE
 /obj/item/stack/sheet/bluespace_crystal/attack_hand(mob/user)
 	if(user.get_inactive_held_item() == src)
-		if(zero_amount())
+		if(is_zero_amount(delete_if_zero = TRUE))
 			return
 		var/BC = new crystal_type(src)
 		user.put_in_hands(BC)
