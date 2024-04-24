@@ -10,19 +10,21 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 
 /area/yogstation/pocket_dimension
 	name = "Pocket Dimension"
-	dynamic_lighting = DYNAMIC_LIGHTING_DISABLED
+	static_lighting = FALSE
+
+	base_lighting_alpha = 255
 	has_gravity = STANDARD_GRAVITY
 	noteleport = TRUE
 	unique = FALSE
 	requires_power = FALSE
 	show_on_sensors = FALSE
-	ambientsounds = SPACE
+	ambience_index = AMBIENCE_SPACE
 	parallax_movedir = EAST
 
 /obj/effect/landmark/pocket_dimension_corner
 	name = "pocket dimension corner (bottom left)"
 
-/obj/effect/landmark/pocket_dimension_corner/Initialize()
+/obj/effect/landmark/pocket_dimension_corner/Initialize(mapload)
 	. = ..()
 	var/datum/space_level/level = SSmapping.get_level(z)
 	if (!level)
@@ -51,20 +53,20 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 	var/manifested_at_x
 	var/manifested_at_y
 	var/manifested_at_z
-	var/mob/camera/aiEye/remote/pocket/eye
+	var/mob/camera/ai_eye/remote/pocket/eye
 	var/manifesting = FALSE
 	var/list/manifestations = list()
-	var/obj/effect/proc_holder/spell/self/pocket_dim/manifest_spell
-	var/obj/effect/proc_holder/spell/self/pocket_dim_move/move_spell
+	var/datum/action/cooldown/spell/pocket_dim/manifest_spell
+	var/datum/action/cooldown/spell/pocket_dim_move/move_spell
 
 /datum/guardian_ability/major/special/pocket/Apply()
-	manifest_spell = new
+	manifest_spell = new(guardian)
 	manifest_spell.guardian = guardian
-	move_spell = new
+	move_spell = new(guardian)
 	move_spell.guardian = guardian
-	guardian.AddSpell(manifest_spell)
-	guardian.AddSpell(move_spell)
-	RegisterSignal(guardian, COMSIG_MOVABLE_MOVED, .proc/auto_demanifest)
+	manifest_spell.Grant(guardian)
+	move_spell.Grant(guardian)
+	RegisterSignal(guardian, COMSIG_MOVABLE_MOVED, PROC_REF(auto_demanifest))
 	if (!LAZYLEN(pocket_dim))
 		var/list/errorList = list()
 		SSmapping.LoadGroup(errorList, "Pocket Dimension [GLOB.pocket_dim]", "templates", "pocket_dimension.dmm", default_traits = list("Pocket Dimension" = TRUE, "Pocket Dimension [GLOB.pocket_dim]" = TRUE, ZTRAIT_BOMBCAP_MULTIPLIER = 0), silent = TRUE)
@@ -85,8 +87,8 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 		eye.forceMove(get_turf(guardian))
 
 /datum/guardian_ability/major/special/pocket/Remove()
-	guardian.RemoveSpell(manifest_spell)
-	guardian.RemoveSpell(move_spell)
+	manifest_spell.Remove(guardian)
+	move_spell.Remove(guardian)
 	UnregisterSignal(guardian, COMSIG_MOVABLE_MOVED)
 	if (LAZYLEN(manifestations))
 		demanifest_dimension()
@@ -257,7 +259,7 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 		QDEL_IN(manifestation, 3 SECONDS)
 
 	if (pocket_dim)
-		addtimer(CALLBACK(GLOBAL_PROC, .proc/update_pocket_mirror, pocket_dim, manifested_at_x, manifested_at_y, manifested_at_z), 3.5 SECONDS)
+		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(update_pocket_mirror), pocket_dim, manifested_at_x, manifested_at_y, manifested_at_z), 3.5 SECONDS)
 
 	addtimer(VARSET_CALLBACK(src, manifesting, FALSE), 3 SECONDS)
 
@@ -274,7 +276,7 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 	ADD_TRAIT(L, TRAIT_NOSOFTCRIT, GUARDIAN_TRAIT)
 	ADD_TRAIT(L, TRAIT_NODEATH, GUARDIAN_TRAIT)
 	if (!isguardian(L))
-		RegisterSignal(L, COMSIG_MOVABLE_MOVED, .proc/check_if_teleport)
+		RegisterSignal(L, COMSIG_MOVABLE_MOVED, PROC_REF(check_if_teleport))
 	for (var/mob/living/simple_animal/hostile/guardian/G in L.hasparasites())
 		G.status_flags |= GODMODE
 
@@ -288,13 +290,13 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 		G.status_flags &= ~GODMODE
 
 /obj/effect/manifestation
-	layer = ABOVE_LIGHTING_LAYER
+	plane = ABOVE_LIGHTING_PLANE
 	appearance_flags = KEEP_TOGETHER|TILE_BOUND|PIXEL_SCALE
 	alpha = 0
 	mouse_opacity = FALSE
 	var/next_animate = 0
 
-/obj/effect/manifestation/Initialize()
+/obj/effect/manifestation/Initialize(mapload)
 	. = ..()
 	var/X,Y,i,rsq
 	for (i=1, i<=7, ++i)
@@ -321,17 +323,18 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 		animate(offset=f:offset-1, time=next)
 		next_animate = world.time + next
 
-/obj/effect/proc_holder/spell/self/pocket_dim
+/datum/action/cooldown/spell/pocket_dim
 	name = "Dimensional Intersection"
 	desc = "(De)manifest a pocket dimension."
-	clothes_req = FALSE
-	human_req = FALSE
-	charge_max = 45 SECONDS
-	action_icon = 'icons/obj/objects.dmi'
-	action_icon_state = "anom"
+	button_icon = 'icons/obj/objects.dmi'
+	button_icon_state = "anom"
+
+	cooldown_time = 45 SECONDS
+	spell_requirements = NONE
 	var/mob/living/simple_animal/hostile/guardian/guardian
 
-/obj/effect/proc_holder/spell/self/pocket_dim/Click()
+/datum/action/cooldown/spell/pocket_dim/cast(atom/cast_on)
+	. = ..()
 	if (!guardian || !istype(guardian))
 		return
 	if (!guardian.is_deployed())
@@ -362,9 +365,6 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 		PD.eye.forceMove(get_turf(guardian))
 		PD.bring_mobs_into_pocket_dimension()
 		PD.demanifest_dimension()
-		charge_counter = 0
-		start_recharge()
-		action.UpdateButtonIcon()
 	else
 		if (get_final_z(guardian) == pocket_z)
 			PD.manifest_dimension(TRUE)
@@ -374,21 +374,17 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 			guardian.visible_message(span_warning("[guardian] emits a burst of energy, distorting the space around it!"))
 			PD.manifest_dimension()
 			PD.eye.forceMove(get_turf(guardian))
-		charge_counter = max(0, charge_max - 3 SECONDS)
-		start_recharge()
-		action.UpdateButtonIcon()
 
-/obj/effect/proc_holder/spell/self/pocket_dim_move
+/datum/action/cooldown/spell/pocket_dim_move
 	name = "Dimensional Movement"
-	action_icon = 'icons/mob/actions/actions_silicon.dmi'
-	action_icon_state = "camera_jump"
-	clothes_req = FALSE
-	human_req = FALSE
-	charge_max = 0
+	button_icon = 'icons/mob/actions/actions_silicon.dmi'
+	button_icon_state = "camera_jump"
+
+	spell_requirements = NONE
 	var/mob/living/simple_animal/hostile/guardian/guardian
 
-
-/obj/effect/proc_holder/spell/self/pocket_dim_move/cast(list/targets, mob/living/user)
+/datum/action/cooldown/spell/pocket_dim_move/cast(mob/living/user)
+	. = ..()
 	if (!guardian || !istype(guardian))
 		return
 	var/datum/guardian_ability/major/special/pocket/PD = guardian?.stats?.ability
@@ -408,7 +404,7 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 	if (PD.manifesting)
 		to_chat(guardian, span_red(span_bold("Wait! Your pocket dimension is currently (de)manifesting!</span>")))
 		return
-	var/mob/camera/aiEye/remote/pocket/eyeobj = PD.eye
+	var/mob/camera/ai_eye/remote/pocket/eyeobj = PD.eye
 	if (eyeobj.eye_user)
 		for (var/V in eyeobj.visibleCameraChunks)
 			var/datum/camerachunk/C = V
@@ -422,8 +418,10 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 	else
 		give_eye(eyeobj)
 		eyeobj.setLoc(locate(PD.manifested_at_x || T.x, PD.manifested_at_y || T.y, PD.manifested_at_z || T.z))
+		
+	return TRUE
 
-/obj/effect/proc_holder/spell/self/pocket_dim_move/proc/give_eye(mob/camera/aiEye/remote/pocket/eyeobj)
+/datum/action/cooldown/spell/pocket_dim_move/proc/give_eye(mob/camera/ai_eye/remote/pocket/eyeobj)
 	eyeobj.eye_user = guardian
 	eyeobj.name = "Guardian Eye ([guardian.name])"
 	guardian.remote_control = eyeobj
@@ -434,10 +432,10 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 	icon_state = "0"
 	appearance_flags = KEEP_TOGETHER|TILE_BOUND|PIXEL_SCALE
 	planetary_atmos = TRUE
-	flags_1 = NOJAUNT_1
+	turf_flags = NOJAUNT
 	var/next_animate = 0
 
-/turf/open/indestructible/pocketspace/Initialize()
+/turf/open/indestructible/pocketspace/Initialize(mapload)
 	. = ..()
 	var/X,Y,i,rsq
 	for (i=1, i<=7, ++i)
@@ -464,14 +462,14 @@ GLOBAL_LIST_EMPTY(pocket_mirrors)
 		animate(offset=f:offset-1, time=next)
 		next_animate = world.time + next
 
-/mob/camera/aiEye/remote/pocket
+/mob/camera/ai_eye/remote/pocket
 	name = "Inactive Guardian Eye"
 	move_on_shuttle = TRUE
 	use_static = FALSE
 	var/mob/living/simple_animal/hostile/guardian/guardian
 	var/datum/guardian_ability/major/special/pocket/guardian_ability
 
-/mob/camera/aiEye/remote/pocket/setLoc()
+/mob/camera/ai_eye/remote/pocket/setLoc(turf/destination, force_update = FALSE)
 	. = ..()
 	var/turf/T = get_turf(src)
 	if (T)

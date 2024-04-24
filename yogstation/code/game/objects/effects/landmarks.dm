@@ -37,15 +37,13 @@ GLOBAL_LIST_EMPTY(chosen_station_templates)
 	var/list/template_names = list()
 	/// Whether or not we can choose templates that have already been chosen
 	var/unique = FALSE
-	layer = BULLET_HOLE_LAYER
 
-/obj/effect/landmark/stationroom/New()
-	..()
+/obj/effect/landmark/stationroom/Initialize(mapload)
+	. = ..()
 	GLOB.stationroom_landmarks += src
 
 /obj/effect/landmark/stationroom/Destroy()
-	if(src in GLOB.stationroom_landmarks)
-		GLOB.stationroom_landmarks -= src
+	GLOB.stationroom_landmarks -= src
 	return ..()
 
 /obj/effect/landmark/stationroom/proc/load(template_name)
@@ -95,17 +93,24 @@ GLOBAL_LIST_EMPTY(chosen_station_templates)
 	return chosen_template
 
 /obj/effect/landmark/stationroom/box/bar
-	template_names = list("Bar Trek", "Bar Spacious", "Bar Box", "Bar Casino", "Bar Citadel", "Bar Conveyor", "Bar Diner", "Bar Disco", "Bar Purple", "Bar Cheese", "Bar Clock", "Bar Arcade")
-	icon = 'yogstation/icons/rooms/box/bar.dmi'
-	icon_state = "bar_box"
+	template_names = list(
+		"Bar Trek", "Bar Spacious", "Bar Box", "Bar Casino", "Bar Citadel", 
+		"Bar Conveyor", "Bar Diner", "Bar Disco", "Bar Purple", "Bar Cheese", 
+		"Bar Clock", "Bar Arcade")
 
 /obj/effect/landmark/stationroom/box/bar/load(template_name)
 	GLOB.stationroom_landmarks -= src
 	return TRUE
 
+/obj/effect/landmark/stationroom/box/clerk
+	template_names = list("Clerk Box", "Clerk Pod", "Clerk Meta", "Clerk Gambling Hall")
+
+/obj/effect/landmark/stationroom/box/clerk/load(template_name)
+	GLOB.stationroom_landmarks -= src
+	return TRUE
+
 /obj/effect/landmark/stationroom/box/engine
-	template_names = list("Engine SM" = 50, "Engine Singulo And Tesla" = 50, "Engine TEG" = 0)
-	icon = 'yogstation/icons/rooms/box/engine.dmi'
+	template_names = list("Engine SM" = 40, "Engine Singulo And Tesla" = 20, "Engine Nuclear Reactor" = 20,"Engine TEG" = 20)
 
 /obj/effect/landmark/stationroom/box/engine/choose()
 	. = ..()
@@ -118,6 +123,8 @@ GLOBAL_LIST_EMPTY(chosen_station_templates)
 		if(3)
 			return . //We let the normal choose() do the work if we want to have all of them in play
 		if(4)
+			return "Engine Nuclear Reactor"
+		if(5)
 			return "Engine TEG"
 
 
@@ -136,8 +143,15 @@ GLOBAL_LIST_EMPTY(chosen_station_templates)
 /obj/effect/landmark/stationroom/box/execution
 	template_names = list("Transfer 1", "Transfer 2", "Transfer 3", "Transfer 4", "Transfer 5", "Transfer 6", "Transfer 7", "Transfer 8", "Transfer 9", "Transfer 10")
 
+/obj/effect/landmark/stationroom/box/chapel
+	template_names = list("Chapel 1", "Chapel 2")
+
+/obj/effect/landmark/stationroom/box/chapel/load(template_name)
+	GLOB.stationroom_landmarks -= src
+	return TRUE
+
 /obj/effect/landmark/stationroom/meta/engine
-	template_names = list("Meta Singulo And Tesla" = 50, "Meta SM" = 50, "Meta TEG" = 0)
+	template_names = list("Meta SM" = 45, "Meta Nuclear Reactor" = 30, "Meta TEG" = 25) // tesla is loud as fuck and singulo doesn't make sense, so SM/reactor only
 
 /obj/effect/landmark/stationroom/meta/engine/choose()
 	. = ..()
@@ -150,6 +164,8 @@ GLOBAL_LIST_EMPTY(chosen_station_templates)
 		if(3)
 			return . //We let the normal choose() do the work if we want to have all of them in play
 		if(4)
+			return "Meta Nuclear Reactor"
+		if(5)
 			return "Meta TEG"
 
 
@@ -215,7 +231,7 @@ GLOBAL_LIST_EMPTY(chosen_station_templates)
 	icon = 'icons/effects/landmarks_static.dmi'
 	icon_state = "snukeop_spawn"
 
-/obj/effect/landmark/start/infiltrator/Initialize()
+/obj/effect/landmark/start/infiltrator/Initialize(mapload)
 	..()
 	GLOB.infiltrator_start += loc
 	return INITIALIZE_HINT_QDEL
@@ -225,7 +241,7 @@ GLOBAL_LIST_EMPTY(chosen_station_templates)
 	icon = 'icons/effects/landmarks_static.dmi'
 	icon_state = "random_loot"
 
-/obj/effect/landmark/start/infiltrator_objective/Initialize()
+/obj/effect/landmark/start/infiltrator_objective/Initialize(mapload)
 	..()
 	GLOB.infiltrator_objective_items += loc
 	return INITIALIZE_HINT_QDEL 

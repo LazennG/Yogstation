@@ -5,11 +5,12 @@
 	name = "Phytosian"
 	id = "pod" // We keep this at pod for compatibility reasons
 	default_color = "59CE00"
-	species_traits = list(MUTCOLORS,EYECOLOR,HAS_FLESH)
+	species_traits = list(MUTCOLORS, EYECOLOR, HAS_FLESH, HAS_BONE)
 	mutant_bodyparts = list("pod_hair", "pod_flower")
-	default_features = list("mcolor" = "0F0", "pod_hair" = "Cabbage", "pod_flower" = "Cabbage")
+	default_features = list("mcolor" = "#00FF00", "pod_hair" = "Cabbage", "pod_flower" = "Cabbage")
 	rare_say_mod = list("rustles" = 10)
 	attack_verb = "slash"
+	attack_effect = ATTACK_EFFECT_CLAW
 	attack_sound = 'sound/weapons/slice.ogg'
 	miss_sound = 'sound/weapons/slashmiss.ogg'
 	burnmod = 2
@@ -19,8 +20,7 @@
 	speedmod = 0.33
 	siemens_coeff = 0.75 //I wouldn't make semiconductors out of plant material
 	punchdamagehigh = 8 //sorry anvil your balance choice was wrong imo and I WILL be changing this soon.
-	punchstunthreshold = 9 
-	payday_modifier = 0.7 //Neutrally viewed by NT
+	punchstunthreshold = 9
 	mutantlungs = /obj/item/organ/lungs/plant //let them breathe CO2
 	meat = /obj/item/reagent_containers/food/snacks/meat/slab/human/mutant/plant
 	disliked_food = MEAT | DAIRY | MICE | VEGETABLES | FRUIT | GRAIN | JUNKFOOD | FRIED | RAW | GROSS | BREAKFAST | GRILLED | EGG | CHOCOLATE | SEAFOOD | CLOTH
@@ -28,6 +28,9 @@
 	liked_food = SUGAR
 	changesource_flags = MIRROR_BADMIN | WABBAJACK | MIRROR_MAGIC | MIRROR_PRIDE | ERT_SPAWN | RACE_SWAP | SLIME_EXTRACT
 	species_language_holder = /datum/language_holder/pod
+	wings_icon = "Plant"
+	wings_detail = "Plantdetails"
+	inert_mutation = SAPBLOOD
 
 	var/no_light_heal = FALSE
 	var/light_heal_multiplier = 1
@@ -39,11 +42,11 @@
 	smells_like = "bloody grass"
 
 /datum/species/pod/before_equip_job(datum/job/J, mob/living/carbon/human/H)
-	to_chat(H, span_info("<b>You are a Phytosian.</b> Born from an engimatic plant called a 'Replica Pod'."))
-	to_chat(H, span_info("Symbiotic plant-cells suffuse your skin and provide a protective layer that keeps you alive, and affords you regeneration unmatched by any other race."))
-	to_chat(H, span_info("Darkness is your greatest foe. Even the cold expanses of space are lit by neighbouring stars, but the darkest recesses of the station's interior may prove to be your greatest foe."))
-	to_chat(H, span_info("Heat and cold will damage your epidermis far faster than your natural regeneration can match."))
-	to_chat(H, span_info("For more information on your race, see https://wiki.yogstation.net/wiki/Phytosian"))
+	to_chat(H, span_info("<b>You are a Phytosian.</b> You are born from the enigmatic plant lazarupela vitalis, better known as replica pods."))
+	to_chat(H, span_info("Symbiotic plant-cells suffuse your skin and provide a protective layer that keeps you alive while affording you regeneration unmatched by any other species."))
+	to_chat(H, span_info("Darkness is your greatest foe. While the cold expanse of space is lit by neighboring stars, shadowy recesses within the station's corridors will spell your demise."))
+	to_chat(H, span_info("Heat and cold will damage your epidermis far faster than your natural regeneration can match; take care to avoid environmental hazards."))
+	to_chat(H, span_info("For more information on your species, see https://wiki.yogstation.net/wiki/Phytosian"))
 
 /datum/species/pod/on_species_gain(mob/living/carbon/C, datum/species/old_species)
 	. = ..()
@@ -55,8 +58,11 @@
 	C.faction -= "plants"
 	C.faction -= "vines"
 
+/datum/species/pod/get_butt_sprite()
+	return BUTT_SPRITE_FLOWERPOT
+
 /datum/species/pod/spec_life(mob/living/carbon/human/H)
-	if(H.stat == DEAD || H.stat == UNCONSCIOUS || (H.mind && H.mind.has_antag_datum(ANTAG_DATUM_THRALL)))
+	if(H.stat == DEAD || H.stat == UNCONSCIOUS)
 		return
 	if(IS_BLOODSUCKER(H) && !HAS_TRAIT(H, TRAIT_MASQUERADE))
 		return
@@ -97,17 +103,17 @@
 			if (0.31 to 0.5)
 				//medium, average, doing nothing for now
 				light_level = 3
-				if(H.nutrition <= NUTRITION_LEVEL_HUNGRY)	
-					//just enough to function			
+				if(H.nutrition <= NUTRITION_LEVEL_HUNGRY)
+					//just enough to function
 					H.nutrition += light_amount * 2
 			if (0.51 to 0.75)
 				//high light, regen here
 				light_level = 4
 				if(H.nutrition < NUTRITION_LEVEL_FED)
-					H.nutrition += light_amount * 1.75				
+					H.nutrition += light_amount * 1.75
 				if ((H.stat != UNCONSCIOUS) && (H.stat != DEAD) && !no_light_heal)
 					H.adjustOxyLoss(-0.5 * light_heal_multiplier, 1)
-					H.heal_overall_damage(1 * light_heal_multiplier, 1 * light_heal_multiplier)
+					H.heal_overall_damage(1 * light_heal_multiplier, 1 * light_heal_multiplier, required_status = BODYPART_ORGANIC)
 					//podpeople shouldn't be able to outheal radiation damage, making them functionally immune
 					if(H.radiation < 500)
 						H.adjustToxLoss(-0.5 * light_heal_multiplier, 1)
@@ -119,7 +125,7 @@
 					H.nutrition += light_amount * 1.5
 				if ((H.stat != UNCONSCIOUS) && (H.stat != DEAD) && !no_light_heal)
 					H.adjustOxyLoss(-0.5 * light_heal_multiplier, 1)
-					H.heal_overall_damage(1.5 * light_heal_multiplier, 1.5 * light_heal_multiplier)
+					H.heal_overall_damage(1.5 * light_heal_multiplier, 1.5 * light_heal_multiplier, required_status = BODYPART_ORGANIC)
 					if(H.radiation < 500)
 						H.adjustToxLoss(-1 * light_heal_multiplier, 1)
 	else
@@ -188,9 +194,9 @@
 		H.adjustToxLoss(1*REAGENTS_EFFECT_MULTIPLIER)
 		if(prob(10))
 			if(prob(95))
-				H.easy_randmut(NEGATIVE + MINOR_NEGATIVE)
+				H.easy_random_mutate(NEGATIVE + MINOR_NEGATIVE)
 			else
-				H.easy_randmut(POSITIVE)
+				H.easy_random_mutate(POSITIVE)
 
 		H.reagents.remove_reagent(chem.type, chem.metabolization_rate * REAGENTS_METABOLISM)
 		return 1
@@ -241,22 +247,23 @@
 		dark_damage_multiplier = 3
 		H.reagents.remove_reagent(chem.type, chem.metabolization_rate * REAGENTS_METABOLISM)
 		//removal is handled in /datum/reagent/sugar/on_mob_delete() //so that was a lie
-		
+
 		//if there's none left after the removal, the light multiplier needs to go back to the default
-		if(!H.reagents.has_reagent(/datum/reagent/consumable/sugar)) 
+		if(!H.reagents.has_reagent(/datum/reagent/consumable/sugar))
 			light_heal_multiplier = initial(light_heal_multiplier)
 			dark_damage_multiplier = initial(dark_damage_multiplier)
 		return 1
 
 	if(istype(chem, /datum/reagent/consumable/ethanol)) //istype so all alcohols work
 		var/datum/reagent/consumable/ethanol/ethanol = chem
-		H.adjustOrganLoss(ORGAN_SLOT_BRAIN, 2*REAGENTS_EFFECT_MULTIPLIER)
-		H.adjustToxLoss(0.4*REAGENTS_EFFECT_MULTIPLIER)
-		H.confused = max(H.confused, 1)
-		if(ethanol.boozepwr > 80 && chem.volume > 30)
-			if(chem.current_cycle > 50)
-				H.IsSleeping(3)
-			H.adjustToxLoss(4*REAGENTS_EFFECT_MULTIPLIER)
+		if(ethanol.boozepwr > 0)
+			H.adjustOrganLoss(ORGAN_SLOT_BRAIN, 2*REAGENTS_EFFECT_MULTIPLIER)
+			H.adjustToxLoss(0.4*REAGENTS_EFFECT_MULTIPLIER)
+			H.set_confusion_if_lower(1 SECONDS)
+			if(ethanol.boozepwr > 80 && chem.volume > 30)
+				if(chem.current_cycle > 50)
+					H.IsSleeping(3)
+				H.adjustToxLoss(4*REAGENTS_EFFECT_MULTIPLIER)
 		return 0 // still get all the normal effects.
 
 /datum/species/pod/handle_environment(datum/gas_mixture/environment, mob/living/carbon/human/H)
@@ -268,18 +275,18 @@
 	else
 		no_light_heal = FALSE
 
-/datum/species/pod/on_hit(obj/item/projectile/P, mob/living/carbon/human/H)
+/datum/species/pod/on_hit(obj/projectile/P, mob/living/carbon/human/H)
 	switch(P.type)
-		if(/obj/item/projectile/energy/floramut)
+		if(/obj/projectile/energy/floramut)
 			H.rad_act(rand(20, 30))
 			H.adjustFireLoss(5)
 			H.visible_message(span_warning("[H] writhes in pain as [H.p_their()] vacuoles boil."), span_userdanger("You writhe in pain as your vacuoles boil!"), span_italics("You hear the crunching of leaves."))
 			if(prob(80))
-				H.easy_randmut(NEGATIVE + MINOR_NEGATIVE)
+				H.easy_random_mutate(NEGATIVE + MINOR_NEGATIVE)
 			else
-				H.easy_randmut(POSITIVE)
+				H.easy_random_mutate(POSITIVE)
 			H.domutcheck()
-		if(/obj/item/projectile/energy/florayield)
+		if(/obj/projectile/energy/florayield)
 			H.nutrition = min(H.nutrition+30, NUTRITION_LEVEL_FULL)
 
 /datum/species/pod/random_name(gender,unique,lastname)
@@ -308,7 +315,7 @@
 		a government tasked with preventing such an event from happening again through strict authoritarian policies. \
 		They quickly butchered almost all remaining non-phytosians lifeforms on Muldova in order to to assimilate them, \
 		enclosing the rest to ensure a steady supply of population.",
- 
+
 		"In the year 2511, drones of Sano-Waltfield Industries landing on Muldova alerted phytosians of the existence \
 		of other life elsewhere. They immediately desired to correct this situation, and shot the drones down. \
 		Noticing the incident, SIC investigators went to scan the planet, expecting illegal human colonists. Instead, \
@@ -345,5 +352,28 @@
 	// TODO
 
 	return to_add
+/*
+ Podpeople subspecies: IVYMEN
+*/
+/datum/species/pod/ivymen
+	// A unique podpeople mutation native to Jungleland. 
+	// They are adapted to the region, don't mind meat, and move faster than normal podpeople.
+	// However, they can't use guns or machines.
+	name = "Ivymen"
+	id = "ivymen"
+	limbs_id = "pod"
+	inherent_traits = list(TRAIT_NOGUNS,TRAIT_RESISTHIGHPRESSURE)
+	speedmod = 0
+	mutantlungs = /obj/item/organ/lungs/plant/ivymen
+	disliked_food = DAIRY
+
+/datum/species/pod/ivymen/on_species_gain(mob/living/carbon/C, datum/species/old_species)
+	. = ..()
+	C.weather_immunities |= "acid"
+
+/datum/species/pod/ivymen/on_species_loss(mob/living/carbon/C)
+	. = ..()
+	C.weather_immunities -= "acid"
+
 
 #undef STATUS_MESSAGE_COOLDOWN

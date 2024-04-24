@@ -8,19 +8,12 @@
 		. += "Total Blood: [vamp.total_blood]"
 		. += "Usable Blood: [vamp.usable_blood]"
 
-/mob/living/carbon/human/Life()
-	. = ..()
-	if(is_vampire(src))
-		var/datum/antagonist/vampire/vamp = mind.has_antag_datum(/datum/antagonist/vampire)
-		vamp.vampire_life()
-
-
 /datum/game_mode/vampire
 	name = "vampire"
 	config_tag = "vampire"
 	antag_flag = ROLE_VAMPIRE
 	false_report_weight = 1
-	restricted_jobs = list("AI", "Cyborg")
+	restricted_jobs = list("AI", "Cyborg", "Synthetic")
 	protected_jobs = list("Head of Security", "Captain", "Head of Personnel", "Research Director", "Chief Engineer", "Chief Medical Officer", "Security Officer", "Chaplain", "Detective", "Warden", "Brig Physician") //Added Brig Physician
 	required_players = 15
 	required_enemies = 1
@@ -90,17 +83,6 @@
 
 /proc/is_vampire(mob/living/M)
 	return M?.mind?.has_antag_datum(/datum/antagonist/vampire)
-
-/datum/game_mode/proc/update_vampire_icons_added(datum/mind/traitor_mind)
-	var/datum/atom_hud/antag/vamphud = GLOB.huds[ANTAG_HUD_VAMPIRE]
-	vamphud.join_hud(traitor_mind.current)
-	set_antag_hud(traitor_mind.current, "vampire")
-
-/datum/game_mode/proc/update_vampire_icons_removed(datum/mind/traitor_mind)
-	var/datum/atom_hud/antag/vamphud = GLOB.huds[ANTAG_HUD_VAMPIRE]
-	vamphud.leave_hud(traitor_mind.current)
-	set_antag_hud(traitor_mind.current, null)
-
 
 /datum/game_mode/vampire/generate_report()
 	return "The Wizard Federation has created a new being based off ancient mythology. \

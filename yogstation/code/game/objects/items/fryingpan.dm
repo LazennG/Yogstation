@@ -36,7 +36,7 @@
 	attack_verb = list("BONKED", "panned", "flexes on")
 	armor = list(MELEE = 0, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 100, BIO = 0, RAD = 0, FIRE = 100, ACID = 100) //honkzo bananium frying pan folded over 1000 times, your mime explosives are no match.
 
-/obj/item/melee/fryingpan/bananium/Initialize()
+/obj/item/melee/fryingpan/bananium/Initialize(mapload)
 	. = ..()
 	AddComponent(/datum/component/randomcrits, force)
 
@@ -54,8 +54,7 @@
 			statue.name = "bananium plated [statue.name]"
 			statue.desc = "An incredibly lifelike bananium carving."
 			statue.add_atom_colour("#ffd700", FIXED_COLOUR_PRIORITY)
-			statue.max_integrity = 9999
-			statue.obj_integrity = 9999
+			statue.modify_max_integrity(9999, can_break=FALSE)
 	return ..()
 
 /obj/item/melee/fryingpan/bananium/honk_act()

@@ -18,8 +18,8 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 	desc = "A mysterious being that stands by its charge, ever vigilant."
 	speak_emote = list("hisses")
 	gender = NEUTER
-	mob_biotypes = list(MOB_INORGANIC, MOB_SPIRIT)
-	bubble_icon = "guardian"
+	mob_biotypes = MOB_INORGANIC|MOB_SPIRIT
+	bubble_icon = BUBBLE_GUARDIAN
 	response_help  = "passes through"
 	response_disarm = "flails at"
 	response_harm   = "punches"
@@ -44,12 +44,12 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 	obj_damage = 40
 	melee_damage_lower = 15
 	melee_damage_upper = 15
+	projectilesound = 'sound/weapons/lasgun.ogg'
 	AIStatus = AI_OFF
 	light_system = MOVABLE_LIGHT
 	light_range = 3
 	light_on = FALSE
 	hud_type = /datum/hud/guardian
-	see_in_dark = 8
 	var/list/barrier_images = list()
 	var/custom_name = FALSE
 	var/atk_cooldown = 10
@@ -112,17 +112,17 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 	if (sx - range - 1 < 1 || sx + range + 1 > world.maxx || sy - range - 1 < 1 || sy + range + 1 > world.maxy)
 		return
 	for (var/turf/T in getline(locate(sx - range, sy + range + 1, sz), locate(sx + range, sy + range + 1, sz)))
-		barrier_images += image('yogstation/icons/effects/effects.dmi', T, "barrier", ABOVE_LIGHTING_LAYER, SOUTH)
+		barrier_images += image('yogstation/icons/effects/effects.dmi', T, "barrier", ABOVE_LIGHTING_PLANE, SOUTH)
 	for (var/turf/T in getline(locate(sx - range, sy - range - 1, sz), locate(sx + range, sy - range - 1, sz)))
-		barrier_images += image('yogstation/icons/effects/effects.dmi', T, "barrier", ABOVE_LIGHTING_LAYER, NORTH)
+		barrier_images += image('yogstation/icons/effects/effects.dmi', T, "barrier", ABOVE_LIGHTING_PLANE, NORTH)
 	for (var/turf/T in getline(locate(sx - range - 1, sy - range, sz), locate(sx - range - 1, sy + range, sz)))
-		barrier_images += image('yogstation/icons/effects/effects.dmi', T, "barrier", ABOVE_LIGHTING_LAYER, EAST)
+		barrier_images += image('yogstation/icons/effects/effects.dmi', T, "barrier", ABOVE_LIGHTING_PLANE, EAST)
 	for (var/turf/T in getline(locate(sx + range + 1, sy - range, sz), locate(sx + range + 1, sy + range, sz)))
-		barrier_images += image('yogstation/icons/effects/effects.dmi', T, "barrier", ABOVE_LIGHTING_LAYER, WEST)
-	barrier_images += image('yogstation/icons/effects/effects.dmi', locate(sx - range - 1 , sy + range + 1, sz), "barrier", ABOVE_LIGHTING_LAYER, SOUTHEAST)
-	barrier_images += image('yogstation/icons/effects/effects.dmi', locate(sx + range + 1, sy + range + 1, sz), "barrier", ABOVE_LIGHTING_LAYER, SOUTHWEST)
-	barrier_images += image('yogstation/icons/effects/effects.dmi', locate(sx + range + 1, sy - range - 1, sz), "barrier", ABOVE_LIGHTING_LAYER, NORTHWEST)
-	barrier_images += image('yogstation/icons/effects/effects.dmi', locate(sx - range - 1, sy - range - 1, sz), "barrier", ABOVE_LIGHTING_LAYER, NORTHEAST)
+		barrier_images += image('yogstation/icons/effects/effects.dmi', T, "barrier", ABOVE_LIGHTING_PLANE, WEST)
+	barrier_images += image('yogstation/icons/effects/effects.dmi', locate(sx - range - 1 , sy + range + 1, sz), "barrier", ABOVE_LIGHTING_PLANE, SOUTHEAST)
+	barrier_images += image('yogstation/icons/effects/effects.dmi', locate(sx + range + 1, sy + range + 1, sz), "barrier", ABOVE_LIGHTING_PLANE, SOUTHWEST)
+	barrier_images += image('yogstation/icons/effects/effects.dmi', locate(sx + range + 1, sy - range - 1, sz), "barrier", ABOVE_LIGHTING_PLANE, NORTHWEST)
+	barrier_images += image('yogstation/icons/effects/effects.dmi', locate(sx - range - 1, sy - range - 1, sz), "barrier", ABOVE_LIGHTING_PLANE, NORTHEAST)
 	for (var/image/I in barrier_images)
 		I.layer = ABOVE_LIGHTING_PLANE
 		I.plane = FLOOR_PLANE
@@ -181,7 +181,7 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 	to_chat(src, span_holoparasite("While personally invincible, you will die if [summoner.current.real_name] does, and any damage dealt to you will have a portion passed on to [summoner.current.p_them()] as you feed upon [summoner.current.p_them()] to sustain yourself."))
 	setup_barriers()
 
-/mob/living/simple_animal/hostile/guardian/Life() //Dies if the summoner dies
+/mob/living/simple_animal/hostile/guardian/Life(seconds_per_tick = SSMOBS_DT, times_fired) //Dies if the summoner dies
 	. = ..()
 	update_health_hud() //we need to update all of our health displays to match our summoner and we can't practically give the summoner a hook to do it
 	med_hud_set_health()
@@ -196,12 +196,12 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 				forceMove(summoner.current)
 				to_chat(src, span_userdanger("Your summoner has died!"))
 				visible_message(span_bolddanger("[src] dies along with its user!"))
-				summoner.current.visible_message(span_bolddanger("[summoner.current]'s body is completely consumed by the strain of sustaining [src]!"))
-				for (var/obj/item/W in summoner.current)
-					if (!summoner.current.dropItemToGround(W))
-						qdel(W)
 				death(TRUE)
-				summoner.current.dust()
+				if(HAS_TRAIT_FROM(summoner.current, TRAIT_NO_SOUL, LICH_TRAIT))//body will be dusted upon revival anyways
+					summoner.current.visible_message(span_bolddanger("[summoner.current]'s body sudders as clashing forces fight for the soul!"))
+				else
+					summoner.current.visible_message(span_bolddanger("[summoner.current]'s body is completely consumed by the strain of sustaining [src]!"))
+					summoner.current.dust(drop_items = TRUE)
 	else
 		if (transforming)
 			GoBerserk()
@@ -352,8 +352,8 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 	if (QDELETED(targeted_atom) || targeted_atom == targets_from.loc || targeted_atom == targets_from)
 		return
 	var/turf/startloc = get_turf(targets_from)
-	var/obj/item/projectile/guardian/emerald_splash = new(startloc)
-	playsound(src, projectilesound, 100, 1)
+	var/obj/projectile/guardian/emerald_splash = new(startloc)
+	playsound(src, projectilesound, 50, TRUE)
 	if (namedatum)
 		emerald_splash.color = namedatum.color
 	emerald_splash.guardian_master = summoner
@@ -381,6 +381,17 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 		return
 	return ..()
 
+/mob/living/simple_animal/hostile/guardian/proc/break_cuffs(mob/living/carbon/target, obj/item/restraints/cuffs)
+	. = TRUE
+	if (!target || !istype(target) || !cuffs || !istype(cuffs))
+		return FALSE
+	if (stats.damage < cuffs.break_strength)
+		to_chat(src, span_warning("You are not strong enough to free your master from their restraints..."))
+		return FALSE
+	playsound(target, 'sound/effects/bang.ogg', 50, TRUE)
+	visible_message(span_danger("[src] smashes \the [cuffs] restraining [target]!"))
+	qdel(cuffs)
+
 /mob/living/simple_animal/hostile/guardian/AttackingTarget()
 	if (transforming)
 		to_chat(src, span_italics(span_holoparasite("No... no... you can't!")))
@@ -398,6 +409,22 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 			to_chat(src, span_bolddanger("You can't attack yourself!"))
 			return FALSE
 		else if (target == summoner?.current)
+			if (iscarbon(target))
+				var/mob/living/carbon/stando_master = target
+				if (stando_master.handcuffed || stando_master.legcuffed)
+					if (stando_master.handcuffed && break_cuffs(stando_master, stando_master.handcuffed))
+						stando_master.handcuffed = null
+						stando_master.update_handcuffed()
+						for (var/zone in list(BODY_ZONE_L_ARM, BODY_ZONE_R_ARM))
+							stando_master.apply_damage(5, BRUTE, zone)
+					else if (stando_master.legcuffed && break_cuffs(stando_master, stando_master.legcuffed)) // you gotta do it twice for both hand and leg cuffs
+						stando_master.legcuffed = null
+						stando_master.update_inv_legcuffed()
+						for (var/zone in list(BODY_ZONE_L_LEG, BODY_ZONE_R_LEG))
+							stando_master.apply_damage(5, BRUTE, zone)
+					if (stando_master.pulledby && stando_master.pulledby != src)
+						stando_master.pulledby.stop_pulling()
+					return
 			to_chat(src, span_bolddanger("You can't attack your summoner!"))
 			return FALSE
 		else if (istype(target, /mob/living/simple_animal/hostile/guardian))
@@ -639,7 +666,7 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 			var/mob/living/simple_animal/hostile/guardian/G = para
 			if(G.summoner?.current.ckey == src.ckey)
 				users += carbon_minds
-				
+
 
 	for(var/datum/mind/user_minds in users)
 		if(!user_minds.current || user_minds.current == src)
@@ -665,7 +692,7 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 	/// Will yield a "?"
 	else
 		to_chat(src, span_notice("There are no users nearby."))
-		
+
 /mob/living/simple_animal/hostile/guardian/verb/Battlecry()
 	set name = "Set Battlecry"
 	set category = "Guardian"
@@ -737,7 +764,7 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 		add_verb(src, list(/mob/living/proc/guardian_comm, /mob/living/proc/guardian_recall, /mob/living/proc/guardian_reset, /mob/living/proc/finduser))
 		for (var/mob/living/simple_animal/hostile/guardian/jojo in guardians)
 			jojo.forceMove(src)
-			jojo.RegisterSignal(src, COMSIG_MOVABLE_MOVED, /mob/living/simple_animal/hostile/guardian.proc/OnMoved)
+			jojo.RegisterSignal(src, COMSIG_MOVABLE_MOVED, TYPE_PROC_REF(/mob/living/simple_animal/hostile/guardian, OnMoved))
 			jojo.revive()
 			var/mob/gost = jojo.grab_ghost(TRUE)
 			if (gost)
@@ -776,7 +803,7 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 		add_verb(current, list(/mob/living/proc/guardian_comm, /mob/living/proc/guardian_recall, /mob/living/proc/guardian_reset, /mob/living/proc/finduser))
 		for (var/mob/living/simple_animal/hostile/guardian/jojo in guardians)
 			jojo.forceMove(current)
-			jojo.RegisterSignal(current, COMSIG_MOVABLE_MOVED, /mob/living/simple_animal/hostile/guardian.proc/OnMoved)
+			jojo.RegisterSignal(current, COMSIG_MOVABLE_MOVED, TYPE_PROC_REF(/mob/living/simple_animal/hostile/guardian, OnMoved))
 			if (jojo.stat == DEAD)
 				jojo.revive()
 				if (!jojo.ckey)
@@ -787,10 +814,11 @@ GLOBAL_LIST_INIT(guardian_projectile_damage, list(
 						jojo.reset(TRUE, "host mind transfer")
 				to_chat(jojo, span_notice("You manifest into existence, as your master's soul appears in a new body!"))
 
-/obj/item/projectile/guardian
+/obj/projectile/guardian
 	name = "crystal bolt"
 	icon_state = "greyscale_bolt"
 	damage = 10
 	damage_type = BRUTE
-	armour_penetration = 100 // no one can just deflect the emerald splash!
+	armor_flag = ENERGY
+	hitsound = 'sound/weapons/pierce_slow.ogg'
 	var/datum/mind/guardian_master

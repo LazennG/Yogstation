@@ -1,6 +1,6 @@
 /obj/item/reagent_containers/food/snacks/bait
 	name = "development bait"
-	desc = "if you see this, get help"
+	desc = "If you see this, get help."
 	icon = 'yogstation/icons/obj/fishing/fishing.dmi'
 	icon_state = "bait_worm"
 	tastes = list("sour, rotten water" = 1)
@@ -12,18 +12,22 @@
 	desc = "A basic bait for an aspiring fisherman"
 	icon_state = "bait_1"
 	fishing_power = 10
+	custom_price = 5
 
 /obj/item/reagent_containers/food/snacks/bait/journeyman
 	name = "journeyman bait"
 	desc = "Advanced bait that only a skilled fisherman can use"
 	icon_state = "bait_2"
 	fishing_power = 20
+	custom_price = 15
 
 /obj/item/reagent_containers/food/snacks/bait/master
 	name = "master bait"
 	desc = "A masterfully crafted bait that only a master in fishing can harness"
 	icon_state = "bait_3"
 	fishing_power = 30
+	custom_price = 25
+	custom_premium_price = 30
 
 /obj/item/reagent_containers/food/snacks/bait/master/Initialize(mapload) //HEE HEEE HAHAHAHAHH  HEEHEH E E EHEEE
 	. = ..()

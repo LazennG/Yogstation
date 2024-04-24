@@ -10,12 +10,13 @@
 	points = 50
 	refined_type = /obj/item/stack/sheet/dilithium_crystal
 	grind_results = list(/datum/reagent/dilithium = 20)
+	eaten_text = "The sparks created by eating a dilithium crystal ignite your innards."
 
 /obj/item/stack/ore/dilithium_crystal/refined
 	name = "refined dilithium crystal"
 	points = 0
 
-/obj/item/stack/ore/dilithium_crystal/Initialize()
+/obj/item/stack/ore/dilithium_crystal/Initialize(mapload)
 	. = ..()
 	pixel_x = rand(-5, 5) // Cloned over from bluespace crystals. I guess to make their spawning a bit more scattered?
 	pixel_y = rand(-5, 5)
@@ -25,6 +26,11 @@
 	new /obj/effect/particle_effect/sparks(loc)
 	playsound(loc, "sparks", 50, 1)
 	use(1)
+
+/obj/item/stack/ore/dilithium_crystal/eaten(mob/living/carbon/human/H)
+	H.adjust_fire_stacks(1)
+	H.ignite_mob()
+	return TRUE
 
 /obj/item/stack/sheet/dilithium_crystal
 	name = "dilithium polycrystal"
@@ -45,7 +51,7 @@
 //ATTACK HAND IGNORING PARENT RETURN VALUE
 /obj/item/stack/sheet/dilithium_crystal/attack_hand(mob/user)
 	if(user.get_inactive_held_item() == src)
-		if(zero_amount())
+		if(is_zero_amount(delete_if_zero = TRUE))
 			return
 		var/BC = new crystal_type(src)
 		user.put_in_hands(BC)

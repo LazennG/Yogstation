@@ -18,7 +18,7 @@
 
 /obj/item/clothing/head/yogs/goatpelt/king/equipped(mob/living/carbon/human/user, slot)
 	..()
-	if (slot == SLOT_HEAD)
+	if (slot == ITEM_SLOT_HEAD)
 		user.faction |= "goat"
 
 /obj/item/clothing/head/yogs/goatpelt/king/dropped(mob/living/carbon/human/user)
@@ -56,8 +56,9 @@
 	worn_x_dimension = 64
 	worn_y_dimension = 64
 	resistance_flags = FLAMMABLE
+	clothing_flags = LARGE_WORN_ICON
 
 /obj/item/clothing/head/yogs/goatpope/equipped(mob/living/carbon/human/user, slot)
 	..()
-	if (slot == SLOT_HEAD)
+	if (slot == ITEM_SLOT_HEAD)
 		user.faction |= "goat"

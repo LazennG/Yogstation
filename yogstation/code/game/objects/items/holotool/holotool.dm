@@ -10,22 +10,19 @@
 	righthand_file = 'yogstation/icons/mob/inhands/righthand.dmi'
 	actions_types = list(/datum/action/item_action/change_tool, /datum/action/item_action/change_ht_color)
 	resistance_flags = FIRE_PROOF | ACID_PROOF
+	light_system = MOVABLE_LIGHT
+	light_range = 3
+	light_on = FALSE
 
+	/// Buffer used by the multitool mode
+	var/buffer
+	/// The current mode
 	var/datum/holotool_mode/current_tool
-	var/obj/item/multitool/internal_multitool // A kludge caused by the statefulness of multitools,
 	// to be retained until we have the hubris to abstract all multitool functionality into some /datum/component, and break modularity in a hundred ways
 	var/list/available_modes
 	var/list/mode_names
 	var/list/radial_modes
 	var/current_color = "#48D1CC" //mediumturquoise
-
-/obj/item/holotool/Initialize()
-	. = ..()
-	internal_multitool = new /obj/item/multitool(src)
-
-/obj/item/holotool/Destroy()
-	. = ..()
-	qdel(internal_multitool)
 
 /obj/item/holotool/examine(mob/user)
 	. = ..()
@@ -43,9 +40,11 @@
 			if(affecting.brute_dam <= 0)
 				to_chat(user, span_warning("[affecting] is already in good condition!"))
 				return FALSE
+			if(DOING_INTERACTION(user, H))
+				return FALSE
 			user.changeNext_move(CLICK_CD_MELEE)
 			user.visible_message(span_notice("[user] starts to fix some of the dents on [M]'s [affecting.name]."), span_notice("You start fixing some of the dents on [M == user ? "your" : "[M]'s"] [affecting.name]."))
-			heal_robo_limb(src, H, user, 15, 0, 0, 50)
+			heal_robo_limb(src, H, user, 10, 0, 0, 50)
 			user.visible_message(span_notice("[user] fixes some of the dents on [M]'s [affecting.name]."), span_notice("You fix some of the dents on [M == user ? "your" : "[M]'s"] [affecting.name]."))
 			return TRUE
 	. = ..()
@@ -66,8 +65,9 @@
 		if(!C || QDELETED(src))
 			return
 		current_color = C
-	update_icon()
-	action.UpdateButtonIcon()
+		set_light_color(current_color)
+	update_appearance(UPDATE_ICON)
+	action.build_all_button_icons()
 	user.regenerate_icons()
 
 /obj/item/holotool/proc/switch_tool(mob/user, datum/holotool_mode/mode)
@@ -78,7 +78,7 @@
 	current_tool = mode
 	current_tool.on_set(src)
 	playsound(loc, 'yogstation/sound/items/holotool.ogg', get_clamped_volume(), 1, -1)
-	update_icon()
+	update_appearance(UPDATE_ICON)
 	user.regenerate_icons()
 
 
@@ -99,7 +99,8 @@
 		else
 			qdel(M)
 
-/obj/item/holotool/update_icon()
+/obj/item/holotool/update_icon(updates=ALL)
+	. = ..()
 	cut_overlays()
 	if(current_tool)
 		var/mutable_appearance/holo_item = mutable_appearance(icon, current_tool.name)
@@ -107,16 +108,16 @@
 		item_state = current_tool.name
 		add_overlay(holo_item)
 		if(current_tool.name == "off")
-			set_light(0)
+			set_light_on(FALSE)
 		else
-			set_light(3, null, current_color)
+			set_light_on(TRUE)
 	else
 		item_state = "holotool"
 		icon_state = "holotool"
-		set_light(0)
+		set_light_on(FALSE)
 
-	for(var/datum/action/A in actions)
-		A.UpdateButtonIcon()
+	for(var/datum/action/A as anything in actions)
+		A.build_all_button_icons()
 
 /obj/item/holotool/proc/check_menu(mob/living/user)
 	if(!istype(user))
@@ -127,7 +128,7 @@
 
 /obj/item/holotool/attack_self(mob/user)
 	update_listing()
-	var/chosen = show_radial_menu(user, src, radial_modes, custom_check = CALLBACK(src, .proc/check_menu,user))
+	var/chosen = show_radial_menu(user, src, radial_modes, custom_check = CALLBACK(src, PROC_REF(check_menu),user))
 	if(!check_menu(user))
 		return
 	if(chosen)
@@ -135,13 +136,13 @@
 		if(new_tool)
 			switch_tool(user, new_tool)
 
-/obj/item/holotool/emag_act(mob/user)
+/obj/item/holotool/emag_act(mob/user, obj/item/card/emag/emag_card)
 	if(obj_flags & EMAGGED)
-		return
+		return FALSE
 	to_chat(user, span_danger("ZZT- ILLEGAL BLUEPRINT UNLOCKED- CONTACT !#$@^%$# NANOTRASEN SUPPORT-@*%$^%!"))
 	do_sparks(5, 0, src)
 	obj_flags |= EMAGGED
-
+	return TRUE
 
 // Spawn in RD closet
 /obj/structure/closet/secure_closet/RD/PopulateContents()

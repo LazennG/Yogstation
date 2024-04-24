@@ -12,9 +12,9 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 	icon = 'goon/icons/obj/spacepods/construction_2x2.dmi'
 	icon_state = "pod_1"
 	density = 1
-	opacity = 0
+	opacity = FALSE
 	dir = NORTH // always points north because why not
-	layer = SPACEPOD_LAYER
+	layer = VEHICLE_LAYER
 	bound_width = 64
 	bound_height = 64
 	animate_movement = NO_STEPS // we do our own gliding here
@@ -67,10 +67,10 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 
 	var/lights = 0
 	var/lights_power = 6
-	var/static/list/icon_light_color = list("pod_civ" = LIGHT_COLOR_WHITE, \
+	var/static/list/icon_light_color = list("pod_civ" = LIGHT_COLOR_DEFAULT, \
 									 "pod_mil" = "#BBF093", \
 									 "pod_synd" = LIGHT_COLOR_RED, \
-									 "pod_gold" = LIGHT_COLOR_WHITE, \
+									 "pod_gold" = LIGHT_COLOR_DEFAULT, \
 									 "pod_black" = "#3B8FE5", \
 									 "pod_industrial" = "#CCCC00")
 
@@ -78,17 +78,17 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 	var/bounce_factor = 0.2 // how much of our velocity to keep on collision
 	var/lateral_bounce_factor = 0.95 // mostly there to slow you down when you drive (pilot?) down a 2x2 corridor
 
-/obj/spacepod/Initialize()
+/obj/spacepod/Initialize(mapload)
 	. = ..()
 	GLOB.spacepods_list += src
 	START_PROCESSING(SSfastprocess, src)
 	cabin_air = new
 	cabin_air.set_temperature(T20C)
 	cabin_air.set_volume(200)
-	/*cabin_air.assert_gas(/datum/gas/oxygen)
-	cabin_air.assert_gas(/datum/gas/nitrogen)
-	cabin_air.gases[/datum/gas/oxygen][MOLES] = ONE_ATMOSPHERE*O2STANDARD*cabin_air.volume/(R_IDEAL_GAS_EQUATION*cabin_air.temperature)
-	cabin_air.gases[/datum/gas/nitrogen][MOLES] = ONE_ATMOSPHERE*N2STANDARD*cabin_air.volume/(R_IDEAL_GAS_EQUATION*cabin_air.temperature)*/
+	/*cabin_air.assert_gas(GAS_O2)
+	cabin_air.assert_gas(GAS_N2)
+	cabin_air.gases[GAS_O2][MOLES] = ONE_ATMOSPHERE*O2STANDARD*cabin_air.volume/(R_IDEAL_GAS_EQUATION*cabin_air.temperature)
+	cabin_air.gases[GAS_N2][MOLES] = ONE_ATMOSPHERE*N2STANDARD*cabin_air.volume/(R_IDEAL_GAS_EQUATION*cabin_air.temperature)*/
 
 /obj/spacepod/Destroy()
 	GLOB.spacepods_list -= src
@@ -157,23 +157,23 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 			to_chat(user, span_notice("Turn the [L] on first."))
 			return TRUE
 		if(W.tool_behaviour == TOOL_WELDER)
-			var/repairing = cell || internal_tank || equipment.len || (obj_integrity < max_integrity) || pilot || passengers.len
+			var/repairing = cell || internal_tank || equipment.len || (atom_integrity < max_integrity) || pilot || passengers.len
 			if(!hatch_open)
 				to_chat(user, span_warning("You must open the maintenance hatch before [repairing ? "attempting repairs" : "unwelding the armor"]."))
 				return TRUE
-			if(repairing && obj_integrity >= max_integrity)
+			if(repairing && atom_integrity >= max_integrity)
 				to_chat(user, span_warning("[src] is fully repaired!"))
 				return TRUE
 			to_chat(user, span_notice("You start [repairing ? "repairing [src]" : "slicing off [src]'s armor'"]"))
 			if(W.use_tool(src, user, 50, amount=3, volume = 50))
 				if(repairing)
-					obj_integrity = min(max_integrity, obj_integrity + 10)
-					update_icon()
+					update_integrity(min(max_integrity, atom_integrity + 10))
+					update_appearance(UPDATE_ICON)
 					to_chat(user, span_notice("You mend some [pick("dents","bumps","damage")] with [W]"))
 				else if(!cell && !internal_tank && !equipment.len && !pilot && !passengers.len && construction_state == SPACEPOD_ARMOR_WELDED)
 					user.visible_message("[user] slices off [src]'s armor.", span_notice("You slice off [src]'s armor."))
 					construction_state = SPACEPOD_ARMOR_SECURED
-					update_icon()
+					update_appearance(UPDATE_ICON)
 			return TRUE
 	return ..()
 
@@ -233,30 +233,30 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 /obj/spacepod/proc/add_armor(obj/item/pod_parts/armor/armor)
 	desc = armor.pod_desc
 	max_integrity = armor.pod_integrity
-	obj_integrity = max_integrity - integrity_failure + obj_integrity
+	update_integrity(max_integrity - integrity_failure + atom_integrity)
 	pod_armor = armor
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
 /obj/spacepod/proc/remove_armor()
 	if(!pod_armor)
-		obj_integrity = min(integrity_failure, obj_integrity)
+		update_integrity(min(integrity_failure, atom_integrity))
 		max_integrity = integrity_failure
 		desc = initial(desc)
 		pod_armor = null
-		update_icon()
+		update_appearance(UPDATE_ICON)
 
 
 /obj/spacepod/proc/InterceptClickOn(mob/user, params, atom/target)
 	var/list/params_list = params2list(params)
-	if(target == src || istype(target, /atom/movable/screen) || (target && (target in user.GetAllContents())) || user != pilot || params_list["shift"] || params_list["alt"] || params_list["ctrl"])
+	if(target == src || istype(target, /atom/movable/screen) || (target && (target in user.get_all_contents())) || user != pilot || params_list["shift"] || params_list["alt"] || params_list["ctrl"])
 		return FALSE
 	if(weapon)
 		weapon.fire_weapons(target)
 	return TRUE
 
-/obj/spacepod/take_damage()
+/obj/spacepod/take_damage(damage_amount, damage_type = BRUTE, damage_flag = 0, sound_effect = TRUE, attack_dir, armour_penetration = 0)
 	..()
-	update_icon()
+	update_appearance(UPDATE_ICON)
 
 /obj/spacepod/return_air()
 	return cabin_air
@@ -299,7 +299,7 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 		var/obj/spacepod/S = loc
 		. += ""
 		. += "Spacepod Charge: [S.cell ? "[round(S.cell.charge,0.1)]/[S.cell.maxcharge] KJ" : "NONE"]"
-		. += "Spacepod Integrity: [round(S.obj_integrity,0.1)]/[S.max_integrity]"
+		. += "Spacepod Integrity: [round(S.get_integrity(),0.1)]/[S.max_integrity]"
 		. += "Spacepod Velocity: [round(sqrt(S.velocity_x*S.velocity_x+S.velocity_y*S.velocity_y), 0.1)] m/s"
 		. += ""
 
@@ -315,8 +315,9 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 			if(prob(40))
 				take_damage(40, BRUTE, BOMB, 0)
 
-/obj/spacepod/obj_break()
-	if(obj_integrity <= 0)
+/obj/spacepod/atom_break()
+	. = ..()
+	if(atom_integrity <= 0)
 		return // nah we'll let the other boy handle it
 	if(construction_state < SPACEPOD_ARMOR_LOOSE)
 		return
@@ -396,20 +397,13 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 		// there here's your frame pieces back, happy?
 	qdel(src)
 
-/obj/spacepod/update_icon()
-	cut_overlays()
+/obj/spacepod/update_icon_state()
+	. = ..()
 	if(construction_state != SPACEPOD_ARMOR_WELDED)
 		icon = 'goon/icons/obj/spacepods/construction_2x2.dmi'
 		icon_state = "pod_[construction_state]"
-		if(pod_armor && construction_state >= SPACEPOD_ARMOR_LOOSE)
-			var/mutable_appearance/masked_armor = mutable_appearance(icon = 'goon/icons/obj/spacepods/construction_2x2.dmi', icon_state = "armor_mask")
-			var/mutable_appearance/armor = mutable_appearance(pod_armor.pod_icon, pod_armor.pod_icon_state)
-			armor.blend_mode = BLEND_MULTIPLY
-			masked_armor.overlays = list(armor)
-			masked_armor.appearance_flags = KEEP_TOGETHER
-			add_overlay(masked_armor)
 		return
-
+	
 	if(pod_armor)
 		icon = pod_armor.pod_icon
 		icon_state = pod_armor.pod_icon_state
@@ -417,15 +411,27 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 		icon = 'goon/icons/obj/spacepods/2x2.dmi'
 		icon_state = initial(icon_state)
 
-	if(obj_integrity <= max_integrity / 2)
-		add_overlay(image(icon='goon/icons/obj/spacepods/2x2.dmi', icon_state="pod_damage"))
-		if(obj_integrity <= max_integrity / 4)
-			add_overlay(image(icon='goon/icons/obj/spacepods/2x2.dmi', icon_state="pod_fire"))
+/obj/spacepod/update_overlays()
+	. = ..()
+	if(construction_state != SPACEPOD_ARMOR_WELDED)
+		if(pod_armor && construction_state >= SPACEPOD_ARMOR_LOOSE)
+			var/mutable_appearance/masked_armor = mutable_appearance(icon = 'goon/icons/obj/spacepods/construction_2x2.dmi', icon_state = "armor_mask")
+			var/mutable_appearance/armor = mutable_appearance(pod_armor.pod_icon, pod_armor.pod_icon_state)
+			armor.blend_mode = BLEND_MULTIPLY
+			masked_armor.overlays = list(armor)
+			masked_armor.appearance_flags = KEEP_TOGETHER
+			. += masked_armor
+		return
+
+	if(atom_integrity <= max_integrity / 2)
+		. += image(icon='goon/icons/obj/spacepods/2x2.dmi', icon_state="pod_damage")
+		if(atom_integrity <= max_integrity / 4)
+			. += image(icon='goon/icons/obj/spacepods/2x2.dmi', icon_state="pod_fire")
 
 	if(weapon && weapon.overlay_icon_state)
-		add_overlay(image(icon=weapon.overlay_icon,icon_state=weapon.overlay_icon_state))
+		. += image(icon=weapon.overlay_icon,icon_state=weapon.overlay_icon_state)
 
-	light_color = icon_light_color[icon_state] || LIGHT_COLOR_WHITE
+	light_color = icon_light_color[icon_state] || LIGHT_COLOR_DEFAULT
 
 	// Thrust!
 	var/list/left_thrusts = list()
@@ -456,13 +462,13 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 		var/left_thrust = left_thrusts[cdir]
 		var/right_thrust = right_thrusts[cdir]
 		if(left_thrust)
-			add_overlay(image(icon = 'yogstation/icons/obj/spacepods/2x2.dmi', icon_state = "rcs_left", dir = cdir))
+			. += image(icon = 'yogstation/icons/obj/spacepods/2x2.dmi', icon_state = "rcs_left", dir = cdir)
 		if(right_thrust)
-			add_overlay(image(icon = 'yogstation/icons/obj/spacepods/2x2.dmi', icon_state = "rcs_right", dir = cdir))
+			. += image(icon = 'yogstation/icons/obj/spacepods/2x2.dmi', icon_state = "rcs_right", dir = cdir)
 	if(back_thrust)
 		var/image/I = image(icon = 'yogstation/icons/obj/spacepods/2x2.dmi', icon_state = "thrust")
 		I.transform = matrix(1, 0, 0, 0, 1, -32)
-		add_overlay(I)
+		. += I
 
 /obj/spacepod/MouseDrop_T(atom/movable/A, mob/living/user)
 	if(user == pilot || (user in passengers) || construction_state != SPACEPOD_ARMOR_WELDED)
@@ -478,7 +484,7 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 		if(hatch_open)
 			to_chat(user, span_warning("The hatch is shut!"))
 		to_chat(user, span_notice("You begin inserting the canister into [src]"))
-		if(do_after_mob(user, list(A, src), 50) && construction_state == SPACEPOD_ARMOR_WELDED)
+		if(do_after(user, 5 SECONDS, A) && construction_state == SPACEPOD_ARMOR_WELDED)
 			to_chat(user, span_notice("You insert the canister into [src]"))
 			A.forceMove(src)
 			internal_tank = A
@@ -492,7 +498,7 @@ GLOBAL_LIST_INIT(spacepods_list, list())
 				return
 			if(passengers.len < max_passengers)
 				visible_message(span_danger("[user] starts loading [M] into [src]!"))
-				if(do_after_mob(user, list(M, src), 50) && construction_state == SPACEPOD_ARMOR_WELDED)
+				if(do_after(user, 5 SECONDS, M) && construction_state == SPACEPOD_ARMOR_WELDED)
 					add_rider(M, FALSE)
 			return
 		if(M == user)
