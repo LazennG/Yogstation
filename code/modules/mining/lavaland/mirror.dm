@@ -4,7 +4,7 @@
 	desc = "What do you see looking back at you?"
 	icon = 'icons/obj/lavaland/artefacts.dmi'
 	icon_state = "mirrornormal"
-	actions_types = list(/datum/action/item_action/recall)
+	actions_types = list(/datum/action/item_action/mirrorrecall)
 	var/possessed = FALSE
 	var/list/reflection = list()
 	var/next_recall = 0
@@ -50,7 +50,7 @@
 
 
 /obj/item/dopmirror/ui_action_click(mob/living/user, action)
-	if(istype(action, /datum/action/item_action/recall))
+	if(istype(action, /datum/action/item_action/mirrorrecall))
 		if(next_recall > world.time)
 			to_chat(user, span_warning("You can't do that yet!"))
 			return
@@ -77,6 +77,13 @@
 		return
 	original = null
 
+
+/datum/action/item_action/mirrorrecall
+	name = "Recall"
+	desc = "Summon all your thralls to your location."
+	button_icon = 'icons/mob/actions/actions_cult.dmi'
+	button_icon_state = "horde"
+
 //doppelganger code
 
 /mob/living/simple_animal/hostile/double
@@ -91,13 +98,12 @@
 	maxHealth = 20
 	health = 20
 	speed = -1
-	projectiletype = /obj/item/projectile/doppshot
+	projectiletype = /obj/projectile/doppshot
 	projectilesound = 'sound/weapons/pierce.ogg'
 	ranged = TRUE
 	ranged_message = "fires at"
 	ranged_cooldown_time = 25
 	see_in_dark = 8
-	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE
 	spacewalk = TRUE
 	speak_emote = list("echoes")
 	melee_damage_lower = 14
@@ -177,7 +183,7 @@
 
 /datum/action/innate/jumpback
 	name = "Return to Mirror"
-	icon_icon = 'icons/obj/lavaland/artefacts.dmi'
+	button_icon = 'icons/obj/lavaland/artefacts.dmi'
 	button_icon_state = "mirrornormal"
 
 /datum/action/innate/jumpback/Activate()
@@ -193,7 +199,7 @@
 #define RESET_TIME 200
 /datum/action/innate/appear
 	name = "Exit Mirror"
-	icon_icon = 'icons/obj/lavaland/artefacts.dmi'
+	button_icon = 'icons/obj/lavaland/artefacts.dmi'
 	button_icon_state = "mirrorcrack"
 	var/next_appearance = 0
 
@@ -218,7 +224,7 @@
 #define SWAP_TIME 150
 /datum/action/innate/swap
 	name = "Swap"
-	icon_icon = 'icons/obj/lavaland/artefacts.dmi'
+	button_icon = 'icons/obj/lavaland/artefacts.dmi'
 	button_icon_state = "mirrorcrack"
 	var/next_swap = 0
 
@@ -245,7 +251,7 @@
 	to_chat(doppelganger, span_warning("You exchange places with the mirror's holder!"))
 
 
-/obj/item/projectile/doppshot
+/obj/projectile/doppshot
 	name = "mirrored shot"
 	icon_state = "greyscale_bolt"
 	nodamage = TRUE //for the sake of welding tanks
@@ -254,7 +260,7 @@
 	var/actual_damage = 5
 	var/ranged_fauna_bonus = 15
 
-/obj/item/projectile/doppshot/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/doppshot/on_hit(atom/target, blocked = FALSE)
 	var/mob/living/M = target
 	M.apply_damage(actual_damage, BRUTE)
 	if(ismegafauna(M) || istype(M, /mob/living/simple_animal/hostile/asteroid))
