@@ -57,6 +57,8 @@
 /obj/item/kinetic_blade/attack_self(mob/living/user)
 	. = ..()
 	for(var/obj/item/kinetic_shield/deposit in user.held_items)
+		if(charging)
+			
 		if(istype(deposit))
 			deposit.charge = (deposit.charge + src.charge)
 			deposit.phials = round(src.charge/20, 1)
@@ -64,6 +66,7 @@
 			user.Immobilize(1 SECONDS)
 			charging = TRUE
 			addtimer(CALLBACK(src, PROC_REF(uncharge), TRUE), 1 SECONDS)
+			return
 
 
 /obj/item/kinetic_blade/proc/zap(mob/user, mob/target, second = FALSE)
